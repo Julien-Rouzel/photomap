@@ -302,14 +302,29 @@
   }
   .thumb-card:hover { border-color: var(--gold); transform: scale(1.02); }
 
-  .thumb-card img,
-  .thumb-card video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: opacity 0.3s;
-    display: block;
-  }
+.thumb-card {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  background: #1a1a1a;
+  border: 1px solid var(--border);
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.thumb-card img,
+.thumb-card video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: none !important;
+  filter: none !important;
+  border-radius: 0;
+}
 
   .thumb-card .thumb-overlay {
     position: absolute; inset: 0;
@@ -345,28 +360,80 @@
   }
   #lightbox.open { display: flex; }
 
-  #lightbox-img,
-  #lightbox-video {
-    width: auto;
-    height: auto;
-    max-width: 96vw;
-    max-height: 88vh;
-    object-fit: contain;
-    border-radius: 8px;
-    box-shadow: 0 0 80px rgba(0,0,0,0.85);
+ function showLightboxPhoto() {
+  if (lightboxPhotos.length === 0) return;
+
+  const photo = lightboxPhotos[lightboxIndex];
+  const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  const video = document.getElementById('lightbox-video');
+  const openBtn = document.getElementById('lightbox-open-onedrive');
+
+  img.style.display = 'none';
+  video.style.display = 'none';
+  img.classList.remove('portrait', 'landscape');
+  video.classList.remove('portrait', 'landscape');
+
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+
+  const fullSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
+
+  if (photo.mediaType === 'video') {
+    video.src = fullSrc;
+    video.style.display = 'block';
+
+    video.onloadedmetadata = () => {
+      const isPortrait = video.videoHeight > video.videoWidth;
+      video.classList.toggle('portrait', isPortrait);
+      video.classList.toggle('landscape', !isPortrait);
+    };
+  } else {
+    img.src = fullSrc;
+    img.style.display = 'block';
+
+    img.onload = () => {
+      const isPortrait = img.naturalHeight > img.naturalWidth;
+      img.classList.toggle('portrait', isPortrait);
+      img.classList.toggle('landscape', !isPortrait);
+    };
+
+    img.onerror = () => {
+      img.src = photo.thumbnailUrl || FALLBACK_ICON;
+    };
   }
 
-  #lightbox-img.portrait,
-  #lightbox-video.portrait {
-    max-height: 92vh;
-    max-width: 70vw;
+  document.getElementById('lightbox-name').textContent = photo.name;
+
+  const dateStr = photo.date
+    ? photo.date.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      })
+    : '';
+
+  const coords = `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`;
+  document.getElementById('lightbox-meta').textContent =
+    [dateStr, coords].filter(Boolean).join('  ·  ');
+
+  if (photo.webUrl) {
+    openBtn.href = photo.webUrl;
+    openBtn.style.display = 'inline-flex';
+  } else {
+    openBtn.removeAttribute('href');
+    openBtn.style.display = 'none';
   }
 
-  #lightbox-img.landscape,
-  #lightbox-video.landscape {
-    max-width: 96vw;
-    max-height: 82vh;
-  }
+  document.getElementById('lightbox-prev').style.display =
+    lightboxPhotos.length > 1 ? 'flex' : 'none';
+  document.getElementById('lightbox-next').style.display =
+    lightboxPhotos.length > 1 ? 'flex' : 'none';
+
+  lb.classList.add('open');
+}
 
   #lightbox-video { display: none; }
   #lightbox-img { display: none; }
@@ -442,13 +509,14 @@
     cursor: pointer;
     background: #1a1a1a;
   }
-  .photo-marker img,
-  .photo-marker video {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    transform: rotate(45deg) scale(1.4);
-    display: block;
-  }
+.photo-marker > img,
+.photo-marker > video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: rotate(45deg) scale(1.4);
+  display: block;
+}
 
   .photo-marker:hover { border-color: #fff; transform: rotate(-45deg) scale(1.08); }
 
