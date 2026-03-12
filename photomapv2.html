@@ -18,14 +18,15 @@
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
 
   :root {
-    --ink: #0d0d0d;
-    --cream: #f5f0e8;
-    --gold: #c9a84c;
-    --gold-light: #e8d49a;
-    --charcoal: #2a2a2a;
-    --muted: #6b6660;
-    --panel: rgba(13,13,13,0.92);
-    --border: rgba(201,168,76,0.25);
+    --ink: #0b1015;
+    --cream: #f0f2f5;
+    --accent: #0078D4;
+    --accent-light: #28A8EA;
+    --accent-dark: #0364B8;
+    --charcoal: #1b2028;
+    --muted: #7a8494;
+    --panel: rgba(11,16,21,0.92);
+    --border: rgba(0,120,212,0.25);
     --danger: #c0392b;
   }
 
@@ -55,7 +56,7 @@
     color: var(--cream);
     flex-shrink: 0;
   }
-  .logo span { color: var(--gold); }
+  .logo span { color: var(--accent); }
 
   .tagline {
     font-size: 0.75rem;
@@ -77,8 +78,8 @@
 
   #stats-pill {
     font-size: 0.75rem;
-    color: var(--gold);
-    background: rgba(201,168,76,0.1);
+    color: var(--accent);
+    background: rgba(0,120,212,0.1);
     border: 1px solid var(--border);
     padding: 4px 12px;
     border-radius: 20px;
@@ -102,17 +103,17 @@
   }
 
   .btn-primary {
-    background: var(--gold);
-    color: var(--ink);
+    background: var(--accent);
+    color: #fff;
   }
-  .btn-primary:hover { background: var(--gold-light); }
+  .btn-primary:hover { background: var(--accent-light); }
 
   .btn-ghost {
     background: transparent;
     color: var(--cream);
     border: 1px solid var(--border);
   }
-  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
 
   .btn-danger {
     background: transparent;
@@ -128,12 +129,12 @@
   }
 
   .leaflet-tile {
-    filter: brightness(0.7) saturate(0.8) contrast(1.1);
+    filter: brightness(0.72) saturate(0.7) contrast(1.1) hue-rotate(10deg);
   }
 
   #splash {
     position: fixed; inset: 0; z-index: 2000;
-    background: radial-gradient(ellipse at 40% 50%, #1a1510 0%, #0d0d0d 70%);
+    background: radial-gradient(ellipse at 40% 50%, #0b1520 0%, #0b1015 70%);
     display: flex; align-items: center; justify-content: center;
     flex-direction: column; gap: 32px;
     transition: opacity 0.6s, visibility 0.6s;
@@ -147,7 +148,7 @@
 
   .splash-globe {
     width: 120px; height: 120px;
-    border: 2px solid var(--gold);
+    border: 2px solid var(--accent);
     border-radius: 50%;
     position: relative;
     animation: spinGlobe 12s linear infinite;
@@ -176,7 +177,7 @@
     line-height: 1.1;
   }
 
-  .splash-title span { color: var(--gold); }
+  .splash-title span { color: var(--accent); }
 
   .splash-sub {
     color: var(--muted);
@@ -201,7 +202,7 @@
 
   #loading-overlay {
     position: fixed; inset: 0; z-index: 1900;
-    background: rgba(13,13,13,0.9);
+    background: rgba(11,16,21,0.9);
     flex-direction: column;
     align-items: center; justify-content: center; gap: 24px;
     display: none;
@@ -225,7 +226,7 @@
 
   .progress-bar-fill {
     height: 100%;
-    background: var(--gold);
+    background: var(--accent);
     border-radius: 2px;
     width: 0%;
     transition: width 0.4s ease;
@@ -234,7 +235,7 @@
   #loading-count {
     font-family: 'Playfair Display', serif;
     font-size: 2rem;
-    color: var(--gold);
+    color: var(--accent);
   }
 
   /* PANEL */
@@ -274,7 +275,7 @@
 
   .panel-date {
     font-size: 0.72rem;
-    color: var(--gold);
+    color: var(--accent);
     letter-spacing: 0.06em;
     text-transform: uppercase;
     margin-top: 4px;
@@ -326,13 +327,13 @@
     border-radius: 10px;
     cursor: pointer;
     position: relative;
-    background: #1a1a1a;
+    background: #141a22;
     border: 1px solid var(--border);
     transition: border-color 0.2s, transform 0.2s;
   }
 
   .thumb-card:hover {
-    border-color: var(--gold);
+    border-color: var(--accent);
     transform: scale(1.02);
   }
 
@@ -485,13 +486,13 @@
 
   /* DYNAMIC MARKER */
   .photo-marker {
-    border-radius: 6px;
+    border-radius: 8px;
     overflow: hidden;
-    border: 2px solid var(--gold);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    border: 3px solid var(--accent);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.55);
     transition: border-color 0.2s, transform 0.15s, width 0.15s, height 0.15s;
     cursor: pointer;
-    background: #1a1a1a;
+    background: #141a22;
   }
 
   .photo-marker > img,
@@ -503,21 +504,21 @@
   }
 
   .photo-marker:hover {
-    border-color: #fff;
+    border-color: var(--accent-light);
     transform: scale(1.08);
   }
 
   .marker-cluster-small,
   .marker-cluster-medium,
   .marker-cluster-large {
-    background-color: rgba(201,168,76,0.15) !important;
+    background-color: rgba(0,120,212,0.15) !important;
   }
 
   .marker-cluster-small div,
   .marker-cluster-medium div,
   .marker-cluster-large div {
-    background-color: rgba(201,168,76,0.7) !important;
-    color: var(--ink) !important;
+    background-color: rgba(0,120,212,0.7) !important;
+    color: #fff !important;
     font-family: 'DM Sans', sans-serif !important;
     font-weight: 500 !important;
   }
@@ -573,9 +574,9 @@
   }
 
   .year-btn.active {
-    background: var(--gold);
-    color: var(--ink);
-    border-color: var(--gold);
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
     font-weight: 500;
   }
 
@@ -592,7 +593,7 @@
   #config-panel.open { display: flex; }
 
   .config-box {
-    background: #151515;
+    background: #111820;
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 36px;
@@ -622,7 +623,7 @@
     font-size: 0.75rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--gold);
+    color: var(--accent);
     margin-bottom: 8px;
   }
 
@@ -639,7 +640,7 @@
     transition: border-color 0.2s;
   }
 
-  .field input:focus { border-color: var(--gold); }
+  .field input:focus { border-color: var(--accent); }
 
   .config-actions {
     display: flex;
@@ -650,7 +651,7 @@
   }
 
   .hint {
-    background: rgba(201,168,76,0.08);
+    background: rgba(0,120,212,0.08);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 12px 16px;
@@ -661,7 +662,7 @@
   }
 
   .hint a {
-    color: var(--gold);
+    color: var(--accent);
     text-decoration: none;
   }
 
@@ -673,8 +674,8 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 4000;
-    background: #2a1a00;
-    border: 1px solid var(--gold);
+    background: #001a33;
+    border: 1px solid var(--accent);
     color: var(--cream);
     padding: 10px 20px;
     border-radius: 6px;
@@ -1290,16 +1291,16 @@ async function runBackgroundSync() {
   }
 }
 
-const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23222'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
+const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23141a22'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
 
 function getMarkerSize() {
   const z = map.getZoom();
-  if (z >= 17) return 92;
-  if (z >= 15) return 78;
-  if (z >= 13) return 64;
-  if (z >= 11) return 54;
-  if (z >= 9) return 46;
-  return 40;
+  if (z >= 17) return 140;
+  if (z >= 15) return 120;
+  if (z >= 13) return 100;
+  if (z >= 11) return 85;
+  if (z >= 9) return 72;
+  return 60;
 }
 
 /*
@@ -1350,7 +1351,7 @@ function createMarker(photo, filteredIdSet) {
 
   /* FIX: use spatial index instead of O(n) scan */
   const isolatedCount = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet).length;
-  if (isolatedCount === 1) size += 10;
+  if (isolatedCount === 1) size += 16;
 
   const icon = L.divIcon({
     className: '',
