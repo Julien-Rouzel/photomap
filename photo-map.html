@@ -683,7 +683,7 @@ function initMsal(clientId) {
 async function getToken() {
   const accounts = msalInstance.getAllAccounts();
   const request = {
-    scopes: ['Files.Read', 'Files.Read.All', 'User.Read'],
+    scopes: ['Files.Read', 'User.Read'],
     account: accounts[0] || undefined
   };
   try {
@@ -949,7 +949,7 @@ function updateStats(count) {
 // MAIN FLOW
 // ═══════════════════════════════════════════════════
 async function startApp() {
-  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
+  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
   if (!clientId) {
     showConfigPanel();
     return;
@@ -1008,7 +1008,7 @@ async function startApp() {
 // ═══════════════════════════════════════════════════
 function showConfigPanel() {
   document.getElementById('redirect-uri-hint').textContent = window.location.origin + window.location.pathname;
-  const saved = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || '';
+  const saved = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID || '';
   document.getElementById('input-client-id').value = saved;
   document.getElementById('config-panel').classList.add('open');
 }
