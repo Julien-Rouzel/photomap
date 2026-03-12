@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhotoMap — Vos souvenirs sur la planète</title>
+
+<!-- Leaflet for map -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<!-- Leaflet.markercluster -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+
+<!-- MSAL for Microsoft auth -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/msal-browser/3.10.0/msal-browser.min.js"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --ink: #0d0d0d;
+    --cream: #f5f0e8;
+    --gold: #c9a84c;
+    --gold-light: #e8d49a;
+    --charcoal: #2a2a2a;
+    --muted: #6b6660;
+    --panel: rgba(13,13,13,0.92);
+    --border: rgba(201,168,76,0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--ink);
+    color: var(--cream);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── TOP BAR ── */
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    height: 56px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 24px; gap: 16px;
+    backdrop-filter: blur(12px);
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.35rem;
+    letter-spacing: 0.04em;
+    color: var(--cream);
+  }
+  .logo span { color: var(--gold); }
+
+  .tagline {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-left: 1px solid var(--border);
+    padding-left: 16px;
+  }
+
+  #topbar-right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+
+  #stats-pill {
+    font-size: 0.75rem;
+    color: var(--gold);
+    background: rgba(201,168,76,0.1);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+    display: none;
+  }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    padding: 8px 20px;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--ink);
+  }
+  .btn-primary:hover { background: var(--gold-light); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--cream);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── MAP ── */
+  #map {
+    position: fixed;
+    top: 56px; left: 0; right: 0; bottom: 0;
+    z-index: 1;
+  }
+
+  /* dark tile overlay */
+  .leaflet-tile { filter: brightness(0.7) saturate(0.8) contrast(1.1); }
+
+  /* ── SPLASH / LOGIN ── */
+  #splash {
+    position: fixed; inset: 0; z-index: 2000;
+    background: radial-gradient(ellipse at 40% 50%, #1a1510 0%, #0d0d0d 70%);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 32px;
+    transition: opacity 0.6s, visibility 0.6s;
+  }
+
+  #splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .splash-globe {
+    width: 120px; height: 120px;
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    position: relative;
+    animation: spinGlobe 12s linear infinite;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .splash-globe::before {
+    content: '';
+    position: absolute; inset: 8px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    animation: spinGlobe 8s linear infinite reverse;
+  }
+  .globe-icon { font-size: 3rem; }
+
+  @keyframes spinGlobe {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .splash-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .splash-title span { color: var(--gold); }
+
+  .splash-sub {
+    color: var(--muted);
+    font-size: 0.95rem;
+    text-align: center;
+    max-width: 380px;
+    line-height: 1.6;
+  }
+
+  #btn-login {
+    padding: 14px 40px;
+    font-size: 0.9rem;
+  }
+
+  .splash-note {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    max-width: 320px;
+    line-height: 1.5;
+  }
+
+  /* ── LOADING BAR ── */
+  #loading-overlay {
+    position: fixed; inset: 0; z-index: 1900;
+    background: rgba(13,13,13,0.9);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 24px;
+    display: none;
+  }
+  #loading-overlay.visible { display: flex; }
+
+  .loading-msg {
+    font-size: 0.9rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .progress-bar-wrap {
+    width: 300px; height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  #loading-count {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: var(--gold);
+  }
+
+  /* ── PHOTO PANEL ── */
+  #photo-panel {
+    position: fixed; right: 0; top: 56px; bottom: 0; z-index: 500;
+    width: 320px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    backdrop-filter: blur(16px);
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  #photo-panel.open { transform: translateX(0); }
+
+  .panel-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+
+  .panel-location {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    line-height: 1.3;
+    max-width: 230px;
+  }
+
+  .panel-date {
+    font-size: 0.72rem;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .btn-close {
+    background: transparent; border: none;
+    color: var(--muted); font-size: 1.2rem;
+    cursor: pointer; padding: 2px;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .btn-close:hover { color: var(--cream); }
+
+  #panel-photos {
+    flex: 1; overflow-y: auto;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-content: start;
+  }
+
+  #panel-photos::-webkit-scrollbar { width: 4px; }
+  #panel-photos::-webkit-scrollbar-track { background: transparent; }
+  #panel-photos::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .thumb-card {
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .thumb-card:hover { border-color: var(--gold); transform: scale(1.02); }
+
+  .thumb-card img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s;
+  }
+
+  .thumb-card .thumb-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
+    opacity: 0; transition: opacity 0.2s;
+    display: flex; align-items: flex-end;
+    padding: 8px;
+    font-size: 0.65rem;
+    color: var(--cream);
+    line-height: 1.2;
+  }
+  .thumb-card:hover .thumb-overlay { opacity: 1; }
+
+  /* ── LIGHTBOX ── */
+  #lightbox {
+    position: fixed; inset: 0; z-index: 3000;
+    background: rgba(0,0,0,0.95);
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  #lightbox.open { display: flex; }
+
+  #lightbox img {
+    max-width: 90vw;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 0 80px rgba(0,0,0,0.8);
+  }
+
+  .lightbox-info {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  .lightbox-info strong {
+    display: block;
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--cream);
+    margin-bottom: 4px;
+  }
+
+  #lightbox-close {
+    position: fixed; top: 24px; right: 24px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid var(--border);
+    color: var(--cream);
+    font-size: 1.4rem;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  #lightbox-close:hover { background: rgba(255,255,255,0.2); }
+
+  /* ── CUSTOM MARKER ── */
+  .photo-marker {
+    width: 48px; height: 48px;
+    border-radius: 50% 50% 50% 4px;
+    transform: rotate(-45deg);
+    overflow: hidden;
+    border: 2px solid var(--gold);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    transition: border-color 0.2s;
+    cursor: pointer;
+  }
+  .photo-marker img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: rotate(45deg) scale(1.4);
+  }
+
+  .photo-marker:hover { border-color: #fff; }
+
+  /* marker cluster overrides */
+  .marker-cluster-small,
+  .marker-cluster-medium,
+  .marker-cluster-large {
+    background-color: rgba(201,168,76,0.15) !important;
+  }
+  .marker-cluster-small div,
+  .marker-cluster-medium div,
+  .marker-cluster-large div {
+    background-color: rgba(201,168,76,0.7) !important;
+    color: var(--ink) !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-weight: 500 !important;
+  }
+
+  /* ── YEAR FILTER ── */
+  #filter-bar {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 500;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 8px 16px;
+    display: flex; gap: 6px; align-items: center;
+    backdrop-filter: blur(12px);
+    display: none;
+    max-width: 90vw;
+    overflow-x: auto;
+  }
+  #filter-bar.visible { display: flex; }
+
+  .filter-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    margin-right: 4px;
+  }
+
+  .year-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .year-btn:hover { color: var(--cream); border-color: var(--border); }
+  .year-btn.active { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 500; }
+
+  /* ── CONFIG PANEL ── */
+  #config-panel {
+    position: fixed; inset: 0; z-index: 1500;
+    background: rgba(0,0,0,0.8);
+    display: none; align-items: center; justify-content: center;
+  }
+  #config-panel.open { display: flex; }
+
+  .config-box {
+    background: #151515;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 36px;
+    max-width: 480px; width: 90%;
+  }
+  .config-box h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+  }
+  .config-box p {
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .field input {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--gold); }
+
+  .config-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 28px; }
+
+  .hint {
+    background: rgba(201,168,76,0.08);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .hint a { color: var(--gold); text-decoration: none; }
+  .hint a:hover { text-decoration: underline; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    z-index: 2000;
+    background: #2a1a00;
+    border: 1px solid var(--gold);
+    color: var(--cream);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="logo">Photo<span>Map</span></div>
+  <div class="tagline">Vos souvenirs sur la planète</div>
+  <div id="topbar-right">
+    <div id="stats-pill">— photos</div>
+    <button class="btn btn-ghost" id="btn-config" style="display:none">⚙ Config</button>
+    <button class="btn btn-ghost" id="btn-reload" style="display:none">↺ Recharger</button>
+    <button class="btn btn-primary" id="btn-connect" style="display:none">Connecter OneDrive</button>
+  </div>
+</div>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- YEAR FILTER -->
+<div id="filter-bar">
+  <span class="filter-label">Année</span>
+  <button class="year-btn active" data-year="all">Toutes</button>
+</div>
+
+<!-- PHOTO PANEL -->
+<div id="photo-panel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-location" id="panel-location-name">Lieu</div>
+      <div class="panel-date" id="panel-date-range"></div>
+    </div>
+    <button class="btn-close" id="panel-close">✕</button>
+  </div>
+  <div id="panel-photos"></div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button id="lightbox-close">✕</button>
+  <img id="lightbox-img" src="" alt=""/>
+  <div class="lightbox-info">
+    <strong id="lightbox-name"></strong>
+    <span id="lightbox-meta"></span>
+  </div>
+</div>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-globe">
+    <div class="globe-icon">🌍</div>
+  </div>
+  <div class="splash-title">Vos photos,<br><span>sur la planète</span></div>
+  <div class="splash-sub">Connectez votre OneDrive pour visualiser toutes vos photos géolocalisées sur une mappemonde interactive.</div>
+  <button class="btn btn-primary btn-lg" id="btn-login">Connecter OneDrive</button>
+  <button class="btn btn-ghost" id="btn-manual-config" style="margin-top:-16px">Configurer manuellement (Client ID)</button>
+  <div class="splash-note">Vos données restent privées — tout est traité localement dans votre navigateur. Aucune photo n'est envoyée à un serveur tiers.</div>
+</div>
+
+<!-- LOADING -->
+<div id="loading-overlay">
+  <div id="loading-count">0</div>
+  <div class="loading-msg" id="loading-msg">Connexion à OneDrive…</div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+</div>
+
+<!-- CONFIG PANEL -->
+<div id="config-panel">
+  <div class="config-box">
+    <h2>Configuration Microsoft</h2>
+    <p>Pour accéder à votre OneDrive, vous devez créer une application Azure AD et entrer votre Client ID ci-dessous.</p>
+    <div class="hint">
+      1. Rendez-vous sur <a href="https://portal.azure.com" target="_blank">portal.azure.com</a><br>
+      2. Azure Active Directory → App registrations → New registration<br>
+      3. Redirect URI : <strong id="redirect-uri-hint"></strong><br>
+      4. API permissions → Microsoft Graph → Files.Read, Sites.Read.All<br>
+      5. Copiez l'Application (client) ID ci-dessous
+    </div>
+    <div class="field">
+      <label>Client ID (Application ID)</label>
+      <input type="text" id="input-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/>
+    </div>
+    <div class="config-actions">
+      <button class="btn btn-ghost" id="btn-config-cancel">Annuler</button>
+      <button class="btn btn-primary" id="btn-config-save">Enregistrer & Connecter</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════
+const STORAGE_KEY_CLIENT_ID = 'photomap_client_id';
+const DEFAULT_CLIENT_ID = ''; // User must provide
+
+let msalInstance = null;
+let allPhotos = []; // { id, name, lat, lng, date, thumbnailUrl, webUrl, driveId }
+let markers = [];
+let clusterGroup = null;
+let currentYear = 'all';
+let activeMarker = null;
+
+// ═══════════════════════════════════════════════════
+// MAP INIT
+// ═══════════════════════════════════════════════════
+const map = L.map('map', {
+  center: [20, 0],
+  zoom: 2,
+  zoomControl: false,
+  minZoom: 2
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap',
+  maxZoom: 19
+}).addTo(map);
+
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+clusterGroup = L.markerClusterGroup({
+  showCoverageOnHover: false,
+  maxClusterRadius: 50,
+  spiderfyOnMaxZoom: true,
+  iconCreateFunction(cluster) {
+    const count = cluster.getChildCount();
+    let size = count < 10 ? 'small' : count < 50 ? 'medium' : 'large';
+    return L.divIcon({
+      html: `<div><span>${count}</span></div>`,
+      className: `marker-cluster marker-cluster-${size}`,
+      iconSize: [40, 40]
+    });
+  }
+});
+map.addLayer(clusterGroup);
+
+// ═══════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════
+function showToast(msg, duration=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function setLoading(visible, msg='', progress=0) {
+  const el = document.getElementById('loading-overlay');
+  el.classList.toggle('visible', visible);
+  if (msg) document.getElementById('loading-msg').textContent = msg;
+  document.getElementById('progress-fill').style.width = progress + '%';
+}
+
+function setLoadingCount(n) {
+  document.getElementById('loading-count').textContent = n;
+}
+
+// ═══════════════════════════════════════════════════
+// MSAL AUTH
+// ═══════════════════════════════════════════════════
+function initMsal(clientId) {
+  msalInstance = new msal.PublicClientApplication({
+    auth: {
+      clientId,
+      authority: 'https://login.microsoftonline.com/common',
+      redirectUri: window.location.origin + window.location.pathname
+    },
+    cache: { cacheLocation: 'localStorage' }
+  });
+  return msalInstance.initialize();
+}
+
+async function getToken() {
+  const accounts = msalInstance.getAllAccounts();
+  const request = {
+    scopes: ['Files.Read', 'Files.Read.All', 'User.Read'],
+    account: accounts[0] || undefined
+  };
+  try {
+    const result = await msalInstance.acquireTokenSilent(request);
+    return result.accessToken;
+  } catch {
+    const result = await msalInstance.acquireTokenPopup(request);
+    return result.accessToken;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// MICROSOFT GRAPH FETCH
+// ═══════════════════════════════════════════════════
+async function graphGet(url, token) {
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error(`Graph API error: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+async function fetchAllPhotos() {
+  const token = await getToken();
+  const photos = [];
+
+  setLoading(true, 'Récupération des photos…', 5);
+
+  // Use search to find all photos with location data
+  // We'll paginate through all photos in the drive
+  let url = 'https://graph.microsoft.com/v1.0/me/drive/root/search(q=\'.jpg .jpeg .heic .png .JPG .JPEG .HEIC\')?$select=id,name,file,photo,location,createdDateTime,@microsoft.graph.downloadUrl,thumbnails&$top=200&$orderby=createdDateTime desc';
+
+  let page = 0;
+  let total = 0;
+
+  while (url) {
+    setLoading(true, `Analyse des photos… (${total} trouvées)`, Math.min(10 + page*5, 80));
+    setLoadingCount(total);
+
+    const data = await graphGet(url, token);
+    const items = data.value || [];
+
+    for (const item of items) {
+      if (!item.location) continue; // skip photos without GPS
+
+      const { latitude, longitude } = item.location;
+      if (!latitude || !longitude) continue;
+
+      const date = item.photo?.takenDateTime || item.createdDateTime;
+      const thumbUrl = item.thumbnails?.[0]?.medium?.url || null;
+
+      photos.push({
+        id: item.id,
+        name: item.name,
+        lat: latitude,
+        lng: longitude,
+        date: date ? new Date(date) : null,
+        thumbnailUrl: thumbUrl,
+        downloadUrl: item['@microsoft.graph.downloadUrl'],
+      });
+
+      total++;
+    }
+
+    url = data['@odata.nextLink'] || null;
+    page++;
+
+    if (page > 50) break; // safety limit (~10k photos)
+  }
+
+  setLoadingCount(total);
+  return photos;
+}
+
+// ═══════════════════════════════════════════════════
+// MARKER CREATION
+// ═══════════════════════════════════════════════════
+function createMarker(photo) {
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="photo-marker"><img src="${photo.thumbnailUrl || ''}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 fill=%22%23333%22/><text x=%2212%22 y=%2217%22 text-anchor=%22middle%22 font-size=%2212%22>📷</text></svg>'"/></div>`,
+    iconSize: [48, 48],
+    iconAnchor: [24, 40]
+  });
+
+  const marker = L.marker([photo.lat, photo.lng], { icon });
+
+  marker.on('click', () => {
+    openPanel([photo], photo.lat, photo.lng);
+  });
+
+  marker._photoData = photo;
+  return marker;
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER MARKERS
+// ═══════════════════════════════════════════════════
+function renderMarkers(filtered) {
+  clusterGroup.clearLayers();
+  markers = [];
+
+  filtered.forEach(photo => {
+    const m = createMarker(photo);
+    markers.push(m);
+  });
+
+  clusterGroup.addLayers(markers);
+
+  // Handle cluster click → open panel with all photos in cluster
+  clusterGroup.on('clusterclick', e => {
+    const childMarkers = e.layer.getAllChildMarkers();
+    const photos = childMarkers.map(m => m._photoData);
+    const center = e.latlng;
+    openPanel(photos, center.lat, center.lng);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// PANEL
+// ═══════════════════════════════════════════════════
+function openPanel(photos, lat, lng) {
+  const panel = document.getElementById('photo-panel');
+  const grid = document.getElementById('panel-photos');
+  const locName = document.getElementById('panel-location-name');
+  const dateRange = document.getElementById('panel-date-range');
+
+  grid.innerHTML = '';
+
+  // Sort by date
+  photos.sort((a, b) => (b.date || 0) - (a.date || 0));
+
+  // Date range
+  const dates = photos.filter(p => p.date).map(p => p.date);
+  if (dates.length) {
+    const min = new Date(Math.min(...dates));
+    const max = new Date(Math.max(...dates));
+    const fmt = d => d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+    dateRange.textContent = min.getTime() === max.getTime() ? fmt(min) : `${fmt(min)} — ${fmt(max)}`;
+  }
+
+  // Location name via reverse geocode (async)
+  locName.textContent = `${photos.length} photo${photos.length > 1 ? 's' : ''}`;
+  reverseGeocode(lat, lng).then(name => { locName.textContent = name; });
+
+  // Thumbnails
+  photos.forEach(photo => {
+    const card = document.createElement('div');
+    card.className = 'thumb-card';
+
+    const dateStr = photo.date
+      ? photo.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+      : '';
+
+    card.innerHTML = `
+      <img src="${photo.thumbnailUrl || ''}" loading="lazy" alt="${photo.name}"
+           onerror="this.style.display='none'"/>
+      <div class="thumb-overlay">${photo.name}<br>${dateStr}</div>
+    `;
+
+    card.addEventListener('click', () => openLightbox(photo));
+    grid.appendChild(card);
+  });
+
+  panel.classList.add('open');
+}
+
+document.getElementById('panel-close').addEventListener('click', () => {
+  document.getElementById('photo-panel').classList.remove('open');
+});
+
+// ═══════════════════════════════════════════════════
+// LIGHTBOX
+// ═══════════════════════════════════════════════════
+function openLightbox(photo) {
+  const lb = document.getElementById('lightbox');
+  document.getElementById('lightbox-img').src = photo.thumbnailUrl || '';
+  document.getElementById('lightbox-name').textContent = photo.name;
+  const dateStr = photo.date
+    ? photo.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+  const coords = `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`;
+  document.getElementById('lightbox-meta').textContent = `${dateStr}  ·  ${coords}`;
+  lb.classList.add('open');
+}
+
+document.getElementById('lightbox-close').addEventListener('click', () => {
+  document.getElementById('lightbox').classList.remove('open');
+});
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('lightbox'))
+    document.getElementById('lightbox').classList.remove('open');
+});
+
+// ═══════════════════════════════════════════════════
+// REVERSE GEOCODE
+// ═══════════════════════════════════════════════════
+const geocodeCache = {};
+async function reverseGeocode(lat, lng) {
+  const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
+  if (geocodeCache[key]) return geocodeCache[key];
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`);
+    const data = await res.json();
+    const addr = data.address || {};
+    const name = addr.city || addr.town || addr.village || addr.county || addr.state || addr.country || 'Lieu inconnu';
+    const country = addr.country || '';
+    const result = country && name !== country ? `${name}, ${country}` : name;
+    geocodeCache[key] = result;
+    return result;
+  } catch {
+    return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// YEAR FILTER
+// ═══════════════════════════════════════════════════
+function buildYearFilter(photos) {
+  const years = [...new Set(
+    photos.filter(p => p.date).map(p => p.date.getFullYear())
+  )].sort((a, b) => b - a);
+
+  const bar = document.getElementById('filter-bar');
+  bar.innerHTML = `<span class="filter-label">Année</span>
+    <button class="year-btn active" data-year="all">Toutes</button>`;
+
+  years.forEach(y => {
+    const btn = document.createElement('button');
+    btn.className = 'year-btn';
+    btn.dataset.year = y;
+    btn.textContent = y;
+    bar.appendChild(btn);
+  });
+
+  bar.classList.add('visible');
+
+  bar.addEventListener('click', e => {
+    const btn = e.target.closest('.year-btn');
+    if (!btn) return;
+    bar.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentYear = btn.dataset.year;
+    applyFilter();
+  });
+}
+
+function applyFilter() {
+  const filtered = currentYear === 'all'
+    ? allPhotos
+    : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
+  renderMarkers(filtered);
+  updateStats(filtered.length);
+}
+
+function updateStats(count) {
+  const el = document.getElementById('stats-pill');
+  el.textContent = `${count} photo${count > 1 ? 's' : ''} géolocalisée${count > 1 ? 's' : ''}`;
+  el.style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════
+// MAIN FLOW
+// ═══════════════════════════════════════════════════
+async function startApp() {
+  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
+  if (!clientId) {
+    showConfigPanel();
+    return;
+  }
+
+  document.getElementById('splash').classList.add('hidden');
+  document.getElementById('btn-connect').style.display = 'none';
+  setLoading(true, 'Connexion à Microsoft…', 2);
+
+  try {
+    await initMsal(clientId);
+    await msalInstance.handleRedirectPromise();
+
+    setLoading(true, 'Authentification…', 5);
+    const token = await getToken();
+
+    setLoading(true, 'Scan de votre OneDrive…', 10);
+    allPhotos = await fetchAllPhotos();
+
+    setLoading(false);
+
+    if (allPhotos.length === 0) {
+      showToast('Aucune photo géolocalisée trouvée dans votre OneDrive.');
+      document.getElementById('btn-reload').style.display = 'inline-flex';
+      document.getElementById('btn-config').style.display = 'inline-flex';
+      return;
+    }
+
+    buildYearFilter(allPhotos);
+    renderMarkers(allPhotos);
+    updateStats(allPhotos.length);
+
+    // Fit map to markers
+    if (markers.length > 0) {
+      const group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.2));
+    }
+
+    document.getElementById('btn-reload').style.display = 'inline-flex';
+    document.getElementById('btn-config').style.display = 'inline-flex';
+
+    showToast(`${allPhotos.length} photos géolocalisées chargées !`);
+
+  } catch (err) {
+    setLoading(false);
+    console.error(err);
+    showToast('Erreur : ' + (err.message || err), 5000);
+    document.getElementById('btn-connect').style.display = 'inline-flex';
+    document.getElementById('btn-config').style.display = 'inline-flex';
+    document.getElementById('splash').classList.remove('hidden');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// CONFIG PANEL
+// ═══════════════════════════════════════════════════
+function showConfigPanel() {
+  document.getElementById('redirect-uri-hint').textContent = window.location.origin + window.location.pathname;
+  const saved = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || '';
+  document.getElementById('input-client-id').value = saved;
+  document.getElementById('config-panel').classList.add('open');
+}
+
+document.getElementById('btn-config-cancel').addEventListener('click', () => {
+  document.getElementById('config-panel').classList.remove('open');
+});
+
+document.getElementById('btn-config-save').addEventListener('click', async () => {
+  const id = document.getElementById('input-client-id').value.trim();
+  if (!id || id.length < 30) {
+    showToast('Client ID invalide');
+    return;
+  }
+  localStorage.setItem(STORAGE_KEY_CLIENT_ID, id);
+  document.getElementById('config-panel').classList.remove('open');
+  document.getElementById('splash').classList.add('hidden');
+  await startApp();
+});
+
+document.getElementById('btn-config').addEventListener('click', showConfigPanel);
+document.getElementById('btn-manual-config').addEventListener('click', showConfigPanel);
+document.getElementById('btn-login').addEventListener('click', startApp);
+document.getElementById('btn-connect').addEventListener('click', startApp);
+document.getElementById('btn-reload').addEventListener('click', async () => {
+  allPhotos = [];
+  clusterGroup.clearLayers();
+  await startApp();
+});
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
+  if (clientId) {
+    // Auto-start if we have a client ID (and might have cached tokens)
+    document.getElementById('btn-connect').style.display = 'inline-flex';
+    document.getElementById('btn-config').style.display = 'none';
+    // Show connect button on splash instead of auto-starting
+  }
+});
+</script>
+</body>
+</html>
