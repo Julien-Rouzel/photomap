@@ -366,16 +366,6 @@
 
   .thumb-card:hover .thumb-overlay { opacity: 1; }
 
-  #panel-footer {
-    padding: 12px 16px 16px;
-    border-top: 1px solid var(--border);
-    background: rgba(13,13,13,0.95);
-    display: none;
-    gap: 10px;
-  }
-
-  #panel-footer .btn { flex: 1; }
-
   /* LIGHTBOX */
   #lightbox {
     position: fixed;
@@ -395,10 +385,10 @@
   #lightbox-img,
   #lightbox-video {
     display: none;
-    width: auto;
-    height: auto;
-    max-width: 94vw;
-    max-height: 90vh;
+    width: 92vw;
+    height: 80vh;
+    flex-shrink: 1;
+    min-height: 0;
     object-fit: contain;
     border-radius: 8px;
     box-shadow: 0 0 80px rgba(0,0,0,0.85);
@@ -406,20 +396,21 @@
 
   #lightbox-img.portrait,
   #lightbox-video.portrait {
-    max-width: 88vw;
-    max-height: 92vh;
+    width: 60vw;
+    height: 85vh;
   }
 
   #lightbox-img.landscape,
   #lightbox-video.landscape {
-    max-width: 96vw;
-    max-height: 90vh;
+    width: 92vw;
+    height: 80vh;
   }
 
   .lightbox-info {
     text-align: center;
     color: var(--muted);
     font-size: 0.82rem;
+    flex-shrink: 0;
   }
 
   .lightbox-info strong {
@@ -431,9 +422,10 @@
   }
 
   #lightbox-actions {
-    margin-top: 14px;
+    margin-top: 10px;
     display: flex;
     justify-content: center;
+    gap: 10px;
   }
 
   #lightbox-open-onedrive {
@@ -442,6 +434,8 @@
     align-items: center;
     justify-content: center;
     min-width: 220px;
+    gap: 8px;
+    font-size: 0.82rem;
   }
 
   .lightbox-nav {
@@ -704,7 +698,8 @@
 
     #lightbox-img.portrait,
     #lightbox-video.portrait {
-      max-width: 90vw;
+      width: 92vw;
+      height: 82vh;
     }
   }
 
@@ -744,11 +739,6 @@
   </div>
 
   <div id="panel-photos"></div>
-
-  <div id="panel-footer">
-    <button class="btn btn-ghost" id="panel-load-more">Voir plus</button>
-    <button class="btn btn-primary" id="panel-show-all">Tout voir</button>
-  </div>
 </div>
 
 <div id="lightbox">
@@ -764,7 +754,7 @@
     <span id="lightbox-meta"></span>
     <div id="lightbox-actions">
       <a id="lightbox-open-onedrive" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
-        Ouvrir dans OneDrive
+        ↗ Ouvrir dans OneDrive
       </a>
     </div>
   </div>
@@ -826,7 +816,6 @@ const DEFAULT_CLIENT_ID = '';
 
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'gif', 'bmp', 'tiff']);
 const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'm4v', 'hevc', 'avi', 'webm', '3gp', 'mkv']);
-const PANEL_PAGE_SIZE = 24;
 
 /* FIX: thumbnail URL TTL for staleness detection (4 hours) */
 const THUMBNAIL_TTL_MS = 4 * 60 * 60 * 1000;
@@ -846,7 +835,6 @@ let lightboxPhotos = [];
 let lightboxIndex = 0;
 
 let panelAllPhotos = [];
-let panelVisibleCount = 0;
 
 /* FIX: shared DB connection to avoid reopening repeatedly */
 let _dbInstance = null;
@@ -1435,7 +1423,6 @@ function openPanel(photos, lat, lng) {
   const countEl = document.getElementById('panel-count');
 
   panelAllPhotos = [...photos].sort((a, b) => (b.date || 0) - (a.date || 0));
-  panelVisibleCount = PANEL_PAGE_SIZE;
 
   const dates = panelAllPhotos.filter(p => p.date).map(p => p.date);
   if (dates.length) {
@@ -1459,19 +1446,11 @@ function openPanel(photos, lat, lng) {
   panel.classList.add('open');
 }
 
-function renderPanelPhotos(showAll = false) {
+function renderPanelPhotos() {
   const grid = document.getElementById('panel-photos');
-  const footer = document.getElementById('panel-footer');
-  const btnMore = document.getElementById('panel-load-more');
-  const btnAll = document.getElementById('panel-show-all');
-
   grid.innerHTML = '';
 
-  const photosToShow = showAll
-    ? panelAllPhotos
-    : panelAllPhotos.slice(0, panelVisibleCount);
-
-  photosToShow.forEach((photo, idx) => {
+  panelAllPhotos.forEach((photo, idx) => {
     const card = document.createElement('div');
     card.className = 'thumb-card';
 
@@ -1494,24 +1473,13 @@ function renderPanelPhotos(showAll = false) {
     card.appendChild(overlay);
 
     card.addEventListener('click', () => {
-      lightboxPhotos = photosToShow;
+      lightboxPhotos = panelAllPhotos;
       lightboxIndex = idx;
       showLightboxPhoto();
     });
 
     grid.appendChild(card);
   });
-
-  if (photosToShow.length < panelAllPhotos.length) {
-    footer.style.display = 'flex';
-    btnMore.style.display = 'inline-flex';
-    btnAll.style.display = 'inline-flex';
-    btnMore.textContent = `Voir plus (${panelAllPhotos.length - photosToShow.length} restants)`;
-  } else {
-    footer.style.display = panelAllPhotos.length > PANEL_PAGE_SIZE ? 'flex' : 'none';
-    btnMore.style.display = 'none';
-    btnAll.style.display = 'none';
-  }
 }
 
 function showLightboxPhoto() {
@@ -1597,8 +1565,9 @@ function showLightboxPhoto() {
   document.getElementById('lightbox-meta').textContent =
     [dateStr, coords].filter(Boolean).join('  ·  ');
 
-  if (photo.webUrl) {
-    openBtn.href = photo.webUrl;
+  const oneDriveUrl = photo.webUrl || photo.downloadUrl;
+  if (oneDriveUrl) {
+    openBtn.href = oneDriveUrl;
     openBtn.style.display = 'inline-flex';
   } else {
     openBtn.removeAttribute('href');
@@ -1612,16 +1581,6 @@ function showLightboxPhoto() {
 
   lb.classList.add('open');
 }
-
-document.getElementById('panel-load-more').addEventListener('click', () => {
-  panelVisibleCount += PANEL_PAGE_SIZE;
-  renderPanelPhotos(false);
-});
-
-document.getElementById('panel-show-all').addEventListener('click', () => {
-  panelVisibleCount = panelAllPhotos.length;
-  renderPanelPhotos(true);
-});
 
 document.getElementById('panel-close').addEventListener('click', () => {
   document.getElementById('photo-panel').classList.remove('open');
@@ -1961,7 +1920,6 @@ document.getElementById('btn-reload').addEventListener('click', async () => {
     markers = [];
     clusterGroup.clearLayers();
     panelAllPhotos = [];
-    panelVisibleCount = 0;
     document.getElementById('filter-bar').classList.remove('visible');
     document.getElementById('photo-panel').classList.remove('open');
     document.getElementById('stats-pill').style.display = 'none';
