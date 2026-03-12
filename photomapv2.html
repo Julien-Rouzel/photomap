@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PhotoMap — Memories on a Map </title>
+<title>PhotoMap — Vos souvenirs sur la planète</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -818,11 +818,16 @@ const DB_NAME = 'photomap_db';
 const DB_VERSION = 1;
 const STORE_MEDIA = 'media';
 const STORE_META = 'meta';
-const DEFAULT_CLIENT_ID = '74655b12-46c1-4cdb-be1a-27655fa47677';
+
+/* FIX: removed DEFAULT_CLIENT_ID — users must provide their own */
+const DEFAULT_CLIENT_ID = '';
 
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'gif', 'bmp', 'tiff']);
 const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'm4v', 'hevc', 'avi', 'webm', '3gp', 'mkv']);
 const PANEL_PAGE_SIZE = 24;
+
+/* FIX: thumbnail URL TTL for staleness detection (4 hours) */
+const THUMBNAIL_TTL_MS = 4 * 60 * 60 * 1000;
 
 let msalInstance = null;
 let allPhotos = [];
@@ -832,13 +837,21 @@ let currentYear = 'all';
 let isLoading = false;
 let backgroundSyncRunning = false;
 
+/* FIX: guard to prevent duplicate startApp calls */
+let startAppRunning = false;
+
 let lightboxPhotos = [];
 let lightboxIndex = 0;
 
 let panelAllPhotos = [];
 let panelVisibleCount = 0;
 
+/* FIX: shared DB connection to avoid reopening repeatedly */
+let _dbInstance = null;
+
 function openDb() {
+  if (_dbInstance) return Promise.resolve(_dbInstance);
+
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
@@ -855,7 +868,18 @@ function openDb() {
       }
     };
 
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      _dbInstance = request.result;
+
+      /* If the DB connection closes unexpectedly, clear the cached reference */
+      _dbInstance.onclose = () => { _dbInstance = null; };
+      _dbInstance.onversionchange = () => {
+        _dbInstance.close();
+        _dbInstance = null;
+      };
+
+      resolve(_dbInstance);
+    };
     request.onerror = () => reject(request.error);
   });
 }
@@ -871,7 +895,9 @@ async function dbPutMediaBatch(items) {
     for (const item of items) {
       store.put({
         ...item,
-        date: item.date ? item.date.toISOString() : null
+        date: item.date ? item.date.toISOString() : null,
+        /* FIX: store timestamp so we can detect stale thumbnails */
+        fetchedAt: item.fetchedAt || new Date().toISOString()
       });
     }
 
@@ -1104,6 +1130,33 @@ async function getThumbnail(itemId, token) {
   }
 }
 
+/* FIX: refresh a single item's thumbnail + download URL if stale */
+async function refreshMediaUrls(item, token) {
+  try {
+    const data = await graphGet(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${item.id}?$select=id,@microsoft.graph.downloadUrl,webUrl`,
+      token
+    );
+    const thumbnailUrl = await getThumbnail(item.id, token);
+
+    item.downloadUrl = data['@microsoft.graph.downloadUrl'] || thumbnailUrl || item.downloadUrl;
+    item.thumbnailUrl = thumbnailUrl || item.thumbnailUrl;
+    item.fetchedAt = new Date().toISOString();
+
+    /* Persist refreshed URLs */
+    await dbPutMediaBatch([item]);
+  } catch (err) {
+    console.warn('Failed to refresh URLs for', item.id, err);
+  }
+}
+
+/* FIX: check if a media item's URLs are likely expired */
+function isUrlStale(item) {
+  if (!item.fetchedAt) return true;
+  const age = Date.now() - new Date(item.fetchedAt).getTime();
+  return age > THUMBNAIL_TTL_MS;
+}
+
 async function flushBatchToIndexedDb(batch, allItemsRef) {
   if (!batch.length) return;
   await dbPutMediaBatch(batch);
@@ -1169,7 +1222,8 @@ async function scanFolderRecursive(folderId, token, progress, seenIds, batch, al
       thumbnailUrl,
       downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
       webUrl: item.webUrl || null,
-      mediaType: isVideoByName(item.name) ? 'video' : 'image'
+      mediaType: isVideoByName(item.name) ? 'video' : 'image',
+      fetchedAt: new Date().toISOString()
     };
 
     batch.push(mediaItem);
@@ -1258,17 +1312,54 @@ function getMarkerSize() {
   return 40;
 }
 
-function createMarker(photo) {
+/*
+ * FIX: precompute a spatial index for nearby-photo lookups.
+ * Groups photos into grid cells so `createMarker` is O(1) per marker
+ * instead of O(n), bringing total from O(n²) to O(n).
+ */
+let spatialIndex = {};
+const SPATIAL_CELL_SIZE = 0.0005;
+
+function buildSpatialIndex(photos) {
+  spatialIndex = {};
+  for (const p of photos) {
+    const cellKey = Math.round(p.lat / SPATIAL_CELL_SIZE) + ',' + Math.round(p.lng / SPATIAL_CELL_SIZE);
+    if (!spatialIndex[cellKey]) spatialIndex[cellKey] = [];
+    spatialIndex[cellKey].push(p);
+  }
+}
+
+function getNearbyPhotos(lat, lng, filteredSet) {
+  const cellLat = Math.round(lat / SPATIAL_CELL_SIZE);
+  const cellLng = Math.round(lng / SPATIAL_CELL_SIZE);
+  const result = [];
+
+  /* Check the cell and all 8 neighbors */
+  for (let di = -1; di <= 1; di++) {
+    for (let dj = -1; dj <= 1; dj++) {
+      const key = (cellLat + di) + ',' + (cellLng + dj);
+      const cell = spatialIndex[key];
+      if (!cell) continue;
+      for (const p of cell) {
+        if (filteredSet && !filteredSet.has(p.id)) continue;
+        const dlat = Math.abs(p.lat - lat);
+        const dlng = Math.abs(p.lng - lng);
+        if (dlat < SPATIAL_CELL_SIZE && dlng < SPATIAL_CELL_SIZE) {
+          result.push(p);
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+function createMarker(photo, filteredIdSet) {
   const thumbSrc = photo.thumbnailUrl || FALLBACK_ICON;
   let size = getMarkerSize();
 
-  const isolatedCount = allPhotos.filter(p => {
-    if (currentYear !== 'all' && (!p.date || p.date.getFullYear() != currentYear)) return false;
-    const dlat = Math.abs(p.lat - photo.lat);
-    const dlng = Math.abs(p.lng - photo.lng);
-    return dlat < 0.0005 && dlng < 0.0005;
-  }).length;
-
+  /* FIX: use spatial index instead of O(n) scan */
+  const isolatedCount = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet).length;
   if (isolatedCount === 1) size += 10;
 
   const icon = L.divIcon({
@@ -1285,12 +1376,7 @@ function createMarker(photo) {
   const marker = L.marker([photo.lat, photo.lng], { icon });
 
   marker.on('click', () => {
-    const nearby = allPhotos.filter(p => {
-      if (currentYear !== 'all' && (!p.date || p.date.getFullYear() != currentYear)) return false;
-      const dlat = Math.abs(p.lat - photo.lat);
-      const dlng = Math.abs(p.lng - photo.lng);
-      return dlat < 0.0005 && dlng < 0.0005;
-    });
+    const nearby = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet);
     openPanel(nearby.length > 0 ? nearby : [photo], photo.lat, photo.lng);
   });
 
@@ -1303,8 +1389,12 @@ function renderMarkers(filtered) {
   clusterGroup.clearLayers();
   markers = [];
 
+  /* FIX: build spatial index from ALL photos, then create a set of filtered IDs */
+  buildSpatialIndex(allPhotos);
+  const filteredIdSet = new Set(filtered.map(p => p.id));
+
   filtered.forEach(photo => {
-    const m = createMarker(photo);
+    const m = createMarker(photo, filteredIdSet);
     markers.push(m);
   });
 
@@ -1318,11 +1408,21 @@ function renderMarkers(filtered) {
   });
 }
 
+/*
+ * FIX: only re-render on zoom if marker sizes actually changed.
+ * Avoids expensive full rebuild on every zoom level change.
+ */
+let lastMarkerSize = null;
 let zoomRefreshTimer = null;
+
 map.on('zoomend', () => {
   if (zoomRefreshTimer) clearTimeout(zoomRefreshTimer);
   zoomRefreshTimer = setTimeout(() => {
-    applyFilter();
+    const newSize = getMarkerSize();
+    if (newSize !== lastMarkerSize) {
+      lastMarkerSize = newSize;
+      applyFilter();
+    }
   }, 80);
 });
 
@@ -1426,17 +1526,39 @@ function showLightboxPhoto() {
   img.classList.remove('portrait', 'landscape');
   video.classList.remove('portrait', 'landscape');
 
+  /* FIX: clean up previous event handlers before reassigning */
+  video.onloadedmetadata = null;
+  img.onload = null;
+  img.onerror = null;
+
   video.pause();
   video.removeAttribute('src');
   video.load();
 
   const fullSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
 
+  /* FIX: if URL is stale, try refreshing in the background */
+  if (isUrlStale(photo) && msalInstance) {
+    getToken().then(token => refreshMediaUrls(photo, token)).then(() => {
+      /* If the lightbox is still showing this photo, update src */
+      if (lightboxPhotos[lightboxIndex]?.id === photo.id) {
+        const currentSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
+        if (photo.mediaType === 'video') {
+          video.src = currentSrc;
+        } else {
+          img.src = currentSrc;
+        }
+      }
+    }).catch(() => { /* ignore refresh failures in lightbox */ });
+  }
+
   if (photo.mediaType === 'video') {
     video.src = fullSrc;
     video.style.display = 'block';
 
     video.onloadedmetadata = () => {
+      /* FIX: guard — only apply classes if this video is still the current one */
+      if (lightboxPhotos[lightboxIndex]?.id !== photo.id) return;
       const isPortrait = video.videoHeight > video.videoWidth;
       video.classList.toggle('portrait', isPortrait);
       video.classList.toggle('landscape', !isPortrait);
@@ -1446,6 +1568,8 @@ function showLightboxPhoto() {
     img.style.display = 'block';
 
     img.onload = () => {
+      /* FIX: guard — only apply classes if this image is still the current one */
+      if (lightboxPhotos[lightboxIndex]?.id !== photo.id) return;
       const isPortrait = img.naturalHeight > img.naturalWidth;
       img.classList.toggle('portrait', isPortrait);
       img.classList.toggle('landscape', !isPortrait);
@@ -1551,7 +1675,10 @@ document.addEventListener('keydown', e => {
 const geocodeCache = {};
 let lastGeocodeTime = 0;
 
-async function reverseGeocode(lat, lng) {
+/*
+ * FIX: added retry with exponential backoff for geocoding 429s.
+ */
+async function reverseGeocode(lat, lng, _retries = 0) {
   const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
   if (geocodeCache[key]) return geocodeCache[key];
 
@@ -1565,6 +1692,17 @@ async function reverseGeocode(lat, lng) {
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`,
       { headers: { 'User-Agent': 'PhotoMap/1.0' } }
     );
+
+    /* FIX: handle 429 with retry */
+    if (res.status === 429) {
+      if (_retries < 3) {
+        const backoff = (2 ** _retries) * 1500;
+        await new Promise(r => setTimeout(r, backoff));
+        return reverseGeocode(lat, lng, _retries + 1);
+      }
+      throw new Error('Nominatim rate limit exceeded');
+    }
+
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     const addr = data.address || {};
@@ -1578,18 +1716,27 @@ async function reverseGeocode(lat, lng) {
   }
 }
 
+/*
+ * FIX: buildYearFilter uses a single persistent onclick handler
+ * instead of reassigning on every call. The handler is attached
+ * via event delegation once.
+ */
+let yearFilterInitialized = false;
+
 function buildYearFilter(photos) {
   const years = [...new Set(
     photos.filter(p => p.date).map(p => p.date.getFullYear())
   )].sort((a, b) => b - a);
 
   const bar = document.getElementById('filter-bar');
+
+  /* Rebuild buttons */
   bar.innerHTML = `<span class="filter-label">Année</span>
-    <button class="year-btn active" data-year="all">Toutes</button>`;
+    <button class="year-btn${currentYear === 'all' ? ' active' : ''}" data-year="all">Toutes</button>`;
 
   years.forEach(y => {
     const btn = document.createElement('button');
-    btn.className = 'year-btn';
+    btn.className = 'year-btn' + (currentYear == y ? ' active' : '');
     btn.dataset.year = y;
     btn.textContent = y;
     bar.appendChild(btn);
@@ -1597,14 +1744,19 @@ function buildYearFilter(photos) {
 
   bar.classList.add('visible');
 
-  bar.onclick = (e) => {
-    const btn = e.target.closest('.year-btn');
-    if (!btn) return;
-    bar.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentYear = btn.dataset.year;
-    applyFilter();
-  };
+  /* FIX: attach click handler only once via delegation */
+  if (!yearFilterInitialized) {
+    yearFilterInitialized = true;
+
+    bar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.year-btn');
+      if (!btn) return;
+      bar.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentYear = btn.dataset.year;
+      applyFilter();
+    });
+  }
 }
 
 function applyFilter() {
@@ -1624,8 +1776,18 @@ function updateStats(count) {
 }
 
 async function startApp() {
-  if (isLoading) return;
+  /* FIX: prevent duplicate concurrent runs */
+  if (startAppRunning) return;
+  startAppRunning = true;
 
+  try {
+    await _startAppInner();
+  } finally {
+    startAppRunning = false;
+  }
+}
+
+async function _startAppInner() {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
   if (!clientId) {
     document.getElementById('splash').classList.add('hidden');
@@ -1636,8 +1798,12 @@ async function startApp() {
   document.getElementById('splash').classList.add('hidden');
   document.getElementById('btn-connect').style.display = 'none';
 
+  /*
+   * FIX: load cache once and reuse. No duplicate dbGetAllMedia calls.
+   */
+  let cached = [];
   try {
-    const cached = await dbGetAllMedia();
+    cached = await dbGetAllMedia();
     if (cached.length > 0) {
       allPhotos = cached;
       updateUiWithCurrentPhotos(true);
@@ -1650,15 +1816,26 @@ async function startApp() {
   setLoading(true, 'Connexion à Microsoft…', 2);
 
   try {
-    await initMsal(clientId);
-    await msalInstance.handleRedirectPromise();
+    /*
+     * FIX: wrap initMsal in its own try/catch so we can give a
+     * clear error if the Client ID is invalid or unregistered.
+     */
+    try {
+      await initMsal(clientId);
+      await msalInstance.handleRedirectPromise();
+    } catch (msalErr) {
+      msalInstance = null;
+      throw new Error(
+        'Impossible d\'initialiser l\'authentification Microsoft. '
+        + 'Vérifiez votre Client ID. Détails : '
+        + (msalErr.message || String(msalErr))
+      );
+    }
 
     setLoading(true, 'Authentification…', 5);
     await getToken();
 
     setLoading(false);
-
-    const cached = await dbGetAllMedia();
 
     if (cached.length === 0) {
       allPhotos = await runFullScan({ background: false });
@@ -1675,6 +1852,7 @@ async function startApp() {
       return;
     }
 
+    /* Already have cache — just start background sync */
     updateUiWithCurrentPhotos(false);
     runBackgroundSync();
 
@@ -1717,6 +1895,10 @@ document.getElementById('btn-config-save').addEventListener('click', async () =>
   localStorage.setItem(STORAGE_KEY_CLIENT_ID, id);
   document.getElementById('config-panel').classList.remove('open');
   document.getElementById('splash').classList.add('hidden');
+
+  /* FIX: reset msalInstance so initMsal runs fresh with the new client ID */
+  msalInstance = null;
+
   await startApp();
 });
 
@@ -1733,6 +1915,7 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
     await dbClearMedia().catch(() => {});
     await dbDeleteMeta('scan_state').catch(() => {});
 
+    msalInstance = null;
     allPhotos = [];
     markers = [];
     clusterGroup.clearLayers();
@@ -1798,6 +1981,12 @@ document.getElementById('config-panel').addEventListener('click', e => {
   }
 });
 
+/*
+ * FIX: DOMContentLoaded only shows cached data and reveals
+ * the connect button. It does NOT call startApp or fit bounds
+ * — that only happens when the user clicks "Connecter".
+ * This eliminates the race condition of double-init + double fitBounds.
+ */
 document.addEventListener('DOMContentLoaded', async () => {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
   if (clientId) {
@@ -1811,6 +2000,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateUiWithCurrentPhotos(true);
       document.getElementById('btn-reload').style.display = 'inline-flex';
       document.getElementById('btn-config').style.display = 'inline-flex';
+      /* FIX: hide splash if we have cached data to show */
+      document.getElementById('splash').classList.add('hidden');
     }
   } catch (err) {
     console.warn('Impossible de précharger le cache IndexedDB', err);
