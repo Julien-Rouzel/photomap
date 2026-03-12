@@ -1167,11 +1167,11 @@ async function startApp() {
   if (isLoading) return; // Prevent double-launch
 
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
-  if (!clientId) {
+ if (!clientId) {
+    document.getElementById('splash').classList.add('hidden');
     showConfigPanel();
     return;
-  }
-
+}
   document.getElementById('splash').classList.add('hidden');
   document.getElementById('btn-connect').style.display = 'none';
   setLoading(true, 'Connexion à Microsoft…', 2);
@@ -1277,7 +1277,15 @@ document.getElementById('input-client-id').addEventListener('keydown', e => {
 
 document.getElementById('btn-config').addEventListener('click', showConfigPanel);
 document.getElementById('btn-manual-config').addEventListener('click', showConfigPanel);
-document.getElementById('btn-login').addEventListener('click', startApp);
+document.getElementById('btn-login').addEventListener('click', () => {
+  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
+  if (!clientId) {
+    document.getElementById('splash').classList.add('hidden');
+    showConfigPanel();
+  } else {
+    startApp();
+  }
+});
 document.getElementById('btn-connect').addEventListener('click', startApp);
 document.getElementById('btn-reload').addEventListener('click', async () => {
   allPhotos = [];
