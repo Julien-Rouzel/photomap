@@ -5,16 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PhotoMap — Vos souvenirs sur la planète</title>
 
-<!-- Leaflet for map -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-<!-- Leaflet.markercluster -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 
-<!-- MSAL for Microsoft auth -->
 <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 
 <style>
@@ -42,7 +39,6 @@
     overflow: hidden;
   }
 
-  /* ── TOP BAR ── */
   #topbar {
     position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
     height: 56px;
@@ -119,17 +115,14 @@
   }
   .btn-danger:hover { background: rgba(192,57,43,0.15); border-color: var(--danger); }
 
-  /* ── MAP ── */
   #map {
     position: fixed;
     top: 56px; left: 0; right: 0; bottom: 0;
     z-index: 1;
   }
 
-  /* dark tile overlay */
   .leaflet-tile { filter: brightness(0.7) saturate(0.8) contrast(1.1); }
 
-  /* ── SPLASH / LOGIN ── */
   #splash {
     position: fixed; inset: 0; z-index: 2000;
     background: radial-gradient(ellipse at 40% 50%, #1a1510 0%, #0d0d0d 70%);
@@ -191,7 +184,6 @@
     line-height: 1.5;
   }
 
-  /* ── LOADING BAR ── */
   #loading-overlay {
     position: fixed; inset: 0; z-index: 1900;
     background: rgba(13,13,13,0.9);
@@ -205,6 +197,8 @@
     font-size: 0.9rem;
     color: var(--muted);
     letter-spacing: 0.04em;
+    text-align: center;
+    max-width: 80vw;
   }
 
   .progress-bar-wrap {
@@ -226,7 +220,6 @@
     color: var(--gold);
   }
 
-  /* ── PHOTO PANEL ── */
   #photo-panel {
     position: fixed; right: 0; top: 56px; bottom: 0; z-index: 500;
     width: 340px;
@@ -302,10 +295,12 @@
   }
   .thumb-card:hover { border-color: var(--gold); transform: scale(1.02); }
 
-  .thumb-card img {
+  .thumb-card img,
+  .thumb-card video {
     width: 100%; height: 100%;
     object-fit: cover;
     transition: opacity 0.3s;
+    display: block;
   }
 
   .thumb-card .thumb-overlay {
@@ -320,7 +315,6 @@
   }
   .thumb-card:hover .thumb-overlay { opacity: 1; }
 
-  /* ── LIGHTBOX ── */
   #lightbox {
     position: fixed; inset: 0; z-index: 3000;
     background: rgba(0,0,0,0.95);
@@ -329,13 +323,17 @@
   }
   #lightbox.open { display: flex; }
 
-  #lightbox-img {
+  #lightbox-img,
+  #lightbox-video {
     max-width: 90vw;
     max-height: 80vh;
     object-fit: contain;
     border-radius: 4px;
     box-shadow: 0 0 80px rgba(0,0,0,0.8);
   }
+
+  #lightbox-video { display: none; }
+  #lightbox-img { display: none; }
 
   .lightbox-info {
     text-align: center;
@@ -383,7 +381,6 @@
   }
   #lightbox-close:hover { background: rgba(255,255,255,0.2); }
 
-  /* ── CUSTOM MARKER ── */
   .photo-marker {
     width: 48px; height: 48px;
     border-radius: 50% 50% 50% 4px;
@@ -394,15 +391,16 @@
     transition: border-color 0.2s, transform 0.15s;
     cursor: pointer;
   }
-  .photo-marker img {
+  .photo-marker img,
+  .photo-marker video {
     width: 100%; height: 100%;
     object-fit: cover;
     transform: rotate(45deg) scale(1.4);
+    display: block;
   }
 
   .photo-marker:hover { border-color: #fff; transform: rotate(-45deg) scale(1.1); }
 
-  /* marker cluster overrides */
   .marker-cluster-small,
   .marker-cluster-medium,
   .marker-cluster-large {
@@ -417,7 +415,6 @@
     font-weight: 500 !important;
   }
 
-  /* ── YEAR FILTER ── */
   #filter-bar {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
     z-index: 500;
@@ -433,7 +430,6 @@
   }
   #filter-bar.visible { display: flex; }
 
-  /* hide scrollbar on filter bar */
   #filter-bar::-webkit-scrollbar { display: none; }
   #filter-bar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -461,7 +457,6 @@
   .year-btn:hover { color: var(--cream); border-color: var(--border); }
   .year-btn.active { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 500; }
 
-  /* ── CONFIG PANEL ── */
   #config-panel {
     position: fixed; inset: 0; z-index: 1500;
     background: rgba(0,0,0,0.8);
@@ -528,7 +523,6 @@
   .hint a { color: var(--gold); text-decoration: none; }
   .hint a:hover { text-decoration: underline; }
 
-  /* ── TOAST ── */
   #toast {
     position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
     z-index: 4000;
@@ -545,7 +539,6 @@
   }
   #toast.show { opacity: 1; }
 
-  /* ── RESPONSIVE ── */
   @media (max-width: 600px) {
     .tagline { display: none; }
     #photo-panel { width: 100%; }
@@ -555,7 +548,6 @@
     .btn { padding: 6px 14px; font-size: 0.72rem; }
   }
 
-  /* scrollbar */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); }
@@ -563,7 +555,6 @@
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div id="topbar">
   <div class="logo">Photo<span>Map</span></div>
   <div class="tagline">Vos souvenirs sur la planète</div>
@@ -575,16 +566,13 @@
   </div>
 </div>
 
-<!-- MAP -->
 <div id="map"></div>
 
-<!-- YEAR FILTER -->
 <div id="filter-bar">
   <span class="filter-label">Année</span>
   <button class="year-btn active" data-year="all">Toutes</button>
 </div>
 
-<!-- PHOTO PANEL -->
 <div id="photo-panel">
   <div class="panel-header">
     <div>
@@ -597,31 +585,29 @@
   <div id="panel-photos"></div>
 </div>
 
-<!-- LIGHTBOX -->
 <div id="lightbox">
   <button id="lightbox-close" title="Fermer">✕</button>
   <button class="lightbox-nav" id="lightbox-prev" title="Précédent">‹</button>
   <button class="lightbox-nav" id="lightbox-next" title="Suivant">›</button>
-  <img id="lightbox-img" src="" alt="Photo"/>
+  <img id="lightbox-img" src="" alt="Média"/>
+  <video id="lightbox-video" controls playsinline></video>
   <div class="lightbox-info">
     <strong id="lightbox-name"></strong>
     <span id="lightbox-meta"></span>
   </div>
 </div>
 
-<!-- SPLASH -->
 <div id="splash">
   <div class="splash-globe">
     <div class="globe-icon">🌍</div>
   </div>
   <div class="splash-title">Vos photos,<br><span>sur la planète</span></div>
-  <div class="splash-sub">Connectez votre OneDrive pour visualiser toutes vos photos géolocalisées sur une mappemonde interactive.</div>
+  <div class="splash-sub">Connectez votre OneDrive pour visualiser toutes vos photos et vidéos géolocalisées sur une mappemonde interactive.</div>
   <button class="btn btn-primary btn-lg" id="btn-login">Connecter OneDrive</button>
   <button class="btn btn-ghost" id="btn-manual-config" style="margin-top:-16px">Configurer manuellement (Client ID)</button>
   <div class="splash-note">Vos données restent privées — tout est traité localement dans votre navigateur. Aucune photo n'est envoyée à un serveur tiers.</div>
 </div>
 
-<!-- LOADING -->
 <div id="loading-overlay">
   <div id="loading-count">0</div>
   <div class="loading-msg" id="loading-msg">Connexion à OneDrive…</div>
@@ -630,14 +616,13 @@
   </div>
 </div>
 
-<!-- CONFIG PANEL -->
 <div id="config-panel">
   <div class="config-box">
     <h2>Configuration Microsoft</h2>
-    <p>Pour accéder à votre OneDrive, vous devez créer une application Azure AD et entrer votre Client ID ci-dessous.</p>
+    <p>Pour accéder à votre OneDrive, vous devez créer une application Microsoft Entra et entrer votre Client ID ci-dessous.</p>
     <div class="hint">
       1. Rendez-vous sur <a href="https://portal.azure.com" target="_blank">portal.azure.com</a><br>
-      2. Azure Active Directory → App registrations → New registration<br>
+      2. Microsoft Entra ID → App registrations → New registration<br>
       3. Redirect URI (SPA) : <strong id="redirect-uri-hint"></strong><br>
       4. API permissions → Microsoft Graph → Files.Read, User.Read<br>
       5. Copiez l'Application (client) ID ci-dessous
@@ -654,7 +639,6 @@
   </div>
 </div>
 
-<!-- TOAST -->
 <div id="toast"></div>
 
 <script>
@@ -662,18 +646,129 @@
 // CONFIG
 // ═══════════════════════════════════════════════════
 const STORAGE_KEY_CLIENT_ID = 'photomap_client_id';
+const DB_NAME = 'photomap_db';
+const DB_VERSION = 1;
+const STORE_MEDIA = 'media';
+const STORE_META = 'meta';
 const DEFAULT_CLIENT_ID = '74655b12-46c1-4cdb-be1a-27655fa47677';
 
+const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'gif', 'bmp', 'tiff']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'm4v', 'hevc', 'avi', 'webm', '3gp', 'mkv']);
+
 let msalInstance = null;
-let allPhotos = []; // { id, name, lat, lng, date, thumbnailUrl, downloadUrl }
+let allPhotos = [];
 let markers = [];
 let clusterGroup = null;
 let currentYear = 'all';
 let isLoading = false;
+let backgroundSyncRunning = false;
 
-// Lightbox state
 let lightboxPhotos = [];
 let lightboxIndex = 0;
+
+// ═══════════════════════════════════════════════════
+// INDEXEDDB
+// ═══════════════════════════════════════════════════
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+
+      if (!db.objectStoreNames.contains(STORE_MEDIA)) {
+        const mediaStore = db.createObjectStore(STORE_MEDIA, { keyPath: 'id' });
+        mediaStore.createIndex('by_date', 'date', { unique: false });
+      }
+
+      if (!db.objectStoreNames.contains(STORE_META)) {
+        db.createObjectStore(STORE_META, { keyPath: 'key' });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function dbPutMediaBatch(items) {
+  if (!items || items.length === 0) return;
+
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_MEDIA, 'readwrite');
+    const store = tx.objectStore(STORE_MEDIA);
+
+    for (const item of items) {
+      store.put({
+        ...item,
+        date: item.date ? item.date.toISOString() : null
+      });
+    }
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+async function dbGetAllMedia() {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_MEDIA, 'readonly');
+    const store = tx.objectStore(STORE_MEDIA);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const rows = (request.result || []).map(item => ({
+        ...item,
+        date: item.date ? new Date(item.date) : null
+      }));
+      resolve(rows);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function dbClearMedia() {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_MEDIA, 'readwrite');
+    tx.objectStore(STORE_MEDIA).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function dbSetMeta(key, value) {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_META, 'readwrite');
+    tx.objectStore(STORE_META).put({ key, value });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function dbGetMeta(key) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_META, 'readonly');
+    const request = tx.objectStore(STORE_META).get(key);
+    request.onsuccess = () => resolve(request.result ? request.result.value : null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function dbDeleteMeta(key) {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_META, 'readwrite');
+    tx.objectStore(STORE_META).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
 
 // ═══════════════════════════════════════════════════
 // MAP INIT
@@ -700,7 +795,7 @@ clusterGroup = L.markerClusterGroup({
   disableClusteringAtZoom: 18,
   iconCreateFunction(cluster) {
     const count = cluster.getChildCount();
-    let size = count < 10 ? 'small' : count < 50 ? 'medium' : 'large';
+    const size = count < 10 ? 'small' : count < 50 ? 'medium' : 'large';
     return L.divIcon({
       html: `<div><span>${count}</span></div>`,
       className: `marker-cluster marker-cluster-${size}`,
@@ -734,6 +829,39 @@ function setLoadingCount(n) {
   document.getElementById('loading-count').textContent = n;
 }
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function isVideoByName(name = '') {
+  const ext = name.split('.').pop()?.toLowerCase();
+  return VIDEO_EXTENSIONS.has(ext);
+}
+
+function updateUiWithCurrentPhotos(fit = false) {
+  if (!allPhotos || allPhotos.length === 0) return;
+
+  buildYearFilter(allPhotos);
+  renderMarkers(currentYear === 'all'
+    ? allPhotos
+    : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear)
+  );
+  updateStats(currentYear === 'all'
+    ? allPhotos.length
+    : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear).length
+  );
+
+  if (fit && markers.length > 0) {
+    const group = L.featureGroup(markers);
+    map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 14 });
+  }
+
+  document.getElementById('btn-reload').style.display = 'inline-flex';
+  document.getElementById('btn-config').style.display = 'inline-flex';
+}
+
 // ═══════════════════════════════════════════════════
 // MSAL AUTH
 // ═══════════════════════════════════════════════════
@@ -755,32 +883,26 @@ async function getToken() {
     scopes: ['Files.Read', 'User.Read'],
     account: accounts[0] || undefined
   };
+
   try {
     const result = await msalInstance.acquireTokenSilent(request);
     return result.accessToken;
-  } catch (e) {
-    // If silent fails, try popup
-    try {
-      const result = await msalInstance.acquireTokenPopup(request);
-      return result.accessToken;
-    } catch (popupErr) {
-      throw new Error('Authentification échouée. Veuillez réessayer. (' + (popupErr.errorCode || popupErr.message) + ')');
-    }
+  } catch {
+    const result = await msalInstance.acquireTokenPopup(request);
+    return result.accessToken;
   }
 }
 
 // ═══════════════════════════════════════════════════
 // MICROSOFT GRAPH FETCH
 // ═══════════════════════════════════════════════════
-const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp']);
-
 async function graphGet(url, token) {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });
 
   if (res.status === 401) {
-    throw new Error('Token expiré. Veuillez vous reconnecter.');
+    throw new Error('Session expirée. Veuillez vous reconnecter.');
   }
 
   if (res.status === 429) {
@@ -791,16 +913,16 @@ async function graphGet(url, token) {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Erreur API Graph (${res.status}): ${text.substring(0, 200)}`);
+    throw new Error(`Erreur API Graph (${res.status}) : ${text.substring(0, 200)}`);
   }
 
   return res.json();
 }
 
-function isImage(item) {
-  if (!item.file) return false;
-  const ext = item.name?.split('.').pop()?.toLowerCase();
-  return IMAGE_EXTENSIONS.has(ext);
+function isMediaFile(item) {
+  if (!item.file || !item.name) return false;
+  const ext = item.name.split('.').pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext);
 }
 
 async function listChildren(itemId, token) {
@@ -825,31 +947,61 @@ async function getThumbnail(itemId, token) {
       `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/thumbnails`,
       token
     );
-    return data.value?.[0]?.medium?.url || data.value?.[0]?.large?.url || data.value?.[0]?.small?.url || null;
+    return data.value?.[0]?.medium?.url
+        || data.value?.[0]?.large?.url
+        || data.value?.[0]?.small?.url
+        || null;
   } catch {
     return null;
   }
 }
 
-async function scanFolderRecursive(folderId, token, photos, progress) {
-  const children = await listChildren(folderId, token);
+async function flushBatchToIndexedDb(batch, allItemsRef) {
+  if (!batch.length) return;
+  await dbPutMediaBatch(batch);
+  allItemsRef.push(...batch);
+  batch.length = 0;
+}
+
+async function scanFolderRecursive(folderId, token, progress, seenIds, batch, allItemsRef, options = {}) {
+  let children = [];
+
+  try {
+    children = await listChildren(folderId, token);
+  } catch (err) {
+    console.warn('Dossier ignoré suite à une erreur:', folderId, err);
+    return;
+  }
 
   for (const item of children) {
     progress.scanned++;
 
-    setLoading(
-      true,
-      `Analyse du OneDrive… (${photos.length} photos géolocalisées, ${progress.scanned} éléments analysés)`,
-      Math.min(10 + progress.scanned * 0.02, 90)
-    );
-    setLoadingCount(photos.length);
+    if (!options.background && progress.scanned % 20 === 0) {
+      setLoading(
+        true,
+        `Analyse du OneDrive… (${progress.found} médias géolocalisés, ${progress.scanned} éléments analysés)`,
+        Math.min(10 + progress.scanned * 0.01, 92)
+      );
+      setLoadingCount(progress.found);
+    }
+
+    if (progress.scanned % 100 === 0) {
+      await dbSetMeta('scan_state', {
+        scanned: progress.scanned,
+        found: progress.found,
+        updatedAt: new Date().toISOString(),
+        completed: false
+      });
+    }
 
     if (item.folder) {
-      await scanFolderRecursive(item.id, token, photos, progress);
+      await scanFolderRecursive(item.id, token, progress, seenIds, batch, allItemsRef, options);
       continue;
     }
 
-    if (!isImage(item)) continue;
+    if (!isMediaFile(item)) continue;
+    if (seenIds.has(item.id)) continue;
+    seenIds.add(item.id);
 
     const lat = item.location?.latitude;
     const lng = item.location?.longitude;
@@ -860,32 +1012,91 @@ async function scanFolderRecursive(folderId, token, photos, progress) {
     const thumbnailUrl = await getThumbnail(item.id, token);
     const date = item.photo?.takenDateTime || item.createdDateTime;
 
-    photos.push({
+    const mediaItem = {
       id: item.id,
       name: item.name,
       lat: Number(lat),
       lng: Number(lng),
       date: date ? new Date(date) : null,
       thumbnailUrl,
-      downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl
-    });
+      downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
+      mediaType: isVideoByName(item.name) ? 'video' : 'image'
+    };
 
-    setLoadingCount(photos.length);
+    batch.push(mediaItem);
+    progress.found++;
+
+    if (batch.length >= 25) {
+      await flushBatchToIndexedDb(batch, allItemsRef);
+
+      if (options.background) {
+        allPhotos = [...allItemsRef];
+        updateUiWithCurrentPhotos(false);
+      } else {
+        setLoadingCount(progress.found);
+      }
+    }
   }
 }
 
-async function fetchAllPhotos() {
+async function runFullScan({ background = false } = {}) {
   const token = await getToken();
-  const photos = [];
-  const progress = { scanned: 0 };
+  const existing = await dbGetAllMedia();
+  const allItems = [...existing];
+  const seenIds = new Set(existing.map(x => x.id));
+  const batch = [];
+  const progress = {
+    scanned: 0,
+    found: existing.length
+  };
 
-  setLoading(true, 'Récupération des photos…', 5);
-  await scanFolderRecursive('root', token, photos, progress);
-  setLoadingCount(photos.length);
+  await dbSetMeta('scan_state', {
+    scanned: 0,
+    found: existing.length,
+    updatedAt: new Date().toISOString(),
+    completed: false
+  });
 
-  return photos;
+  if (!background) {
+    setLoading(true, 'Scan complet de votre OneDrive…', 8);
+    setLoadingCount(existing.length);
+  }
+
+  await scanFolderRecursive('root', token, progress, seenIds, batch, allItems, { background });
+  await flushBatchToIndexedDb(batch, allItems);
+
+  await dbSetMeta('scan_state', {
+    scanned: progress.scanned,
+    found: progress.found,
+    updatedAt: new Date().toISOString(),
+    completed: true
+  });
+
+  if (!background) {
+    setLoadingCount(progress.found);
+    setLoading(false);
+  }
+
+  return allItems;
 }
-  
+
+async function runBackgroundSync() {
+  if (backgroundSyncRunning) return;
+  backgroundSyncRunning = true;
+
+  try {
+    const fresh = await runFullScan({ background: true });
+    allPhotos = fresh;
+    updateUiWithCurrentPhotos(false);
+    showToast(`Synchronisation terminée : ${allPhotos.length} médias.`);
+  } catch (err) {
+    console.warn('Erreur pendant la synchronisation en arrière-plan', err);
+    showToast('Synchronisation arrière-plan incomplète.', 5000);
+  } finally {
+    backgroundSyncRunning = false;
+  }
+}
+
 // ═══════════════════════════════════════════════════
 // MARKER CREATION
 // ═══════════════════════════════════════════════════
@@ -904,7 +1115,6 @@ function createMarker(photo) {
   const marker = L.marker([photo.lat, photo.lng], { icon });
 
   marker.on('click', () => {
-    // Find nearby photos (within ~50m) for the panel
     const nearby = allPhotos.filter(p => {
       if (currentYear !== 'all' && (!p.date || p.date.getFullYear() != currentYear)) return false;
       const dlat = Math.abs(p.lat - photo.lat);
@@ -922,7 +1132,6 @@ function createMarker(photo) {
 // RENDER MARKERS
 // ═══════════════════════════════════════════════════
 function renderMarkers(filtered) {
-  // Unbind old cluster click first
   clusterGroup.off('clusterclick');
   clusterGroup.clearLayers();
   markers = [];
@@ -934,7 +1143,6 @@ function renderMarkers(filtered) {
 
   clusterGroup.addLayers(markers);
 
-  // Handle cluster click → open panel with all photos in cluster
   clusterGroup.on('clusterclick', e => {
     const childMarkers = e.layer.getAllChildMarkers();
     const photos = childMarkers.map(m => m._photoData);
@@ -955,10 +1163,8 @@ function openPanel(photos, lat, lng) {
 
   grid.innerHTML = '';
 
-  // Sort by date descending
   photos.sort((a, b) => (b.date || 0) - (a.date || 0));
 
-  // Date range display
   const dates = photos.filter(p => p.date).map(p => p.date);
   if (dates.length) {
     const min = new Date(Math.min(...dates));
@@ -971,14 +1177,11 @@ function openPanel(photos, lat, lng) {
     dateRange.textContent = '';
   }
 
-  // Count
-  countEl.textContent = `${photos.length} photo${photos.length > 1 ? 's' : ''}`;
+  countEl.textContent = `${photos.length} média${photos.length > 1 ? 's' : ''}`;
 
-  // Location name via reverse geocode (async)
   locName.textContent = 'Chargement…';
   reverseGeocode(lat, lng).then(name => { locName.textContent = name; });
 
-  // Thumbnails
   photos.forEach((photo, idx) => {
     const card = document.createElement('div');
     card.className = 'thumb-card';
@@ -1012,32 +1215,40 @@ function openPanel(photos, lat, lng) {
   panel.classList.add('open');
 }
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
 document.getElementById('panel-close').addEventListener('click', () => {
   document.getElementById('photo-panel').classList.remove('open');
 });
 
-// Close panel when clicking on map
 map.on('click', () => {
   document.getElementById('photo-panel').classList.remove('open');
 });
 
 // ═══════════════════════════════════════════════════
-// LIGHTBOX with navigation
+// LIGHTBOX
 // ═══════════════════════════════════════════════════
 function showLightboxPhoto() {
   if (lightboxPhotos.length === 0) return;
   const photo = lightboxPhotos[lightboxIndex];
   const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  const video = document.getElementById('lightbox-video');
 
-  // Use download URL for full res, fallback to thumbnail
-  const imgSrc = photo.downloadUrl || photo.thumbnailUrl || FALLBACK_ICON;
-  document.getElementById('lightbox-img').src = imgSrc;
+  img.style.display = 'none';
+  video.style.display = 'none';
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+
+  const src = photo.downloadUrl || photo.thumbnailUrl || FALLBACK_ICON;
+
+  if (photo.mediaType === 'video') {
+    video.src = src;
+    video.style.display = 'block';
+  } else {
+    img.src = src;
+    img.style.display = 'block';
+  }
+
   document.getElementById('lightbox-name').textContent = photo.name;
 
   const dateStr = photo.date
@@ -1047,7 +1258,6 @@ function showLightboxPhoto() {
   document.getElementById('lightbox-meta').textContent =
     [dateStr, coords].filter(Boolean).join('  ·  ');
 
-  // Show/hide nav arrows
   document.getElementById('lightbox-prev').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
   document.getElementById('lightbox-next').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
 
@@ -1076,7 +1286,6 @@ document.getElementById('lightbox').addEventListener('click', e => {
   }
 });
 
-// Keyboard nav for lightbox
 document.addEventListener('keydown', e => {
   const lb = document.getElementById('lightbox');
   if (!lb.classList.contains('open')) return;
@@ -1091,7 +1300,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// Also close panel with Escape
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.getElementById('photo-panel').classList.remove('open');
@@ -1099,7 +1307,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ═══════════════════════════════════════════════════
-// REVERSE GEOCODE with debouncing
+// REVERSE GEOCODE
 // ═══════════════════════════════════════════════════
 const geocodeCache = {};
 let lastGeocodeTime = 0;
@@ -1108,7 +1316,6 @@ async function reverseGeocode(lat, lng) {
   const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
   if (geocodeCache[key]) return geocodeCache[key];
 
-  // Rate limit: 1 request per second for Nominatim
   const now = Date.now();
   const wait = Math.max(0, 1100 - (now - lastGeocodeTime));
   if (wait > 0) await new Promise(r => setTimeout(r, wait));
@@ -1154,14 +1361,14 @@ function buildYearFilter(photos) {
 
   bar.classList.add('visible');
 
-  bar.addEventListener('click', e => {
+  bar.onclick = (e) => {
     const btn = e.target.closest('.year-btn');
     if (!btn) return;
     bar.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentYear = btn.dataset.year;
     applyFilter();
-  });
+  };
 }
 
 function applyFilter() {
@@ -1170,14 +1377,12 @@ function applyFilter() {
     : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
   renderMarkers(filtered);
   updateStats(filtered.length);
-
-  // Close panel when filter changes
   document.getElementById('photo-panel').classList.remove('open');
 }
 
 function updateStats(count) {
   const el = document.getElementById('stats-pill');
-  el.textContent = `${count} photo${count > 1 ? 's' : ''} géolocalisée${count > 1 ? 's' : ''}`;
+  el.textContent = `${count} média${count > 1 ? 's' : ''} géolocalisé${count > 1 ? 's' : ''}`;
   el.style.display = 'block';
 }
 
@@ -1185,16 +1390,29 @@ function updateStats(count) {
 // MAIN FLOW
 // ═══════════════════════════════════════════════════
 async function startApp() {
-  if (isLoading) return; // Prevent double-launch
+  if (isLoading) return;
 
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
- if (!clientId) {
+  if (!clientId) {
     document.getElementById('splash').classList.add('hidden');
     showConfigPanel();
     return;
-}
+  }
+
   document.getElementById('splash').classList.add('hidden');
   document.getElementById('btn-connect').style.display = 'none';
+
+  try {
+    const cached = await dbGetAllMedia();
+    if (cached.length > 0) {
+      allPhotos = cached;
+      updateUiWithCurrentPhotos(true);
+      showToast(`Cache chargé : ${allPhotos.length} médias.`);
+    }
+  } catch (err) {
+    console.warn('Impossible de lire IndexedDB au démarrage', err);
+  }
+
   setLoading(true, 'Connexion à Microsoft…', 2);
 
   try {
@@ -1202,42 +1420,39 @@ async function startApp() {
     await msalInstance.handleRedirectPromise();
 
     setLoading(true, 'Authentification…', 5);
-    await getToken(); // Just verify auth works
-
-    setLoading(true, 'Scan de votre OneDrive…', 10);
-    allPhotos = await fetchAllPhotos();
+    await getToken();
 
     setLoading(false);
 
-    if (allPhotos.length === 0) {
-      showToast('Aucune photo géolocalisée trouvée dans votre OneDrive.', 5000);
-      document.getElementById('btn-reload').style.display = 'inline-flex';
-      document.getElementById('btn-config').style.display = 'inline-flex';
+    const cached = await dbGetAllMedia();
+
+    if (cached.length === 0) {
+      allPhotos = await runFullScan({ background: false });
+
+      if (allPhotos.length === 0) {
+        showToast('Aucun média géolocalisé trouvé dans votre OneDrive.', 5000);
+        document.getElementById('btn-reload').style.display = 'inline-flex';
+        document.getElementById('btn-config').style.display = 'inline-flex';
+        return;
+      }
+
+      updateUiWithCurrentPhotos(true);
+      showToast(`${allPhotos.length} médias géolocalisés chargés !`);
       return;
     }
 
-    buildYearFilter(allPhotos);
-    renderMarkers(allPhotos);
-    updateStats(allPhotos.length);
-
-    // Fit map to markers
-    if (markers.length > 0) {
-      const group = L.featureGroup(markers);
-      map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 14 });
-    }
-
-    document.getElementById('btn-reload').style.display = 'inline-flex';
-    document.getElementById('btn-config').style.display = 'inline-flex';
-
-    showToast(`${allPhotos.length} photos géolocalisées chargées !`);
+    updateUiWithCurrentPhotos(false);
+    runBackgroundSync();
 
   } catch (err) {
     setLoading(false);
     console.error('PhotoMap error:', err);
-    showToast('Erreur : ' + (err.message || String(err)), 6000);
-    document.getElementById('btn-connect').style.display = 'inline-flex';
+
+    document.getElementById('btn-reload').style.display = 'inline-flex';
     document.getElementById('btn-config').style.display = 'inline-flex';
-    document.getElementById('splash').classList.remove('hidden');
+    document.getElementById('btn-connect').style.display = 'inline-flex';
+
+    showToast('Erreur : ' + (err.message || String(err)), 8000);
   }
 }
 
@@ -1245,11 +1460,12 @@ async function startApp() {
 // CONFIG PANEL
 // ═══════════════════════════════════════════════════
 function showConfigPanel() {
-  document.getElementById('redirect-uri-hint').textContent = window.location.origin + window.location.pathname;
-  const saved = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || '';
+  document.getElementById('redirect-uri-hint').textContent =
+    window.location.origin + window.location.pathname;
+
+  const saved = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID || '';
   document.getElementById('input-client-id').value = saved;
 
-  // Show logout button if we have credentials
   const hasAuth = msalInstance && msalInstance.getAllAccounts().length > 0;
   document.getElementById('btn-config-logout').style.display = hasAuth ? 'inline-flex' : 'none';
 
@@ -1273,49 +1489,75 @@ document.getElementById('btn-config-save').addEventListener('click', async () =>
 });
 
 document.getElementById('btn-config-logout').addEventListener('click', async () => {
-  if (msalInstance) {
-    const accounts = msalInstance.getAllAccounts();
-    for (const account of accounts) {
-      await msalInstance.logoutPopup({ account }).catch(() => {});
+  try {
+    if (msalInstance) {
+      const accounts = msalInstance.getAllAccounts();
+      for (const account of accounts) {
+        await msalInstance.logoutPopup({ account }).catch(() => {});
+      }
     }
+  } finally {
+    localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
+    await dbClearMedia().catch(() => {});
+    await dbDeleteMeta('scan_state').catch(() => {});
+
+    allPhotos = [];
+    markers = [];
+    clusterGroup.clearLayers();
+
+    document.getElementById('config-panel').classList.remove('open');
+    document.getElementById('filter-bar').classList.remove('visible');
+    document.getElementById('stats-pill').style.display = 'none';
+    document.getElementById('btn-reload').style.display = 'none';
+    document.getElementById('btn-config').style.display = 'none';
+    document.getElementById('photo-panel').classList.remove('open');
+    document.getElementById('splash').classList.remove('hidden');
+
+    showToast('Déconnecté avec succès');
   }
-  localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
-  allPhotos = [];
-  clusterGroup.clearLayers();
-  document.getElementById('config-panel').classList.remove('open');
-  document.getElementById('filter-bar').classList.remove('visible');
-  document.getElementById('stats-pill').style.display = 'none';
-  document.getElementById('btn-reload').style.display = 'none';
-  document.getElementById('btn-config').style.display = 'none';
-  document.getElementById('splash').classList.remove('hidden');
-  showToast('Déconnecté avec succès');
 });
 
-// Allow pressing Enter in the client ID input
 document.getElementById('input-client-id').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('btn-config-save').click();
 });
 
 document.getElementById('btn-config').addEventListener('click', showConfigPanel);
 document.getElementById('btn-manual-config').addEventListener('click', showConfigPanel);
+
 document.getElementById('btn-login').addEventListener('click', () => {
-  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
+  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
   if (!clientId) {
     document.getElementById('splash').classList.add('hidden');
     showConfigPanel();
-  } else {
-    startApp();
+    return;
   }
-});
-document.getElementById('btn-connect').addEventListener('click', startApp);
-document.getElementById('btn-reload').addEventListener('click', async () => {
-  allPhotos = [];
-  clusterGroup.clearLayers();
-  document.getElementById('filter-bar').classList.remove('visible');
-  await startApp();
+  startApp();
 });
 
-// Close config panel on backdrop click
+document.getElementById('btn-connect').addEventListener('click', startApp);
+
+document.getElementById('btn-reload').addEventListener('click', async () => {
+  try {
+    setLoading(true, 'Réinitialisation du cache…', 2);
+
+    allPhotos = [];
+    markers = [];
+    clusterGroup.clearLayers();
+    document.getElementById('filter-bar').classList.remove('visible');
+    document.getElementById('photo-panel').classList.remove('open');
+    document.getElementById('stats-pill').style.display = 'none';
+
+    await dbClearMedia();
+    await dbDeleteMeta('scan_state');
+
+    setLoading(false);
+    await startApp();
+  } catch (err) {
+    setLoading(false);
+    showToast('Erreur pendant la réinitialisation : ' + (err.message || err), 6000);
+  }
+});
+
 document.getElementById('config-panel').addEventListener('click', e => {
   if (e.target === document.getElementById('config-panel')) {
     document.getElementById('config-panel').classList.remove('open');
@@ -1325,10 +1567,22 @@ document.getElementById('config-panel').addEventListener('click', e => {
 // ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
   if (clientId) {
     document.getElementById('btn-connect').style.display = 'inline-flex';
+  }
+
+  try {
+    const cached = await dbGetAllMedia();
+    if (cached.length > 0) {
+      allPhotos = cached;
+      updateUiWithCurrentPhotos(true);
+      document.getElementById('btn-reload').style.display = 'inline-flex';
+      document.getElementById('btn-config').style.display = 'inline-flex';
+    }
+  } catch (err) {
+    console.warn('Impossible de précharger le cache IndexedDB', err);
   }
 });
 </script>
