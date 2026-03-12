@@ -662,7 +662,7 @@
 // CONFIG
 // ═══════════════════════════════════════════════════
 const STORAGE_KEY_CLIENT_ID = 'photomap_client_id';
-const DEFAULT_CLIENT_ID = ''; // No default — user must provide their own
+const DEFAULT_CLIENT_ID = '74655b12-46c1-4cdb-be1a-27655fa47677';
 
 let msalInstance = null;
 let allPhotos = []; // { id, name, lat, lng, date, thumbnailUrl, downloadUrl }
@@ -772,99 +772,120 @@ async function getToken() {
 // ═══════════════════════════════════════════════════
 // MICROSOFT GRAPH FETCH
 // ═══════════════════════════════════════════════════
+const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp']);
+
 async function graphGet(url, token) {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });
+
   if (res.status === 401) {
     throw new Error('Token expiré. Veuillez vous reconnecter.');
   }
+
   if (res.status === 429) {
-    // Rate limited — wait and retry
     const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
     return graphGet(url, token);
   }
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Erreur API Graph (${res.status}): ${text.substring(0, 200)}`);
   }
+
   return res.json();
+}
+
+function isImage(item) {
+  if (!item.file) return false;
+  const ext = item.name?.split('.').pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS.has(ext);
+}
+
+async function listChildren(itemId, token) {
+  let url = itemId === 'root'
+    ? 'https://graph.microsoft.com/v1.0/me/drive/root/children?$top=200&$select=id,name,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl'
+    : `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/children?$top=200&$select=id,name,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl`;
+
+  const items = [];
+
+  while (url) {
+    const data = await graphGet(url, token);
+    items.push(...(data.value || []));
+    url = data['@odata.nextLink'] || null;
+  }
+
+  return items;
+}
+
+async function getThumbnail(itemId, token) {
+  try {
+    const data = await graphGet(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/thumbnails`,
+      token
+    );
+    return data.value?.[0]?.medium?.url || data.value?.[0]?.large?.url || data.value?.[0]?.small?.url || null;
+  } catch {
+    return null;
+  }
+}
+
+async function scanFolderRecursive(folderId, token, photos, progress) {
+  const children = await listChildren(folderId, token);
+
+  for (const item of children) {
+    progress.scanned++;
+
+    setLoading(
+      true,
+      `Analyse du OneDrive… (${photos.length} photos géolocalisées, ${progress.scanned} éléments analysés)`,
+      Math.min(10 + progress.scanned * 0.02, 90)
+    );
+    setLoadingCount(photos.length);
+
+    if (item.folder) {
+      await scanFolderRecursive(item.id, token, photos, progress);
+      continue;
+    }
+
+    if (!isImage(item)) continue;
+
+    const lat = item.location?.latitude;
+    const lng = item.location?.longitude;
+
+    if (lat == null || lng == null) continue;
+    if (lat === 0 && lng === 0) continue;
+
+    const thumbnailUrl = await getThumbnail(item.id, token);
+    const date = item.photo?.takenDateTime || item.createdDateTime;
+
+    photos.push({
+      id: item.id,
+      name: item.name,
+      lat: Number(lat),
+      lng: Number(lng),
+      date: date ? new Date(date) : null,
+      thumbnailUrl,
+      downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl
+    });
+
+    setLoadingCount(photos.length);
+  }
 }
 
 async function fetchAllPhotos() {
   const token = await getToken();
   const photos = [];
+  const progress = { scanned: 0 };
 
   setLoading(true, 'Récupération des photos…', 5);
+  await scanFolderRecursive('root', token, photos, progress);
+  setLoadingCount(photos.length);
 
-  // Search for image files — using multiple extensions
-  // The Graph search API matches on file content/metadata
-  let url = "https://graph.microsoft.com/v1.0/me/drive/root/search(q='.jpg OR .jpeg OR .png OR .heic')?$select=id,name,photo,location,createdDateTime,@microsoft.graph.downloadUrl&$expand=thumbnails&$top=200&$orderby=createdDateTime desc";
-
-  let page = 0;
-  let total = 0;
-  const seenIds = new Set(); // Deduplicate
-
-  while (url) {
-    setLoading(true, `Analyse des photos… (${total} géolocalisées)`, Math.min(10 + page * 8, 85));
-    setLoadingCount(total);
-
-    let data;
-    try {
-      data = await graphGet(url, token);
-    } catch (err) {
-      console.warn('Erreur page', page, err);
-      // If a page fails, try continuing
-      if (page > 0) break;
-      throw err;
-    }
-
-    const items = data.value || [];
-
-    for (const item of items) {
-      // Deduplicate
-      if (seenIds.has(item.id)) continue;
-      seenIds.add(item.id);
-
-      // Skip files without location
-      const loc = item.location;
-      if (!loc) continue;
-
-      const latitude = loc.latitude;
-      const longitude = loc.longitude;
-      if (latitude == null || longitude == null) continue;
-      if (latitude === 0 && longitude === 0) continue; // Skip null island
-
-      const date = item.photo?.takenDateTime || item.createdDateTime;
-      const thumbUrl = item.thumbnails?.[0]?.medium?.url
-                    || item.thumbnails?.[0]?.small?.url
-                    || null;
-
-      photos.push({
-        id: item.id,
-        name: item.name,
-        lat: latitude,
-        lng: longitude,
-        date: date ? new Date(date) : null,
-        thumbnailUrl: thumbUrl,
-        downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbUrl,
-      });
-
-      total++;
-    }
-
-    url = data['@odata.nextLink'] || null;
-    page++;
-
-    // Safety limit — ~20k photos max
-    if (page > 100) break;
-  }
-
-  setLoadingCount(total);
   return photos;
 }
-
+  
 // ═══════════════════════════════════════════════════
 // MARKER CREATION
 // ═══════════════════════════════════════════════════
@@ -1305,9 +1326,8 @@ document.getElementById('config-panel').addEventListener('click', e => {
 // INIT
 // ═══════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
+  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
   if (clientId) {
-    // Show connect button — don't auto-start to avoid unexpected popups
     document.getElementById('btn-connect').style.display = 'inline-flex';
   }
 });
