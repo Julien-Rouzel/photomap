@@ -2462,24 +2462,29 @@ document.getElementById('btn-connect').addEventListener('click', () => {
 
 document.getElementById('btn-reload').addEventListener('click', async () => {
   try {
-    setLoading(true, 'Réinitialisation du cache…', 2);
+    /* Don't clear cache — just rescan to find new photos.
+       runFullScan already skips items that exist in IndexedDB. */
+    if (!_currentToken) {
+      /* Need to authenticate first */
+      await startApp();
+      return;
+    }
 
-    allPhotos = [];
-    markers = [];
-    clusterGroup.clearLayers();
-    panelAllPhotos = [];
-    document.getElementById('filter-bar').classList.remove('visible');
-    document.getElementById('photo-panel').classList.remove('open');
-    document.getElementById('stats-pill').style.display = 'none';
+    setLoading(true, 'Synchronisation avec OneDrive…', 5);
 
-    await dbClearMedia();
-    await dbDeleteMeta('scan_state');
+    allPhotos = await runFullScan({ background: false });
 
     setLoading(false);
-    await startApp();
+
+    if (allPhotos.length === 0) {
+      showToast('Aucun média géolocalisé trouvé.', 5000);
+    } else {
+      updateUiWithCurrentPhotos(true);
+      showToast(`Synchronisation terminée : ${allPhotos.length} médias.`);
+    }
   } catch (err) {
     setLoading(false);
-    showToast('Erreur pendant la réinitialisation : ' + (err.message || err), 6000);
+    showToast('Erreur pendant la synchronisation : ' + (err.message || err), 6000);
   }
 });
 
