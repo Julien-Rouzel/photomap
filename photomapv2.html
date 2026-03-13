@@ -99,6 +99,80 @@
     white-space: nowrap;
   }
 
+  #scan-status {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  #scan-status.visible { display: flex; }
+
+  #scan-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    animation: scan-pulse 1.5s ease-in-out infinite;
+  }
+
+  #scan-status.paused #scan-status-dot {
+    background: #f0a030;
+    animation: none;
+  }
+
+  #scan-status.done #scan-status-dot {
+    background: #2ea043;
+    animation: none;
+  }
+
+  #scan-status.error #scan-status-dot {
+    background: var(--danger);
+    animation: none;
+  }
+
+  @keyframes scan-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  #scan-status-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #scan-status-count {
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  #scan-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: transparent;
+  }
+
+  #scan-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.5s ease;
+    border-radius: 0 0 20px 20px;
+  }
+
   .btn {
     font-family: var(--font-ui);
     font-size: 0.8rem;
@@ -748,6 +822,15 @@
     #btn-config { padding: 6px 10px; font-size: 0.95rem; }
     #btn-reload { padding: 6px 10px; font-size: 0.95rem; }
 
+    #scan-status {
+      font-size: 0.62rem;
+      padding: 3px 8px;
+      gap: 5px;
+      max-width: 180px;
+    }
+    #scan-status-text { max-width: 90px; }
+    #scan-status-count { font-size: 0.62rem; }
+
     /* ---- MAP ---- */
     #map {
       top: calc(48px + env(safe-area-inset-top, 0px));
@@ -974,6 +1057,12 @@
   <div class="tagline">Vos souvenirs sur la planète</div>
   <div id="topbar-right">
     <div id="stats-pill"></div>
+    <div id="scan-status" style="display:none">
+      <div id="scan-status-dot"></div>
+      <span id="scan-status-text">Scan…</span>
+      <span id="scan-status-count"></span>
+      <div id="scan-progress-bar"><div id="scan-progress-fill"></div></div>
+    </div>
     <button class="btn btn-ghost" id="btn-config" style="display:none">⚙ <span class="btn-label">Config</span></button>
     <button class="btn btn-ghost" id="btn-reload" style="display:none">↺ <span class="btn-label">Recharger</span></button>
   </div>
@@ -1256,6 +1345,43 @@ function setLoading(visible, msg = '', progress = 0) {
 
 function setLoadingCount(n) {
   document.getElementById('loading-count').textContent = n;
+}
+
+/* ==========================================
+   SCAN STATUS INDICATOR (topbar)
+   States: scanning, paused, done, error
+   ========================================== */
+function setScanStatus(state, text, count, progress) {
+  const el = document.getElementById('scan-status');
+  const textEl = document.getElementById('scan-status-text');
+  const countEl = document.getElementById('scan-status-count');
+  const fillEl = document.getElementById('scan-progress-fill');
+
+  if (state === 'hidden') {
+    el.style.display = 'none';
+    el.classList.remove('visible', 'paused', 'done', 'error');
+    return;
+  }
+
+  el.style.display = 'flex';
+  el.classList.add('visible');
+  el.classList.remove('paused', 'done', 'error');
+
+  if (state === 'paused') el.classList.add('paused');
+  if (state === 'done') el.classList.add('done');
+  if (state === 'error') el.classList.add('error');
+
+  if (text) textEl.textContent = text;
+  if (count !== undefined && count !== null) countEl.textContent = count;
+  if (progress !== undefined) fillEl.style.width = Math.min(progress, 100) + '%';
+}
+
+/* Auto-hide the "done" status after a delay */
+let _scanDoneTimer = null;
+function setScanDone(count) {
+  setScanStatus('done', 'Terminé', count + ' médias', 100);
+  if (_scanDoneTimer) clearTimeout(_scanDoneTimer);
+  _scanDoneTimer = setTimeout(() => setScanStatus('hidden'), 5000);
 }
 
 function escapeHtml(str) {
@@ -1596,7 +1722,7 @@ async function flushBatchToIndexedDb(batch, allItemsRef) {
   batch.length = 0;
 }
 
-async function scanFolderRecursive(folderId, progress, seenIds, batch, allItemsRef, options = {}) {
+async function scanFolderRecursive(folderId, progress, seenIds, batch, allItemsRef) {
   let children = [];
 
   try {
@@ -1609,13 +1735,14 @@ async function scanFolderRecursive(folderId, progress, seenIds, batch, allItemsR
   for (const item of children) {
     progress.scanned++;
 
-    if (!options.background && progress.scanned % 20 === 0) {
-      setLoading(
-        true,
-        `Analyse du OneDrive… (${progress.found} médias géolocalisés, ${progress.scanned} éléments analysés)`,
-        Math.min(10 + progress.scanned * 0.01, 92)
+    /* Update topbar scan status every 20 items */
+    if (progress.scanned % 20 === 0) {
+      setScanStatus(
+        'scanning',
+        `Analyse… ${progress.scanned} fichiers`,
+        progress.found + ' trouvés',
+        Math.min(5 + progress.scanned * 0.01, 95)
       );
-      setLoadingCount(progress.found);
     }
 
     if (progress.scanned % 100 === 0) {
@@ -1628,7 +1755,7 @@ async function scanFolderRecursive(folderId, progress, seenIds, batch, allItemsR
     }
 
     if (item.folder) {
-      await scanFolderRecursive(item.id, progress, seenIds, batch, allItemsRef, options);
+      await scanFolderRecursive(item.id, progress, seenIds, batch, allItemsRef);
       continue;
     }
 
@@ -1661,20 +1788,23 @@ async function scanFolderRecursive(folderId, progress, seenIds, batch, allItemsR
     batch.push(mediaItem);
     progress.found++;
 
+    /* Flush every 25 items and update the map live */
     if (batch.length >= 25) {
       await flushBatchToIndexedDb(batch, allItemsRef);
+      allPhotos = [...allItemsRef];
+      updateUiWithCurrentPhotos(progress.found <= 25); /* fitBounds only on first batch */
 
-      if (options.background) {
-        allPhotos = [...allItemsRef];
-        updateUiWithCurrentPhotos(false);
-      } else {
-        setLoadingCount(progress.found);
-      }
+      setScanStatus(
+        'scanning',
+        `Analyse… ${progress.scanned} fichiers`,
+        progress.found + ' trouvés',
+        Math.min(5 + progress.scanned * 0.01, 95)
+      );
     }
   }
 }
 
-async function runFullScan({ background = false } = {}) {
+async function runFullScan() {
   _currentToken = await getToken();
   if (!_currentToken) return []; /* redirect happened */
 
@@ -1694,13 +1824,14 @@ async function runFullScan({ background = false } = {}) {
     completed: false
   });
 
-  if (!background) {
-    setLoading(true, 'Scan complet de votre OneDrive…', 8);
-    setLoadingCount(existing.length);
-  }
+  setScanStatus('scanning', 'Démarrage du scan…', existing.length > 0 ? existing.length + ' en cache' : '', 2);
 
-  await scanFolderRecursive('root', progress, seenIds, batch, allItems, { background });
+  await scanFolderRecursive('root', progress, seenIds, batch, allItems);
   await flushBatchToIndexedDb(batch, allItems);
+
+  /* Final UI update */
+  allPhotos = [...allItems];
+  updateUiWithCurrentPhotos(existing.length === 0);
 
   await dbSetMeta('scan_state', {
     scanned: progress.scanned,
@@ -1709,11 +1840,7 @@ async function runFullScan({ background = false } = {}) {
     completed: true
   });
 
-  if (!background) {
-    setLoadingCount(progress.found);
-    setLoading(false);
-  }
-
+  setScanDone(progress.found);
   return allItems;
 }
 
@@ -1722,13 +1849,11 @@ async function runBackgroundSync() {
   backgroundSyncRunning = true;
 
   try {
-    const fresh = await runFullScan({ background: true });
-    allPhotos = fresh;
-    updateUiWithCurrentPhotos(false);
-    showToast(`Synchronisation terminée : ${allPhotos.length} médias.`);
+    await runFullScan();
   } catch (err) {
     console.warn('Erreur pendant la synchronisation en arrière-plan', err);
-    showToast('Synchronisation arrière-plan incomplète.', 5000);
+    setScanStatus('error', 'Sync interrompue', '', 0);
+    setTimeout(() => setScanStatus('hidden'), 4000);
   } finally {
     backgroundSyncRunning = false;
   }
@@ -2294,31 +2419,31 @@ async function _startAppInner() {
 
   document.getElementById('splash').classList.add('hidden');
 
-  /*
-   * FIX: load cache once and reuse. No duplicate dbGetAllMedia calls.
-   */
+  /* Load cache and show it immediately */
   let cached = [];
   try {
     cached = await dbGetAllMedia();
     if (cached.length > 0) {
       allPhotos = cached;
       updateUiWithCurrentPhotos(true);
-      showToast(`Cache chargé : ${allPhotos.length} médias.`);
     }
   } catch (err) {
     console.warn('Impossible de lire IndexedDB au démarrage', err);
   }
 
-  setLoading(true, 'Connexion à Microsoft…', 2);
+  /* Show buttons right away so the user can interact */
+  document.getElementById('btn-reload').style.display = 'inline-flex';
+  document.getElementById('btn-config').style.display = 'inline-flex';
+
+  /* Authenticate — this is the only blocking step */
+  setScanStatus('scanning', 'Connexion à Microsoft…', '', 0);
 
   try {
     try {
       await initMsal(clientId);
-      /* handleRedirectPromise resolves with token result if returning from auth redirect */
       const redirectResult = await msalInstance.handleRedirectPromise();
       if (redirectResult) {
-        /* We just came back from Microsoft login — token is ready */
-        setLoading(true, 'Authentification réussie…', 5);
+        setScanStatus('scanning', 'Authentification réussie', '', 3);
       }
     } catch (msalErr) {
       msalInstance = null;
@@ -2329,42 +2454,21 @@ async function _startAppInner() {
       );
     }
 
-    setLoading(true, 'Authentification…', 5);
+    setScanStatus('scanning', 'Authentification…', '', 3);
     const token = await getToken();
 
-    /* If getToken triggered a redirect, execution stops here.
-       The page will reload and handleRedirectPromise above will catch the result. */
+    /* If getToken triggered a redirect, execution stops here */
     if (!token) return;
 
     _currentToken = token;
-    setLoading(false);
 
-    if (cached.length === 0) {
-      allPhotos = await runFullScan({ background: false });
-
-      if (allPhotos.length === 0) {
-        showToast('Aucun média géolocalisé trouvé dans votre OneDrive.', 5000);
-        document.getElementById('btn-reload').style.display = 'inline-flex';
-        document.getElementById('btn-config').style.display = 'inline-flex';
-        return;
-      }
-
-      updateUiWithCurrentPhotos(true);
-      showToast(`${allPhotos.length} médias géolocalisés chargés !`);
-      return;
-    }
-
-    /* Already have cache — just start background sync */
-    updateUiWithCurrentPhotos(false);
+    /* Auth done — launch scan in background, user can already use the map */
     runBackgroundSync();
 
   } catch (err) {
-    setLoading(false);
     console.error('PhotoMap error:', err);
-
-    document.getElementById('btn-reload').style.display = 'inline-flex';
-    document.getElementById('btn-config').style.display = 'inline-flex';
-
+    setScanStatus('error', 'Erreur de connexion', '', 0);
+    setTimeout(() => setScanStatus('hidden'), 6000);
     showToast('Erreur : ' + (err.message || String(err)), 8000);
   }
 }
@@ -2461,31 +2565,12 @@ document.getElementById('btn-connect').addEventListener('click', () => {
 });
 
 document.getElementById('btn-reload').addEventListener('click', async () => {
-  try {
-    /* Don't clear cache — just rescan to find new photos.
-       runFullScan already skips items that exist in IndexedDB. */
-    if (!_currentToken) {
-      /* Need to authenticate first */
-      await startApp();
-      return;
-    }
-
-    setLoading(true, 'Synchronisation avec OneDrive…', 5);
-
-    allPhotos = await runFullScan({ background: false });
-
-    setLoading(false);
-
-    if (allPhotos.length === 0) {
-      showToast('Aucun média géolocalisé trouvé.', 5000);
-    } else {
-      updateUiWithCurrentPhotos(true);
-      showToast(`Synchronisation terminée : ${allPhotos.length} médias.`);
-    }
-  } catch (err) {
-    setLoading(false);
-    showToast('Erreur pendant la synchronisation : ' + (err.message || err), 6000);
+  if (!_currentToken) {
+    await startApp();
+    return;
   }
+  /* Just launch a background scan — topbar shows progress */
+  runBackgroundSync();
 });
 
 document.getElementById('config-panel').addEventListener('click', e => {
