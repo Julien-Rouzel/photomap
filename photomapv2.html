@@ -1315,8 +1315,10 @@ async function getToken() {
     const result = await msalInstance.acquireTokenSilent(request);
     return result.accessToken;
   } catch {
-    const result = await msalInstance.acquireTokenPopup(request);
-    return result.accessToken;
+    /* Redirect-based auth: navigates away, page reloads after login */
+    await msalInstance.acquireTokenRedirect(request);
+    /* This line is never reached — the browser navigates away */
+    return null;
   }
 }
 
@@ -2120,13 +2122,14 @@ async function _startAppInner() {
   setLoading(true, 'Connexion à Microsoft…', 2);
 
   try {
-    /*
-     * FIX: wrap initMsal in its own try/catch so we can give a
-     * clear error if the Client ID is invalid or unregistered.
-     */
     try {
       await initMsal(clientId);
-      await msalInstance.handleRedirectPromise();
+      /* handleRedirectPromise resolves with token result if returning from auth redirect */
+      const redirectResult = await msalInstance.handleRedirectPromise();
+      if (redirectResult) {
+        /* We just came back from Microsoft login — token is ready */
+        setLoading(true, 'Authentification réussie…', 5);
+      }
     } catch (msalErr) {
       msalInstance = null;
       throw new Error(
@@ -2137,7 +2140,11 @@ async function _startAppInner() {
     }
 
     setLoading(true, 'Authentification…', 5);
-    await getToken();
+    const token = await getToken();
+
+    /* If getToken triggered a redirect, execution stops here.
+       The page will reload and handleRedirectPromise above will catch the result. */
+    if (!token) return;
 
     setLoading(false);
 
@@ -2212,8 +2219,9 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
   try {
     if (msalInstance) {
       const accounts = msalInstance.getAllAccounts();
-      for (const account of accounts) {
-        await msalInstance.logoutPopup({ account }).catch(() => {});
+      if (accounts.length > 0) {
+        await msalInstance.logoutRedirect({ account: accounts[0] }).catch(() => {});
+        return; /* page navigates away */
       }
     }
   } finally {
@@ -2291,13 +2299,20 @@ document.getElementById('config-panel').addEventListener('click', e => {
 });
 
 /*
- * FIX: DOMContentLoaded only shows cached data and reveals
- * the connect button. It does NOT call startApp or fit bounds
- * — that only happens when the user clicks "Connecter".
- * This eliminates the race condition of double-init + double fitBounds.
+ * On DOMContentLoaded:
+ * - If we have cached data, show it immediately
+ * - If we're returning from a Microsoft auth redirect (URL has hash), auto-start
+ * - Otherwise, just show the splash
  */
 document.addEventListener('DOMContentLoaded', async () => {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
+
+  /* Detect if we're returning from a Microsoft auth redirect */
+  const hashOrSearch = window.location.hash + window.location.search;
+  const isAuthRedirectReturn = hashOrSearch.includes('code=')
+    || hashOrSearch.includes('access_token')
+    || hashOrSearch.includes('id_token')
+    || hashOrSearch.includes('error=');
 
   try {
     const cached = await dbGetAllMedia();
@@ -2306,11 +2321,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateUiWithCurrentPhotos(true);
       document.getElementById('btn-reload').style.display = 'inline-flex';
       document.getElementById('btn-config').style.display = 'inline-flex';
-      /* FIX: hide splash if we have cached data to show */
       document.getElementById('splash').classList.add('hidden');
     }
   } catch (err) {
     console.warn('Impossible de précharger le cache IndexedDB', err);
+  }
+
+  /* Auto-start if returning from auth redirect OR if we have cached data + clientId */
+  if (clientId && (isAuthRedirectReturn || allPhotos.length > 0)) {
+    startApp();
   }
 });
 </script>
