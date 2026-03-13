@@ -1315,17 +1315,46 @@ async function getToken() {
     const result = await msalInstance.acquireTokenSilent(request);
     return result.accessToken;
   } catch {
-    /* Redirect-based auth: navigates away, page reloads after login */
     await msalInstance.acquireTokenRedirect(request);
-    /* This line is never reached — the browser navigates away */
     return null;
   }
 }
 
-async function graphGet(url, token) {
+/* Force a fresh token (bypasses cache) — used after a 401 */
+async function getTokenFresh() {
+  const accounts = msalInstance.getAllAccounts();
+  const request = {
+    scopes: ['Files.Read', 'User.Read'],
+    account: accounts[0] || undefined,
+    forceRefresh: true
+  };
+
+  try {
+    const result = await msalInstance.acquireTokenSilent(request);
+    return result.accessToken;
+  } catch {
+    await msalInstance.acquireTokenRedirect(request);
+    return null;
+  }
+}
+
+let _currentToken = null;
+
+async function graphGet(url, token, _retried = false) {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });
+
+  if (res.status === 401 && !_retried) {
+    /* Token expired — get a fresh one and retry once */
+    const freshToken = await getTokenFresh();
+    if (freshToken) {
+      _currentToken = freshToken;
+      return graphGet(url, freshToken, true);
+    }
+    /* If getTokenFresh triggered a redirect, execution stops */
+    return null;
+  }
 
   if (res.status === 401) {
     throw new Error('Session expirée. Veuillez vous reconnecter.');
@@ -1351,7 +1380,7 @@ function isMediaFile(item) {
   return IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext);
 }
 
-async function listChildren(itemId, token) {
+async function listChildren(itemId) {
   let url = itemId === 'root'
     ? 'https://graph.microsoft.com/v1.0/me/drive/root/children?$top=200&$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl'
     : `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/children?$top=200&$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl`;
@@ -1359,7 +1388,7 @@ async function listChildren(itemId, token) {
   const items = [];
 
   while (url) {
-    const data = await graphGet(url, token);
+    const data = await graphGet(url, _currentToken);
     items.push(...(data.value || []));
     url = data['@odata.nextLink'] || null;
   }
@@ -1367,11 +1396,11 @@ async function listChildren(itemId, token) {
   return items;
 }
 
-async function getThumbnail(itemId, token) {
+async function getThumbnail(itemId) {
   try {
     const data = await graphGet(
       `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/thumbnails`,
-      token
+      _currentToken
     );
     return data.value?.[0]?.medium?.url
         || data.value?.[0]?.large?.url
@@ -1383,13 +1412,13 @@ async function getThumbnail(itemId, token) {
 }
 
 /* FIX: refresh a single item's thumbnail + download URL if stale */
-async function refreshMediaUrls(item, token) {
+async function refreshMediaUrls(item) {
   try {
     const data = await graphGet(
       `https://graph.microsoft.com/v1.0/me/drive/items/${item.id}?$select=id,@microsoft.graph.downloadUrl,webUrl`,
-      token
+      _currentToken
     );
-    const thumbnailUrl = await getThumbnail(item.id, token);
+    const thumbnailUrl = await getThumbnail(item.id);
 
     item.downloadUrl = data['@microsoft.graph.downloadUrl'] || thumbnailUrl || item.downloadUrl;
     item.thumbnailUrl = thumbnailUrl || item.thumbnailUrl;
@@ -1416,11 +1445,11 @@ async function flushBatchToIndexedDb(batch, allItemsRef) {
   batch.length = 0;
 }
 
-async function scanFolderRecursive(folderId, token, progress, seenIds, batch, allItemsRef, options = {}) {
+async function scanFolderRecursive(folderId, progress, seenIds, batch, allItemsRef, options = {}) {
   let children = [];
 
   try {
-    children = await listChildren(folderId, token);
+    children = await listChildren(folderId);
   } catch (err) {
     console.warn('Dossier ignoré suite à une erreur:', folderId, err);
     return;
@@ -1448,7 +1477,7 @@ async function scanFolderRecursive(folderId, token, progress, seenIds, batch, al
     }
 
     if (item.folder) {
-      await scanFolderRecursive(item.id, token, progress, seenIds, batch, allItemsRef, options);
+      await scanFolderRecursive(item.id, progress, seenIds, batch, allItemsRef, options);
       continue;
     }
 
@@ -1462,7 +1491,7 @@ async function scanFolderRecursive(folderId, token, progress, seenIds, batch, al
     if (lat == null || lng == null) continue;
     if (lat === 0 && lng === 0) continue;
 
-    const thumbnailUrl = await getThumbnail(item.id, token);
+    const thumbnailUrl = await getThumbnail(item.id);
     const date = item.photo?.takenDateTime || item.createdDateTime;
 
     const mediaItem = {
@@ -1495,7 +1524,9 @@ async function scanFolderRecursive(folderId, token, progress, seenIds, batch, al
 }
 
 async function runFullScan({ background = false } = {}) {
-  const token = await getToken();
+  _currentToken = await getToken();
+  if (!_currentToken) return []; /* redirect happened */
+
   const existing = await dbGetAllMedia();
   const allItems = [...existing];
   const seenIds = new Set(existing.map(x => x.id));
@@ -1517,7 +1548,7 @@ async function runFullScan({ background = false } = {}) {
     setLoadingCount(existing.length);
   }
 
-  await scanFolderRecursive('root', token, progress, seenIds, batch, allItems, { background });
+  await scanFolderRecursive('root', progress, seenIds, batch, allItems, { background });
   await flushBatchToIndexedDb(batch, allItems);
 
   await dbSetMeta('scan_state', {
@@ -1771,7 +1802,7 @@ function showLightboxPhoto() {
 
   /* FIX: if URL is stale, try refreshing in the background */
   if (isUrlStale(photo) && msalInstance) {
-    getToken().then(token => refreshMediaUrls(photo, token)).then(() => {
+    getToken().then(token => { _currentToken = token; return refreshMediaUrls(photo); }).then(() => {
       /* If the lightbox is still showing this photo, update src */
       if (lightboxPhotos[lightboxIndex]?.id === photo.id) {
         const currentSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
@@ -2146,6 +2177,7 @@ async function _startAppInner() {
        The page will reload and handleRedirectPromise above will catch the result. */
     if (!token) return;
 
+    _currentToken = token;
     setLoading(false);
 
     if (cached.length === 0) {
