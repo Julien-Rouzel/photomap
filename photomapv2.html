@@ -574,15 +574,27 @@
 
   #lightbox-close:hover { background: rgba(255,255,255,0.2); }
 
-  /* DYNAMIC MARKER */
-  .photo-marker {
-    border-radius: 8px;
-    overflow: hidden;
-    border: 3px solid var(--accent);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-    transition: border-color 0.2s, transform 0.15s, width 0.15s, height 0.15s;
+  /* DYNAMIC MARKER — Apple Maps style */
+  .photo-marker-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     cursor: pointer;
-    background: var(--surface);
+    filter: drop-shadow(0 4px 14px rgba(0,0,0,0.35));
+    transition: transform 0.15s;
+  }
+
+  .photo-marker-wrap:hover {
+    transform: scale(1.08);
+  }
+
+  .photo-marker {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 3px solid #fff;
+    background: #e0e0e0;
+    position: relative;
+    flex-shrink: 0;
   }
 
   .photo-marker > img,
@@ -593,24 +605,42 @@
     display: block;
   }
 
-  .photo-marker:hover {
-    border-color: var(--accent-light);
-    transform: scale(1.08);
+  .photo-marker-count {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 3px 7px;
+    border-radius: 10px;
+    pointer-events: none;
   }
 
+  .photo-marker-tail {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid #fff;
+    margin-top: -2px;
+  }
+
+  /* hide old Leaflet cluster styles */
   .marker-cluster-small,
   .marker-cluster-medium,
   .marker-cluster-large {
-    background-color: rgba(0,120,212,0.15) !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   .marker-cluster-small div,
   .marker-cluster-medium div,
   .marker-cluster-large div {
-    background-color: rgba(0,120,212,0.7) !important;
-    color: #fff !important;
-    font-family: var(--font-ui) !important;
-    font-weight: 500 !important;
+    background: none !important;
   }
 
   #filter-bar {
@@ -1326,11 +1356,26 @@ clusterGroup = L.markerClusterGroup({
   disableClusteringAtZoom: 18,
   iconCreateFunction(cluster) {
     const count = cluster.getChildCount();
-    const size = count < 10 ? 'small' : count < 50 ? 'medium' : 'large';
+    const children = cluster.getAllChildMarkers();
+    const firstPhoto = children[0]?._photoData;
+    const thumbSrc = firstPhoto?.thumbnailUrl || FALLBACK_ICON;
+    const photoId = firstPhoto?.id || '';
+    const sz = 80;
     return L.divIcon({
-      html: `<div><span>${count}</span></div>`,
-      className: `marker-cluster marker-cluster-${size}`,
-      iconSize: [40, 40]
+      className: '',
+      html: `
+        <div class="photo-marker-wrap">
+          <div class="photo-marker" style="width:${sz}px;height:${sz}px;">
+            <img src="${thumbSrc}" loading="lazy"
+              data-photo-id="${photoId}"
+              onerror="this.src='${FALLBACK_ICON}'"/>
+            <div class="photo-marker-count">${count}</div>
+          </div>
+          <div class="photo-marker-tail"></div>
+        </div>
+      `,
+      iconSize: [sz, sz + 10],
+      iconAnchor: [sz / 2, sz + 10]
     });
   }
 });
@@ -2012,17 +2057,25 @@ function createMarker(photo, filteredIdSet) {
 
   const photoId = photo.id;
 
+  const countBadge = isolatedCount > 1
+    ? `<div class="photo-marker-count">${isolatedCount}</div>`
+    : '';
+
   const icon = L.divIcon({
     className: '',
     html: `
-      <div class="photo-marker" style="width:${size}px;height:${size}px;">
-        <img src="${thumbSrc}" loading="lazy"
-          data-photo-id="${photoId}"
-          onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${photoId}', this);"/>
+      <div class="photo-marker-wrap">
+        <div class="photo-marker" style="width:${size}px;height:${size}px;">
+          <img src="${thumbSrc}" loading="lazy"
+            data-photo-id="${photoId}"
+            onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${photoId}', this);"/>
+          ${countBadge}
+        </div>
+        <div class="photo-marker-tail"></div>
       </div>
     `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2]
+    iconSize: [size, size + 10],
+    iconAnchor: [size / 2, size + 10]
   });
 
   const marker = L.marker([photo.lat, photo.lng], { icon });
