@@ -2354,16 +2354,50 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('btn-reload').style.display = 'inline-flex';
       document.getElementById('btn-config').style.display = 'inline-flex';
       document.getElementById('splash').classList.add('hidden');
+
+      /* Try silent background sync only if we have a client ID.
+         If the token is expired, this will fail silently — the cache stays visible. */
+      if (clientId && !isAuthRedirectReturn) {
+        trySilentBackgroundSync(clientId);
+      }
     }
   } catch (err) {
     console.warn('Impossible de précharger le cache IndexedDB', err);
   }
 
-  /* Auto-start if returning from auth redirect OR if we have cached data + clientId */
-  if (clientId && (isAuthRedirectReturn || allPhotos.length > 0)) {
+  /* Only auto-start full auth flow if returning from Microsoft redirect */
+  if (clientId && isAuthRedirectReturn) {
     startApp();
   }
 });
+
+/*
+ * Try to silently refresh the token and run a background sync.
+ * If the token is expired and can't be refreshed silently, do nothing —
+ * the cached data is already displayed and the user can manually reconnect.
+ */
+async function trySilentBackgroundSync(clientId) {
+  try {
+    if (!msalInstance) {
+      await initMsal(clientId);
+      await msalInstance.handleRedirectPromise();
+    }
+
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length === 0) return; /* No session — skip silently */
+
+    const result = await msalInstance.acquireTokenSilent({
+      scopes: ['Files.Read', 'User.Read'],
+      account: accounts[0]
+    });
+
+    _currentToken = result.accessToken;
+    runBackgroundSync();
+  } catch {
+    /* Token can't be refreshed silently — that's fine, cache is shown */
+    console.log('Synchronisation silencieuse ignorée — reconnexion nécessaire pour mettre à jour.');
+  }
+}
 </script>
 </body>
 </html>
