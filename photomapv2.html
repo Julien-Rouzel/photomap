@@ -754,81 +754,55 @@
   .config-box {
     background: #fff;
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 36px;
-    max-width: 480px;
+    border-radius: 20px;
+    padding: 28px 28px 32px;
+    max-width: 380px;
     width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+  }
+
+  .config-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
   }
 
   .config-box h2 {
     font-family: var(--font-ui);
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: var(--text);
-    margin-bottom: 8px;
+    margin: 0;
   }
 
-  .config-box p {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    line-height: 1.6;
-    margin-bottom: 24px;
-  }
-
-  .field { margin-bottom: 20px; }
-
-  .field label {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-
-  .field input {
-    width: 100%;
-    background: #fff;
-    border: 1px solid rgba(0,0,0,0.15);
-    border-radius: 6px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: var(--font-ui);
-    font-size: 0.85rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .field input:focus { border-color: var(--accent); }
-
-  .config-actions {
+  .config-close-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1rem;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .config-buttons {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
-    justify-content: flex-end;
-    margin-top: 28px;
-    flex-wrap: wrap;
   }
 
-  .hint {
-    background: rgba(0,120,212,0.06);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 12px 16px;
-    font-size: 0.78rem;
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: 20px;
+  .config-btn {
+    width: 100%;
+    padding: 14px 24px;
+    border-radius: 28px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-align: center;
   }
-
-  .hint a {
-    color: var(--accent);
-    text-decoration: none;
-  }
-
-  .hint a:hover { text-decoration: underline; }
 
   #toast {
     position: fixed;
@@ -1081,37 +1055,23 @@
     .splash-sub { font-size: 0.9rem; padding: 0 12px; max-width: 320px; }
 
     #btn-login { padding: 14px 36px; font-size: 0.95rem; }
-    #btn-manual-config { font-size: 0.8rem; padding: 8px 18px; }
 
     .splash-note { font-size: 0.75rem; max-width: 300px; }
 
     /* ---- CONFIG PANEL ---- */
     .config-box {
-      padding: 28px 22px;
+      padding: 24px 22px 28px;
       max-width: 100%;
       width: 94%;
-      max-height: 85dvh;
-      border-radius: 20px;
+      border-radius: 24px;
     }
 
     .config-box h2 { font-size: 1.35rem; }
-    .config-box p { font-size: 0.88rem; }
 
-    .hint {
-      font-size: 0.8rem;
-      padding: 12px 14px;
-    }
-
-    .field input {
-      font-size: 1rem;
-      padding: 14px 16px;
-    }
-
-    .config-actions { gap: 10px; }
-    .config-actions .btn {
-      font-size: 0.88rem;
-      padding: 12px 20px;
-      min-height: 48px;
+    .config-btn {
+      font-size: 0.95rem;
+      padding: 15px 24px;
+      min-height: 52px;
     }
 
     /* ---- LOADING ---- */
@@ -1220,7 +1180,6 @@
   <div class="splash-title">Vos photos,<br><span>sur la planète</span></div>
   <div class="splash-sub">Connectez votre OneDrive pour visualiser toutes vos photos et vidéos géolocalisées sur une mappemonde interactive.</div>
   <button class="btn btn-primary btn-lg" id="btn-login">Connecter OneDrive</button>
-  <button class="btn btn-ghost" id="btn-manual-config" style="margin-top:-16px">Configurer manuellement (Client ID)</button>
   <div class="splash-note">Vos données restent privées — tout est traité localement dans votre navigateur. Aucune photo n'est envoyée à un serveur tiers.</div>
 </div>
 
@@ -1234,30 +1193,20 @@
 
 <div id="config-panel">
   <div class="config-box">
-    <h2>Configuration Microsoft</h2>
-    <p>Pour accéder à votre OneDrive, vous devez créer une application Microsoft Entra et entrer votre Client ID ci-dessous.</p>
-    <div class="hint">
-      1. Rendez-vous sur <a href="https://portal.azure.com" target="_blank">portal.azure.com</a><br>
-      2. Microsoft Entra ID → App registrations → New registration<br>
-      3. Redirect URI (SPA) : <strong id="redirect-uri-hint"></strong><br>
-      4. API permissions → Microsoft Graph → Files.Read, User.Read<br>
-      5. Copiez l'Application (client) ID ci-dessous
+    <div class="config-header">
+      <h2>PhotoMap</h2>
+      <button class="btn btn-ghost config-close-btn" id="btn-config-cancel">✕</button>
     </div>
-    <div class="field">
-      <label>Client ID (Application ID)</label>
-      <input type="text" id="input-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/>
-    </div>
-    <div class="config-actions">
-      <button class="btn btn-danger" id="btn-config-logout" style="margin-right:auto;display:none">Déconnecter</button>
-      <button class="btn btn-ghost" id="btn-config-cancel">Annuler</button>
-      <button class="btn btn-primary" id="btn-config-save">Enregistrer & Connecter</button>
-    </div>
-    <div id="config-connect-wrap" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:none">
-      <button class="btn btn-primary" id="btn-connect" style="width:100%;padding:12px">Connecter OneDrive</button>
-    </div>
-    <div id="config-rescan-wrap" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:none">
-      <p style="margin:0 0 10px;font-size:0.82rem;color:var(--text-secondary)">Réindexer tous les médias depuis zéro (ignore le cache delta).</p>
-      <button class="btn btn-ghost" id="btn-full-rescan" style="width:100%;padding:12px">↺ Rescan complet</button>
+    <div class="config-buttons">
+      <div id="config-connect-wrap">
+        <button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button>
+      </div>
+      <div id="config-rescan-wrap" style="display:none">
+        <button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button>
+      </div>
+      <div id="config-logout-wrap" style="display:none">
+        <button class="btn btn-danger config-btn" id="btn-config-logout">Disconnect &amp; Delete</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2710,43 +2659,14 @@ async function _startAppInner() {
 }
 
 function showConfigPanel() {
-  document.getElementById('redirect-uri-hint').textContent =
-    window.location.origin + window.location.pathname;
-
-  const saved = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID || '';
-  document.getElementById('input-client-id').value = saved;
-
   const hasAuth = msalInstance && msalInstance.getAllAccounts().length > 0;
-  document.getElementById('btn-config-logout').style.display = hasAuth ? 'inline-flex' : 'none';
-
-  /* Show the connect button if a client ID is saved */
-  document.getElementById('config-connect-wrap').style.display = saved ? 'block' : 'none';
-
-  /* Show rescan button only when authenticated */
   document.getElementById('config-rescan-wrap').style.display = hasAuth ? 'block' : 'none';
-
+  document.getElementById('config-logout-wrap').style.display = hasAuth ? 'block' : 'none';
   document.getElementById('config-panel').classList.add('open');
 }
 
 document.getElementById('btn-config-cancel').addEventListener('click', () => {
   document.getElementById('config-panel').classList.remove('open');
-});
-
-document.getElementById('btn-config-save').addEventListener('click', async () => {
-  const id = document.getElementById('input-client-id').value.trim();
-  if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-    showToast('Format de Client ID invalide (doit être un UUID)');
-    return;
-  }
-
-  localStorage.setItem(STORAGE_KEY_CLIENT_ID, id);
-  document.getElementById('config-panel').classList.remove('open');
-  document.getElementById('splash').classList.add('hidden');
-
-  /* FIX: reset msalInstance so initMsal runs fresh with the new client ID */
-  msalInstance = null;
-
-  await startApp();
 });
 
 document.getElementById('btn-config-logout').addEventListener('click', async () => {
@@ -2782,15 +2702,7 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
   }
 });
 
-document.getElementById('input-client-id').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('btn-config-save').click();
-});
-
 document.getElementById('btn-config').addEventListener('click', showConfigPanel);
-document.getElementById('btn-manual-config').addEventListener('click', () => {
-  document.getElementById('splash').classList.add('hidden');
-  showConfigPanel();
-});
 
 document.getElementById('btn-login').addEventListener('click', () => {
   /* Save the default client ID if none is set, then connect directly */
