@@ -324,7 +324,6 @@
     color: var(--accent);
   }
 
-  /* PANEL */
   #photo-panel {
     position: fixed;
     right: 0;
@@ -457,7 +456,6 @@
 
   .thumb-card:hover .thumb-overlay { opacity: 1; }
 
-  /* LIGHTBOX */
   #lightbox {
     position: fixed;
     inset: 0;
@@ -574,7 +572,6 @@
 
   #lightbox-close:hover { background: rgba(255,255,255,0.2); }
 
-  /* DYNAMIC MARKER */
   .photo-marker {
     border-radius: 8px;
     overflow: hidden;
@@ -784,12 +781,7 @@
 
   #toast.show { opacity: 1; }
 
-  /* ==========================================
-     MOBILE / IPHONE OPTIMIZATION
-     ========================================== */
   @media (max-width: 600px) {
-
-    /* ---- TOPBAR ---- */
     .tagline { display: none; }
 
     #topbar {
@@ -817,7 +809,6 @@
       letter-spacing: 0.03em;
     }
 
-    /* Hide button labels on mobile */
     .btn-label { display: none; }
     #btn-config { padding: 6px 10px; font-size: 0.95rem; }
     #btn-reload { padding: 6px 10px; font-size: 0.95rem; }
@@ -831,12 +822,10 @@
     #scan-status-text { max-width: 90px; }
     #scan-status-count { font-size: 0.62rem; }
 
-    /* ---- MAP ---- */
     #map {
       top: calc(48px + env(safe-area-inset-top, 0px));
     }
 
-    /* ---- PHOTO PANEL: bottom sheet ---- */
     #photo-panel {
       top: auto;
       right: 0;
@@ -858,7 +847,6 @@
       position: relative;
     }
 
-    /* drag handle indicator */
     .panel-header::before {
       content: '';
       position: absolute;
@@ -899,7 +887,6 @@
       padding: 6px;
     }
 
-    /* ---- FILTER BAR ---- */
     #filter-bar {
       bottom: calc(12px + env(safe-area-inset-bottom, 0px));
       padding: 6px 12px;
@@ -915,7 +902,6 @@
       padding: 4px 10px;
     }
 
-    /* ---- LIGHTBOX: full screen ---- */
     #lightbox {
       padding: 0;
       gap: 0;
@@ -941,7 +927,6 @@
       height: 65dvh;
     }
 
-    /* Nav buttons: bottom bar on mobile */
     .lightbox-nav {
       top: auto;
       bottom: calc(80px + env(safe-area-inset-bottom, 0px));
@@ -978,7 +963,6 @@
       padding: 8px 16px;
     }
 
-    /* ---- SPLASH ---- */
     #splash { gap: 20px; padding: 24px; }
 
     .splash-globe { width: 80px; height: 80px; }
@@ -991,7 +975,6 @@
 
     .splash-note { font-size: 0.65rem; max-width: 280px; }
 
-    /* ---- CONFIG PANEL ---- */
     .config-box {
       padding: 24px 20px;
       max-width: 100%;
@@ -1016,26 +999,22 @@
     .config-actions { gap: 8px; }
     .config-actions .btn { font-size: 0.72rem; }
 
-    /* ---- LOADING ---- */
     .progress-bar-wrap { width: 220px; }
     .loading-msg { font-size: 0.82rem; }
     #loading-count { font-size: 1.6rem; }
 
-    /* ---- TOAST ---- */
     #toast {
       bottom: calc(60px + env(safe-area-inset-bottom, 0px));
       font-size: 0.75rem;
       padding: 8px 16px;
     }
 
-    /* ---- ZOOM CONTROL ---- */
     .leaflet-control-zoom {
       margin-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
       margin-right: 10px !important;
     }
   }
 
-  /* Extra small phones (iPhone SE etc) */
   @media (max-width: 375px) {
     .logo { font-size: 1rem; }
     #stats-pill { display: none !important; }
@@ -1101,7 +1080,7 @@
     <span id="lightbox-meta"></span>
     <div id="lightbox-actions">
       <button id="lightbox-open-onedrive" class="btn btn-primary" type="button">
-        ↗ Ouvrir dans OneDrive
+        ↗ Essayer d’ouvrir dans OneDrive
       </button>
     </div>
   </div>
@@ -1166,7 +1145,6 @@ const DEFAULT_CLIENT_ID = '74655b12-46c1-4cdb-be1a-27655fa47677';
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'gif', 'bmp', 'tiff']);
 const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'm4v', 'hevc', 'avi', 'webm', '3gp', 'mkv']);
 
-/* FIX: thumbnail URL TTL for staleness detection (4 hours) */
 const THUMBNAIL_TTL_MS = 4 * 60 * 60 * 1000;
 
 let msalInstance = null;
@@ -1176,20 +1154,20 @@ let clusterGroup = null;
 let currentYear = 'all';
 let isLoading = false;
 let backgroundSyncRunning = false;
-
-/* FIX: guard to prevent duplicate startApp calls */
+let priorityScanRunning = false;
 let startAppRunning = false;
 
 let lightboxPhotos = [];
 let lightboxIndex = 0;
-
 let panelAllPhotos = [];
 
-/* FIX: shared DB connection to avoid reopening repeatedly */
 let _dbInstance = null;
+let _currentToken = null;
+let _scanDoneTimer = null;
+let toastTimer = null;
 
-function openDb() {
-  if (_dbInstance) return Promise.resolve(_dbInstance);
+async function openDb() {
+  if (_dbInstance) return _dbInstance;
 
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -1209,24 +1187,22 @@ function openDb() {
 
     request.onsuccess = () => {
       _dbInstance = request.result;
-
-      /* If the DB connection closes unexpectedly, clear the cached reference */
       _dbInstance.onclose = () => { _dbInstance = null; };
       _dbInstance.onversionchange = () => {
         _dbInstance.close();
         _dbInstance = null;
       };
-
       resolve(_dbInstance);
     };
+
     request.onerror = () => reject(request.error);
   });
 }
 
 async function dbPutMediaBatch(items) {
   if (!items || items.length === 0) return;
-
   const db = await openDb();
+
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_MEDIA, 'readwrite');
     const store = tx.objectStore(STORE_MEDIA);
@@ -1235,7 +1211,6 @@ async function dbPutMediaBatch(items) {
       store.put({
         ...item,
         date: item.date ? item.date.toISOString() : null,
-        /* FIX: store timestamp so we can detect stale thumbnails */
         fetchedAt: item.fetchedAt || new Date().toISOString()
       });
     }
@@ -1248,6 +1223,7 @@ async function dbPutMediaBatch(items) {
 
 async function dbGetAllMedia() {
   const db = await openDb();
+
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_MEDIA, 'readonly');
     const store = tx.objectStore(STORE_MEDIA);
@@ -1260,12 +1236,14 @@ async function dbGetAllMedia() {
       }));
       resolve(rows);
     };
+
     request.onerror = () => reject(request.error);
   });
 }
 
 async function dbClearMedia() {
   const db = await openDb();
+
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_MEDIA, 'readwrite');
     tx.objectStore(STORE_MEDIA).clear();
@@ -1276,6 +1254,7 @@ async function dbClearMedia() {
 
 async function dbSetMeta(key, value) {
   const db = await openDb();
+
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_META, 'readwrite');
     tx.objectStore(STORE_META).put({ key, value });
@@ -1286,6 +1265,7 @@ async function dbSetMeta(key, value) {
 
 async function dbGetMeta(key) {
   const db = await openDb();
+
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_META, 'readonly');
     const request = tx.objectStore(STORE_META).get(key);
@@ -1296,9 +1276,21 @@ async function dbGetMeta(key) {
 
 async function dbDeleteMeta(key) {
   const db = await openDb();
+
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_META, 'readwrite');
     tx.objectStore(STORE_META).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function dbDeleteMediaItem(id) {
+  const db = await openDb();
+
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_MEDIA, 'readwrite');
+    tx.objectStore(STORE_MEDIA).delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
@@ -1336,7 +1328,6 @@ clusterGroup = L.markerClusterGroup({
 });
 map.addLayer(clusterGroup);
 
-let toastTimer = null;
 function showToast(msg, duration = 3000) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -1357,10 +1348,6 @@ function setLoadingCount(n) {
   document.getElementById('loading-count').textContent = n;
 }
 
-/* ==========================================
-   SCAN STATUS INDICATOR (topbar)
-   States: scanning, paused, done, error
-   ========================================== */
 function setScanStatus(state, text, count, progress) {
   const el = document.getElementById('scan-status');
   const textEl = document.getElementById('scan-status-text');
@@ -1386,8 +1373,6 @@ function setScanStatus(state, text, count, progress) {
   if (progress !== undefined) fillEl.style.width = Math.min(progress, 100) + '%';
 }
 
-/* Auto-hide the "done" status after a delay */
-let _scanDoneTimer = null;
 function setScanDone(count, detail) {
   setScanStatus('done', 'Terminé', detail || (count + ' médias'), 100);
   if (_scanDoneTimer) clearTimeout(_scanDoneTimer);
@@ -1405,19 +1390,23 @@ function isVideoByName(name = '') {
   return VIDEO_EXTENSIONS.has(ext);
 }
 
+function isMediaFile(item) {
+  if (!item.file || !item.name) return false;
+  const ext = item.name.split('.').pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext);
+}
+
 function updateUiWithCurrentPhotos(fit = false) {
   if (!allPhotos || allPhotos.length === 0) return;
 
   buildYearFilter(allPhotos);
-  renderMarkers(currentYear === 'all'
-    ? allPhotos
-    : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear)
-  );
 
-  updateStats(currentYear === 'all'
-    ? allPhotos.length
-    : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear).length
-  );
+  const filtered = currentYear === 'all'
+    ? allPhotos
+    : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
+
+  renderMarkers(filtered);
+  updateStats(filtered.length);
 
   if (fit && markers.length > 0) {
     const group = L.featureGroup(markers);
@@ -1427,7 +1416,6 @@ function updateUiWithCurrentPhotos(fit = false) {
   document.getElementById('btn-reload').style.display = 'inline-flex';
   document.getElementById('btn-config').style.display = 'inline-flex';
 
-  /* After rendering, check viewport for stale thumbnails to refresh */
   setTimeout(refreshVisibleStaleThumbnails, 800);
 }
 
@@ -1459,7 +1447,6 @@ async function getToken() {
   }
 }
 
-/* Force a fresh token (bypasses cache) — used after a 401 */
 async function getTokenFresh() {
   const accounts = msalInstance.getAllAccounts();
   const request = {
@@ -1477,21 +1464,17 @@ async function getTokenFresh() {
   }
 }
 
-let _currentToken = null;
-
 async function graphGet(url, token, _retried = false) {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });
 
   if (res.status === 401 && !_retried) {
-    /* Token expired — get a fresh one and retry once */
     const freshToken = await getTokenFresh();
     if (freshToken) {
       _currentToken = freshToken;
       return graphGet(url, freshToken, true);
     }
-    /* If getTokenFresh triggered a redirect, execution stops */
     return null;
   }
 
@@ -1513,12 +1496,6 @@ async function graphGet(url, token, _retried = false) {
   return res.json();
 }
 
-function isMediaFile(item) {
-  if (!item.file || !item.name) return false;
-  const ext = item.name.split('.').pop()?.toLowerCase();
-  return IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext);
-}
-
 async function listChildren(itemId) {
   let url = itemId === 'root'
     ? 'https://graph.microsoft.com/v1.0/me/drive/root/children?$top=200&$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl'
@@ -1528,6 +1505,21 @@ async function listChildren(itemId) {
 
   while (url) {
     const data = await graphGet(url, _currentToken);
+    if (!data) break;
+    items.push(...(data.value || []));
+    url = data['@odata.nextLink'] || null;
+  }
+
+  return items;
+}
+
+async function listSpecialFolderChildren(folderName) {
+  let url = `https://graph.microsoft.com/v1.0/me/drive/special/${folderName}/children?$top=200&$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl`;
+  const items = [];
+
+  while (url) {
+    const data = await graphGet(url, _currentToken);
+    if (!data) break;
     items.push(...(data.value || []));
     url = data['@odata.nextLink'] || null;
   }
@@ -1550,7 +1542,6 @@ async function getThumbnail(itemId) {
   }
 }
 
-/* FIX: refresh a single item's thumbnail + download URL if stale */
 async function refreshMediaUrls(item) {
   try {
     const data = await graphGet(
@@ -1563,36 +1554,28 @@ async function refreshMediaUrls(item) {
     item.thumbnailUrl = thumbnailUrl || item.thumbnailUrl;
     item.fetchedAt = new Date().toISOString();
 
-    /* Persist refreshed URLs */
     await dbPutMediaBatch([item]);
   } catch (err) {
     console.warn('Failed to refresh URLs for', item.id, err);
   }
 }
 
-/* FIX: check if a media item's URLs are likely expired */
 function isUrlStale(item) {
   if (!item.fetchedAt) return true;
   const age = Date.now() - new Date(item.fetchedAt).getTime();
   return age > THUMBNAIL_TTL_MS;
 }
 
-/* ==========================================
-   THUMBNAIL REFRESH QUEUE
-   Automatically refreshes expired thumbnails,
-   prioritizing photos visible in the current viewport.
-   ========================================== */
-const _refreshQueue = new Set();       /* photo IDs pending refresh */
-const _refreshInProgress = new Set();  /* photo IDs currently being refreshed */
-const _failedImgElements = new Map();  /* photo ID → Set of <img> elements to update */
+const _refreshQueue = new Set();
+const _refreshInProgress = new Set();
+const _failedImgElements = new Map();
 let _refreshProcessing = false;
 const REFRESH_CONCURRENCY = 4;
 const REFRESH_DELAY_MS = 200;
 
-/* Register a failed <img> so we can update it after refresh */
 function queueThumbnailRefresh(photoId, imgElement) {
-  if (!_currentToken) return;         /* no token = can't refresh */
-  if (_refreshInProgress.has(photoId)) return; /* already refreshing */
+  if (!_currentToken) return;
+  if (_refreshInProgress.has(photoId)) return;
 
   _refreshQueue.add(photoId);
 
@@ -1603,6 +1586,8 @@ function queueThumbnailRefresh(photoId, imgElement) {
 
   scheduleRefreshProcessing();
 }
+
+window.queueThumbnailRefresh = queueThumbnailRefresh;
 
 function scheduleRefreshProcessing() {
   if (_refreshProcessing) return;
@@ -1616,7 +1601,6 @@ async function processRefreshQueue() {
     return;
   }
 
-  /* Prioritize photos visible in the current viewport */
   const bounds = map.getBounds();
   const priorityIds = [];
   const normalIds = [];
@@ -1630,7 +1614,6 @@ async function processRefreshQueue() {
     }
   }
 
-  /* Take up to REFRESH_CONCURRENCY items, priority first */
   const batch = [...priorityIds, ...normalIds].slice(0, REFRESH_CONCURRENCY);
 
   const promises = batch.map(async (id) => {
@@ -1638,29 +1621,29 @@ async function processRefreshQueue() {
     _refreshInProgress.add(id);
 
     const photo = allPhotos.find(p => p.id === id);
-    if (!photo) { _refreshInProgress.delete(id); return; }
+    if (!photo) {
+      _refreshInProgress.delete(id);
+      return;
+    }
 
     try {
       await refreshMediaUrls(photo);
 
-      /* Update all registered <img> elements for this photo */
       const newSrc = photo.thumbnailUrl || photo.downloadUrl || FALLBACK_ICON;
       const imgSet = _failedImgElements.get(id);
+
       if (imgSet) {
         for (const img of imgSet) {
-          if (img.isConnected) { /* still in DOM */
-            img.onerror = null; /* prevent infinite loop */
+          if (img.isConnected) {
+            img.onerror = null;
             img.src = newSrc;
-            /* Re-attach a one-shot onerror in case new URL also fails */
             img.onerror = function() { this.src = FALLBACK_ICON; };
           }
         }
         _failedImgElements.delete(id);
       }
 
-      /* Update marker icon on the map */
       updateMarkerThumb(id, newSrc);
-
     } catch (err) {
       console.warn('Thumbnail refresh failed for', id, err);
     } finally {
@@ -1670,7 +1653,6 @@ async function processRefreshQueue() {
 
   await Promise.allSettled(promises);
 
-  /* Small delay then process next batch */
   if (_refreshQueue.size > 0) {
     setTimeout(processRefreshQueue, REFRESH_DELAY_MS);
   } else {
@@ -1678,7 +1660,6 @@ async function processRefreshQueue() {
   }
 }
 
-/* Find and update a marker's thumbnail on the map */
 function updateMarkerThumb(photoId, newSrc) {
   for (const m of markers) {
     if (m._photoData && m._photoData.id === photoId) {
@@ -1696,7 +1677,6 @@ function updateMarkerThumb(photoId, newSrc) {
   }
 }
 
-/* On map move/zoom: check visible markers for stale thumbnails and queue them */
 function refreshVisibleStaleThumbnails() {
   if (!_currentToken) return;
 
@@ -1704,7 +1684,7 @@ function refreshVisibleStaleThumbnails() {
   let queued = 0;
 
   for (const m of markers) {
-    if (queued >= 20) break; /* don't queue too many at once */
+    if (queued >= 20) break;
     const photo = m._photoData;
     if (!photo) continue;
     if (!bounds.contains([photo.lat, photo.lng])) continue;
@@ -1725,106 +1705,101 @@ map.on('moveend', () => {
   _visibleRefreshTimer = setTimeout(refreshVisibleStaleThumbnails, 500);
 });
 
-async function flushBatchToIndexedDb(batch, allItemsRef) {
-  if (!batch.length) return;
-  await dbPutMediaBatch(batch);
-  allItemsRef.push(...batch);
-  batch.length = 0;
-}
-
-/*
- * DELTA-BASED SYNC
- *
- * Uses Microsoft Graph's delta query API:
- * - First sync: fetches ALL files in OneDrive (flat, no recursion needed)
- * - Subsequent syncs: only fetches changes since the last deltaLink
- * - Handles additions, modifications, and deletions
- * - Stores the deltaLink in IndexedDB for persistence across sessions
- *
- * This is dramatically faster than recursive folder scanning because
- * it skips unchanged files entirely at the API level.
- */
 const DELTA_BASE_URL = 'https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
 
-async function dbDeleteMediaItem(id) {
-  const db = await openDb();
-  await new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_MEDIA, 'readwrite');
-    tx.objectStore(STORE_MEDIA).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
+async function scanFolderTreeById(folderId, seenIds, onProgress) {
+  const results = [];
+  const stack = [folderId];
+  let scannedItems = 0;
 
-async function runDeltaSync() {
-  _currentToken = await getToken();
-  if (!_currentToken) return [];
+  while (stack.length > 0) {
+    const currentFolderId = stack.pop();
+    const children = await listChildren(currentFolderId);
 
-  const existing = await dbGetAllMedia();
-  const existingMap = new Map(existing.map(p => [p.id, p]));
-  const existingCount = existing.length;
+    for (const item of children) {
+      scannedItems++;
+      if (onProgress) onProgress({ scannedItems, item });
 
-  /* Load saved deltaLink — if it exists, we only get changes */
-  let deltaLink = await dbGetMeta('deltaLink');
-  let url = deltaLink || DELTA_BASE_URL;
-  const isFirstScan = !deltaLink;
-
-  if (isFirstScan) {
-    setScanStatus('scanning', 'Premier scan…', '', 2);
-  } else {
-    setScanStatus('scanning', 'Synchronisation…', existingCount + ' en cache', 2);
-  }
-
-  let scanned = 0;
-  let added = 0;
-  let deleted = 0;
-  let newDeltaLink = null;
-  const batch = [];
-
-  while (url) {
-    const data = await graphGet(url, _currentToken);
-    const items = data.value || [];
-
-    for (const item of items) {
-      scanned++;
-
-      /* Update topbar every 50 items */
-      if (scanned % 50 === 0) {
-        const label = isFirstScan
-          ? `Analyse… ${scanned} fichiers`
-          : `Synchro… ${scanned} changements`;
-        const countLabel = isFirstScan
-          ? (existingCount + added) + ' trouvés'
-          : (added > 0 ? `+${added} nouveaux` : 'vérification…');
-
-        setScanStatus('scanning', label, countLabel,
-          Math.min(5 + scanned * 0.005, 95)
-        );
-      }
-
-      /* Handle deletions */
-      if (item.deleted) {
-        if (existingMap.has(item.id)) {
-          existingMap.delete(item.id);
-          await dbDeleteMediaItem(item.id);
-          deleted++;
-        }
+      if (item.folder) {
+        stack.push(item.id);
         continue;
       }
 
-      /* Skip folders and non-media */
-      if (item.folder) continue;
       if (!isMediaFile(item)) continue;
 
-      /* Skip if already known and not a delta update */
-      if (!isFirstScan && existingMap.has(item.id)) {
-        /* Delta returned it = it was modified, update it */
-        const lat = item.location?.latitude;
-        const lng = item.location?.longitude;
-        if (lat != null && lng != null && !(lat === 0 && lng === 0)) {
+      const lat = item.location?.latitude;
+      const lng = item.location?.longitude;
+      if (lat == null || lng == null) continue;
+      if (lat === 0 && lng === 0) continue;
+      if (seenIds.has(item.id)) continue;
+
+      const thumbnailUrl = await getThumbnail(item.id);
+      const date = item.photo?.takenDateTime || item.createdDateTime;
+
+      const mediaItem = {
+        id: item.id,
+        name: item.name,
+        lat: Number(lat),
+        lng: Number(lng),
+        date: date ? new Date(date) : null,
+        thumbnailUrl,
+        downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
+        webUrl: item.webUrl || null,
+        mediaType: isVideoByName(item.name) ? 'video' : 'image',
+        fetchedAt: new Date().toISOString()
+      };
+
+      seenIds.add(item.id);
+      results.push(mediaItem);
+    }
+  }
+
+  return results;
+}
+
+async function runPriorityMediaScan() {
+  if (priorityScanRunning) return;
+  priorityScanRunning = true;
+
+  try {
+    if (!_currentToken) return;
+
+    const priorityFolders = ['photos', 'cameraroll'];
+    const seenIds = new Set(allPhotos.map(p => p.id));
+    let found = 0;
+    let scanned = 0;
+    let hasFitted = allPhotos.length > 0;
+
+    setScanStatus('scanning', 'Scan prioritaire des dossiers photo…', '', 5);
+
+    for (const folderName of priorityFolders) {
+      try {
+        setScanStatus('scanning', `Ouverture de ${folderName}…`, `${found} médias`, Math.min(10 + scanned * 0.05, 20));
+
+        const items = await listSpecialFolderChildren(folderName);
+        const directBatch = [];
+        const folderIdsToScan = [];
+
+        for (const item of items) {
+          scanned++;
+
+          if (item.folder) {
+            folderIdsToScan.push(item.id);
+            continue;
+          }
+
+          if (!isMediaFile(item)) continue;
+
+          const lat = item.location?.latitude;
+          const lng = item.location?.longitude;
+          if (lat == null || lng == null) continue;
+          if (lat === 0 && lng === 0) continue;
+          if (seenIds.has(item.id)) continue;
+
           const thumbnailUrl = await getThumbnail(item.id);
           const date = item.photo?.takenDateTime || item.createdDateTime;
-          const updated = {
+
+          const mediaItem = {
             id: item.id,
             name: item.name,
             lat: Number(lat),
@@ -1836,16 +1811,104 @@ async function runDeltaSync() {
             mediaType: isVideoByName(item.name) ? 'video' : 'image',
             fetchedAt: new Date().toISOString()
           };
-          existingMap.set(item.id, updated);
-          batch.push(updated);
+
+          seenIds.add(item.id);
+          directBatch.push(mediaItem);
+        }
+
+        if (directBatch.length > 0) {
+          allPhotos.push(...directBatch);
+          await dbPutMediaBatch(directBatch);
+          found += directBatch.length;
+          updateUiWithCurrentPhotos(!hasFitted);
+          hasFitted = true;
+        }
+
+        for (const folderId of folderIdsToScan) {
+          const batch = await scanFolderTreeById(folderId, seenIds, ({ scannedItems }) => {
+            setScanStatus(
+              'scanning',
+              `Scan prioritaire : ${folderName}`,
+              `${found} médias`,
+              Math.min(20 + scannedItems * 0.02, 38)
+            );
+          });
+
+          if (batch.length > 0) {
+            allPhotos.push(...batch);
+            await dbPutMediaBatch(batch);
+            found += batch.length;
+            updateUiWithCurrentPhotos(!hasFitted);
+            hasFitted = true;
+          }
+        }
+      } catch (err) {
+        console.warn(`Dossier spécial inaccessible: ${folderName}`, err);
+      }
+    }
+
+    setScanStatus('paused', 'Scan prioritaire terminé', `${found} médias rapides`, 40);
+  } finally {
+    priorityScanRunning = false;
+  }
+}
+
+async function runDeltaSync() {
+  _currentToken = await getToken();
+  if (!_currentToken) return [];
+
+  const existing = await dbGetAllMedia();
+  const existingMap = new Map(existing.map(p => [p.id, p]));
+  const existingCount = existing.length;
+
+  let deltaLink = await dbGetMeta('deltaLink');
+  let url = deltaLink || DELTA_BASE_URL;
+  const isFirstScan = !deltaLink;
+
+  if (isFirstScan) {
+    setScanStatus('scanning', 'Premier scan complet…', '', 42);
+  } else {
+    setScanStatus('scanning', 'Synchronisation complète…', existingCount + ' en cache', 42);
+  }
+
+  let scanned = 0;
+  let added = 0;
+  let deleted = 0;
+  let newDeltaLink = null;
+  const batch = [];
+
+  while (url) {
+    const data = await graphGet(url, _currentToken);
+    if (!data) break;
+    const items = data.value || [];
+
+    for (const item of items) {
+      scanned++;
+
+      if (scanned % 50 === 0) {
+        const label = isFirstScan
+          ? `Scan complet… ${scanned} fichiers`
+          : `Synchro complète… ${scanned} changements`;
+
+        const countLabel = isFirstScan
+          ? `${existingMap.size} trouvés`
+          : (added > 0 ? `+${added} nouveaux` : 'vérification…');
+
+        setScanStatus('scanning', label, countLabel, Math.min(45 + scanned * 0.005, 95));
+      }
+
+      if (item.deleted) {
+        if (existingMap.has(item.id)) {
+          existingMap.delete(item.id);
+          await dbDeleteMediaItem(item.id);
+          deleted++;
         }
         continue;
       }
 
-      /* First scan: skip if already in cache */
-      if (isFirstScan && existingMap.has(item.id)) continue;
+      if (item.folder) continue;
+      if (!isMediaFile(item)) continue;
 
-      /* New item — check geo data */
       const lat = item.location?.latitude;
       const lng = item.location?.longitude;
       if (lat == null || lng == null) continue;
@@ -1867,29 +1930,34 @@ async function runDeltaSync() {
         fetchedAt: new Date().toISOString()
       };
 
+      if (existingMap.has(item.id)) {
+        existingMap.set(item.id, mediaItem);
+        batch.push(mediaItem);
+        continue;
+      }
+
       existingMap.set(item.id, mediaItem);
       batch.push(mediaItem);
       added++;
 
-      /* Flush to IndexedDB and update map live */
       const flushThreshold = (existingCount + added) < 50 ? 5 : 25;
       if (batch.length >= flushThreshold) {
         await dbPutMediaBatch(batch);
         batch.length = 0;
 
         allPhotos = [...existingMap.values()];
-        const shouldFit = existingCount === 0 && added <= flushThreshold;
+        const shouldFit = existingCount === 0 && allPhotos.length > 0;
         updateUiWithCurrentPhotos(shouldFit);
 
-        setScanStatus('scanning',
-          isFirstScan ? `Analyse… ${scanned} fichiers` : `Synchro… ${scanned} changements`,
-          isFirstScan ? (existingCount + added) + ' trouvés' : `+${added} nouveaux`,
-          Math.min(5 + scanned * 0.005, 95)
+        setScanStatus(
+          'scanning',
+          isFirstScan ? `Scan complet… ${scanned} fichiers` : `Synchro complète… ${scanned} changements`,
+          isFirstScan ? `${allPhotos.length} trouvés` : `+${added} nouveaux`,
+          Math.min(45 + scanned * 0.005, 95)
         );
       }
     }
 
-    /* Follow pagination or store deltaLink */
     if (data['@odata.nextLink']) {
       url = data['@odata.nextLink'];
     } else {
@@ -1898,17 +1966,14 @@ async function runDeltaSync() {
     }
   }
 
-  /* Flush remaining batch */
   if (batch.length > 0) {
     await dbPutMediaBatch(batch);
   }
 
-  /* Save deltaLink for next time */
   if (newDeltaLink) {
     await dbSetMeta('deltaLink', newDeltaLink);
   }
 
-  /* Final update */
   allPhotos = [...existingMap.values()];
   updateUiWithCurrentPhotos(existingCount === 0 && allPhotos.length > 0);
 
@@ -1960,11 +2025,6 @@ function getMarkerSize() {
   return 60;
 }
 
-/*
- * FIX: precompute a spatial index for nearby-photo lookups.
- * Groups photos into grid cells so `createMarker` is O(1) per marker
- * instead of O(n), bringing total from O(n²) to O(n).
- */
 let spatialIndex = {};
 const SPATIAL_CELL_SIZE = 0.0005;
 
@@ -1982,12 +2042,12 @@ function getNearbyPhotos(lat, lng, filteredSet) {
   const cellLng = Math.round(lng / SPATIAL_CELL_SIZE);
   const result = [];
 
-  /* Check the cell and all 8 neighbors */
   for (let di = -1; di <= 1; di++) {
     for (let dj = -1; dj <= 1; dj++) {
       const key = (cellLat + di) + ',' + (cellLng + dj);
       const cell = spatialIndex[key];
       if (!cell) continue;
+
       for (const p of cell) {
         if (filteredSet && !filteredSet.has(p.id)) continue;
         const dlat = Math.abs(p.lat - lat);
@@ -2006,7 +2066,6 @@ function createMarker(photo, filteredIdSet) {
   const thumbSrc = photo.thumbnailUrl || FALLBACK_ICON;
   let size = getMarkerSize();
 
-  /* FIX: use spatial index instead of O(n) scan */
   const isolatedCount = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet).length;
   if (isolatedCount === 1) size += 16;
 
@@ -2041,7 +2100,6 @@ function renderMarkers(filtered) {
   clusterGroup.clearLayers();
   markers = [];
 
-  /* FIX: build spatial index from ALL photos, then create a set of filtered IDs */
   buildSpatialIndex(allPhotos);
   const filteredIdSet = new Set(filtered.map(p => p.id));
 
@@ -2060,10 +2118,6 @@ function renderMarkers(filtered) {
   });
 }
 
-/*
- * FIX: only re-render on zoom if marker sizes actually changed.
- * Avoids expensive full rebuild on every zoom level change.
- */
 let lastMarkerSize = null;
 let zoomRefreshTimer = null;
 
@@ -2091,6 +2145,7 @@ function openPanel(photos, lat, lng) {
     const min = new Date(Math.min(...dates));
     const max = new Date(Math.max(...dates));
     const fmt = d => d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+
     dateRange.textContent =
       min.getFullYear() === max.getFullYear() && min.getMonth() === max.getMonth()
         ? fmt(min)
@@ -2100,8 +2155,8 @@ function openPanel(photos, lat, lng) {
   }
 
   countEl.textContent = `${panelAllPhotos.length} média${panelAllPhotos.length > 1 ? 's' : ''}`;
-
   locName.textContent = 'Chargement…';
+
   reverseGeocode(lat, lng).then(name => { locName.textContent = name; });
 
   renderPanelPhotos();
@@ -2156,13 +2211,13 @@ function showLightboxPhoto() {
   const img = document.getElementById('lightbox-img');
   const video = document.getElementById('lightbox-video');
   const openBtn = document.getElementById('lightbox-open-onedrive');
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   img.style.display = 'none';
   video.style.display = 'none';
   img.classList.remove('portrait', 'landscape');
   video.classList.remove('portrait', 'landscape');
 
-  /* FIX: clean up previous event handlers before reassigning */
   video.onloadedmetadata = null;
   img.onload = null;
   img.onerror = null;
@@ -2173,19 +2228,23 @@ function showLightboxPhoto() {
 
   const fullSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
 
-  /* FIX: if URL is stale, try refreshing in the background */
   if (isUrlStale(photo) && msalInstance) {
-    getToken().then(token => { _currentToken = token; return refreshMediaUrls(photo); }).then(() => {
-      /* If the lightbox is still showing this photo, update src */
-      if (lightboxPhotos[lightboxIndex]?.id === photo.id) {
-        const currentSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
-        if (photo.mediaType === 'video') {
-          video.src = currentSrc;
-        } else {
-          img.src = currentSrc;
+    getToken()
+      .then(token => {
+        _currentToken = token;
+        return refreshMediaUrls(photo);
+      })
+      .then(() => {
+        if (lightboxPhotos[lightboxIndex]?.id === photo.id) {
+          const currentSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
+          if (photo.mediaType === 'video') {
+            video.src = currentSrc;
+          } else {
+            img.src = currentSrc;
+          }
         }
-      }
-    }).catch(() => { /* ignore refresh failures in lightbox */ });
+      })
+      .catch(() => {});
   }
 
   if (photo.mediaType === 'video') {
@@ -2193,7 +2252,6 @@ function showLightboxPhoto() {
     video.style.display = 'block';
 
     video.onloadedmetadata = () => {
-      /* FIX: guard — only apply classes if this video is still the current one */
       if (lightboxPhotos[lightboxIndex]?.id !== photo.id) return;
       const isPortrait = video.videoHeight > video.videoWidth;
       video.classList.toggle('portrait', isPortrait);
@@ -2204,7 +2262,6 @@ function showLightboxPhoto() {
     img.style.display = 'block';
 
     img.onload = () => {
-      /* FIX: guard — only apply classes if this image is still the current one */
       if (lightboxPhotos[lightboxIndex]?.id !== photo.id) return;
       const isPortrait = img.naturalHeight > img.naturalWidth;
       img.classList.toggle('portrait', isPortrait);
@@ -2231,10 +2288,13 @@ function showLightboxPhoto() {
   document.getElementById('lightbox-meta').textContent =
     [dateStr, coords].filter(Boolean).join('  ·  ');
 
-  const oneDriveUrl = photo.webUrl || photo.downloadUrl;
+  const oneDriveUrl = photo.webUrl || null;
   if (oneDriveUrl) {
     openBtn.dataset.webUrl = oneDriveUrl;
     openBtn.style.display = 'inline-flex';
+    openBtn.textContent = isMobile
+      ? '↗ Essayer d’ouvrir dans OneDrive'
+      : '↗ Ouvrir dans OneDrive Web';
   } else {
     delete openBtn.dataset.webUrl;
     openBtn.style.display = 'none';
@@ -2278,29 +2338,26 @@ document.getElementById('lightbox').addEventListener('click', e => {
   }
 });
 
-/*
- * Open in OneDrive.
- *
- * On iOS/Android: OneDrive web URLs are registered as Universal Links /
- * App Links by Microsoft. If the OneDrive app is installed, the OS
- * automatically opens the app instead of the browser — no custom URL
- * scheme needed. If the app isn't installed, it opens in the browser.
- *
- * On desktop: opens in a new tab.
- */
 document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) => {
   e.stopPropagation();
 
   const webUrl = e.currentTarget.dataset.webUrl;
-  if (!webUrl) return;
+  if (!webUrl) {
+    showToast("Aucun lien OneDrive web disponible pour ce fichier.");
+    return;
+  }
 
-  /* On mobile, navigate in same tab so iOS Universal Links can intercept */
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  if (isMobile) {
-    window.location.href = webUrl;
-  } else {
-    window.open(webUrl, '_blank', 'noopener');
+  try {
+    if (isMobile) {
+      window.location.assign(webUrl);
+    } else {
+      window.open(webUrl, '_blank', 'noopener,noreferrer');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast("Impossible d’ouvrir le lien OneDrive.");
   }
 });
 
@@ -2325,9 +2382,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ==========================================
-   TOUCH SWIPE SUPPORT
-   ========================================== */
 (function() {
   let touchStartX = 0;
   let touchStartY = 0;
@@ -2337,7 +2391,6 @@ document.addEventListener('keydown', e => {
 
   const lb = document.getElementById('lightbox');
 
-  /* Lightbox swipe: left/right to navigate, down to close */
   lb.addEventListener('touchstart', e => {
     touchStartX = e.changedTouches[0].screenX;
     touchStartY = e.changedTouches[0].screenY;
@@ -2350,24 +2403,19 @@ document.addEventListener('keydown', e => {
     const dx = touchEndX - touchStartX;
     const dy = touchEndY - touchStartY;
 
-    /* Prioritize horizontal swipe */
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
       if (dx < 0) {
-        /* swipe left → next */
         lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
         showLightboxPhoto();
       } else {
-        /* swipe right → prev */
         lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
         showLightboxPhoto();
       }
     } else if (dy > SWIPE_THRESHOLD * 1.5 && Math.abs(dy) > Math.abs(dx)) {
-      /* swipe down → close */
       lb.classList.remove('open');
     }
   }, { passive: true });
 
-  /* Panel swipe-down to close on mobile */
   const panelHeader = document.querySelector('.panel-header');
   let panelTouchStartY = 0;
 
@@ -2386,9 +2434,6 @@ document.addEventListener('keydown', e => {
 const geocodeCache = {};
 let lastGeocodeTime = 0;
 
-/*
- * FIX: added retry with exponential backoff for geocoding 429s.
- */
 async function reverseGeocode(lat, lng, _retries = 0) {
   const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
   if (geocodeCache[key]) return geocodeCache[key];
@@ -2400,11 +2445,9 @@ async function reverseGeocode(lat, lng, _retries = 0) {
 
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`,
-      { headers: { 'User-Agent': 'PhotoMap/1.0' } }
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`
     );
 
-    /* FIX: handle 429 with retry */
     if (res.status === 429) {
       if (_retries < 3) {
         const backoff = (2 ** _retries) * 1500;
@@ -2415,6 +2458,7 @@ async function reverseGeocode(lat, lng, _retries = 0) {
     }
 
     if (!res.ok) throw new Error(res.status);
+
     const data = await res.json();
     const addr = data.address || {};
     const name = addr.city || addr.town || addr.village || addr.county || addr.state || addr.country || 'Lieu inconnu';
@@ -2427,11 +2471,6 @@ async function reverseGeocode(lat, lng, _retries = 0) {
   }
 }
 
-/*
- * FIX: buildYearFilter uses a single persistent onclick handler
- * instead of reassigning on every call. The handler is attached
- * via event delegation once.
- */
 let yearFilterInitialized = false;
 
 function buildYearFilter(photos) {
@@ -2441,7 +2480,6 @@ function buildYearFilter(photos) {
 
   const bar = document.getElementById('filter-bar');
 
-  /* Rebuild buttons */
   bar.innerHTML = `<span class="filter-label">Année</span>
     <button class="year-btn${currentYear === 'all' ? ' active' : ''}" data-year="all">Toutes</button>`;
 
@@ -2455,7 +2493,6 @@ function buildYearFilter(photos) {
 
   bar.classList.add('visible');
 
-  /* FIX: attach click handler only once via delegation */
   if (!yearFilterInitialized) {
     yearFilterInitialized = true;
 
@@ -2482,12 +2519,11 @@ function applyFilter() {
 
 function updateStats(count) {
   const el = document.getElementById('stats-pill');
-  el.textContent = `${count} média${count > 1 ? 's' : ''} géolocalisé${count > 1 ? 's' : ''}`;
+  el.textContent = `${count} média${count > 1 ? 's' : ''} géolocalisé${count > 1 ? 's' : 's'}`;
   el.style.display = 'block';
 }
 
 async function startApp() {
-  /* FIX: prevent duplicate concurrent runs */
   if (startAppRunning) return;
   startAppRunning = true;
 
@@ -2508,7 +2544,6 @@ async function _startAppInner() {
 
   document.getElementById('splash').classList.add('hidden');
 
-  /* Load cache and show it immediately */
   let cached = [];
   try {
     cached = await dbGetAllMedia();
@@ -2520,11 +2555,9 @@ async function _startAppInner() {
     console.warn('Impossible de lire IndexedDB au démarrage', err);
   }
 
-  /* Show buttons right away so the user can interact */
   document.getElementById('btn-reload').style.display = 'inline-flex';
   document.getElementById('btn-config').style.display = 'inline-flex';
 
-  /* Authenticate — this is the only blocking step */
   setScanStatus('scanning', 'Connexion à Microsoft…', '', 0);
 
   try {
@@ -2537,23 +2570,30 @@ async function _startAppInner() {
     } catch (msalErr) {
       msalInstance = null;
       throw new Error(
-        'Impossible d\'initialiser l\'authentification Microsoft. '
-        + 'Vérifiez votre Client ID. Détails : '
-        + (msalErr.message || String(msalErr))
+        'Impossible d\'initialiser l\'authentification Microsoft. Vérifiez votre Client ID. Détails : ' +
+        (msalErr.message || String(msalErr))
       );
     }
 
     setScanStatus('scanning', 'Authentification…', '', 3);
     const token = await getToken();
-
-    /* If getToken triggered a redirect, execution stops here */
     if (!token) return;
 
     _currentToken = token;
 
-    /* Auth done — launch scan in background, user can already use the map */
-    runBackgroundSync();
+    (async () => {
+      try {
+        await runPriorityMediaScan();
+      } catch (err) {
+        console.warn('Priority scan failed', err);
+      }
 
+      try {
+        await runBackgroundSync();
+      } catch (err) {
+        console.warn('Background delta sync failed', err);
+      }
+    })();
   } catch (err) {
     console.error('PhotoMap error:', err);
     setScanStatus('error', 'Erreur de connexion', '', 0);
@@ -2571,10 +2611,7 @@ function showConfigPanel() {
 
   const hasAuth = msalInstance && msalInstance.getAllAccounts().length > 0;
   document.getElementById('btn-config-logout').style.display = hasAuth ? 'inline-flex' : 'none';
-
-  /* Show the connect button if a client ID is saved */
   document.getElementById('config-connect-wrap').style.display = saved ? 'block' : 'none';
-
   document.getElementById('config-panel').classList.add('open');
 }
 
@@ -2593,9 +2630,7 @@ document.getElementById('btn-config-save').addEventListener('click', async () =>
   document.getElementById('config-panel').classList.remove('open');
   document.getElementById('splash').classList.add('hidden');
 
-  /* FIX: reset msalInstance so initMsal runs fresh with the new client ID */
   msalInstance = null;
-
   await startApp();
 });
 
@@ -2605,7 +2640,7 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
       const accounts = msalInstance.getAllAccounts();
       if (accounts.length > 0) {
         await msalInstance.logoutRedirect({ account: accounts[0] }).catch(() => {});
-        return; /* page navigates away */
+        return;
       }
     }
   } finally {
@@ -2617,6 +2652,9 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
     msalInstance = null;
     allPhotos = [];
     markers = [];
+    panelAllPhotos = [];
+    lightboxPhotos = [];
+    lightboxIndex = 0;
     clusterGroup.clearLayers();
 
     document.getElementById('config-panel').classList.remove('open');
@@ -2625,6 +2663,7 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
     document.getElementById('btn-reload').style.display = 'none';
     document.getElementById('btn-config').style.display = 'none';
     document.getElementById('photo-panel').classList.remove('open');
+    document.getElementById('lightbox').classList.remove('open');
     document.getElementById('splash').classList.remove('hidden');
     setScanStatus('hidden');
 
@@ -2637,13 +2676,13 @@ document.getElementById('input-client-id').addEventListener('keydown', e => {
 });
 
 document.getElementById('btn-config').addEventListener('click', showConfigPanel);
+
 document.getElementById('btn-manual-config').addEventListener('click', () => {
   document.getElementById('splash').classList.add('hidden');
   showConfigPanel();
 });
 
 document.getElementById('btn-login').addEventListener('click', () => {
-  /* Save the default client ID if none is set, then connect directly */
   if (!localStorage.getItem(STORAGE_KEY_CLIENT_ID)) {
     localStorage.setItem(STORAGE_KEY_CLIENT_ID, DEFAULT_CLIENT_ID);
   }
@@ -2660,8 +2699,20 @@ document.getElementById('btn-reload').addEventListener('click', async () => {
     await startApp();
     return;
   }
-  /* Just launch a background scan — topbar shows progress */
-  runBackgroundSync();
+
+  (async () => {
+    try {
+      await runPriorityMediaScan();
+    } catch (err) {
+      console.warn('Priority rescan failed', err);
+    }
+
+    try {
+      await runBackgroundSync();
+    } catch (err) {
+      console.warn('Background delta resync failed', err);
+    }
+  })();
 });
 
 document.getElementById('config-panel').addEventListener('click', e => {
@@ -2670,16 +2721,9 @@ document.getElementById('config-panel').addEventListener('click', e => {
   }
 });
 
-/*
- * On DOMContentLoaded:
- * - If we have cached data, show it immediately
- * - If we're returning from a Microsoft auth redirect (URL has hash), auto-start
- * - Otherwise, just show the splash
- */
 document.addEventListener('DOMContentLoaded', async () => {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
 
-  /* Detect if we're returning from a Microsoft auth redirect */
   const hashOrSearch = window.location.hash + window.location.search;
   const isAuthRedirectReturn = hashOrSearch.includes('code=')
     || hashOrSearch.includes('access_token')
@@ -2695,8 +2739,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('btn-config').style.display = 'inline-flex';
       document.getElementById('splash').classList.add('hidden');
 
-      /* Try silent background sync only if we have a client ID.
-         If the token is expired, this will fail silently — the cache stays visible. */
       if (clientId && !isAuthRedirectReturn) {
         trySilentBackgroundSync(clientId);
       }
@@ -2705,17 +2747,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.warn('Impossible de précharger le cache IndexedDB', err);
   }
 
-  /* Only auto-start full auth flow if returning from Microsoft redirect */
   if (clientId && isAuthRedirectReturn) {
     startApp();
   }
 });
 
-/*
- * Try to silently refresh the token and run a background sync.
- * If the token is expired and can't be refreshed silently, do nothing —
- * the cached data is already displayed and the user can manually reconnect.
- */
 async function trySilentBackgroundSync(clientId) {
   try {
     if (!msalInstance) {
@@ -2724,7 +2760,7 @@ async function trySilentBackgroundSync(clientId) {
     }
 
     const accounts = msalInstance.getAllAccounts();
-    if (accounts.length === 0) return; /* No session — skip silently */
+    if (accounts.length === 0) return;
 
     const result = await msalInstance.acquireTokenSilent({
       scopes: ['Files.Read', 'User.Read'],
@@ -2732,9 +2768,21 @@ async function trySilentBackgroundSync(clientId) {
     });
 
     _currentToken = result.accessToken;
-    runBackgroundSync();
+
+    (async () => {
+      try {
+        await runPriorityMediaScan();
+      } catch (err) {
+        console.warn('Silent priority scan failed', err);
+      }
+
+      try {
+        await runBackgroundSync();
+      } catch (err) {
+        console.warn('Silent delta sync failed', err);
+      }
+    })();
   } catch {
-    /* Token can't be refreshed silently — that's fine, cache is shown */
     console.log('Synchronisation silencieuse ignorée — reconnexion nécessaire pour mettre à jour.');
   }
 }
