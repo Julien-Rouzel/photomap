@@ -17,27 +17,30 @@
 <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
-
   :root {
-    --ink: #0b1015;
-    --cream: #f0f2f5;
+    --ink: #ffffff;
+    --text: #242424;
+    --text-secondary: #616161;
     --accent: #0078D4;
     --accent-light: #28A8EA;
     --accent-dark: #0364B8;
-    --charcoal: #1b2028;
-    --muted: #7a8494;
-    --panel: rgba(11,16,21,0.92);
-    --border: rgba(0,120,212,0.25);
-    --danger: #c0392b;
+    --surface: #f5f5f5;
+    --surface-hover: #ebebeb;
+    --muted: #8a8886;
+    --panel: rgba(255,255,255,0.97);
+    --border: rgba(0,0,0,0.08);
+    --border-accent: rgba(0,120,212,0.3);
+    --danger: #d13438;
+    --shadow: rgba(0,0,0,0.08);
+    --font-ui: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-ui);
     background: var(--ink);
-    color: var(--cream);
+    color: var(--text);
     height: 100vh;
     height: 100dvh;
     overflow: hidden;
@@ -53,13 +56,15 @@
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); gap: 16px;
     backdrop-filter: blur(12px);
+    box-shadow: 0 1px 4px var(--shadow);
   }
 
   .logo {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-ui);
     font-size: 1.35rem;
-    letter-spacing: 0.04em;
-    color: var(--cream);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
     flex-shrink: 0;
   }
   .logo span { color: var(--accent); }
@@ -85,26 +90,25 @@
   #stats-pill {
     font-size: 0.75rem;
     color: var(--accent);
-    background: rgba(0,120,212,0.1);
-    border: 1px solid var(--border);
+    background: rgba(0,120,212,0.08);
+    border: 1px solid var(--border-accent);
     padding: 4px 12px;
     border-radius: 20px;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
     display: none;
     white-space: nowrap;
   }
 
   .btn {
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-ui);
     font-size: 0.8rem;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     border: none;
     cursor: pointer;
     padding: 8px 20px;
-    border-radius: 4px;
-    transition: all 0.2s;
+    border-radius: 6px;
+    transition: all 0.15s;
     white-space: nowrap;
   }
 
@@ -112,11 +116,11 @@
     background: var(--accent);
     color: #fff;
   }
-  .btn-primary:hover { background: var(--accent-light); }
+  .btn-primary:hover { background: var(--accent-dark); }
 
   .btn-ghost {
     background: transparent;
-    color: var(--cream);
+    color: var(--text);
     border: 1px solid var(--border);
   }
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
@@ -124,9 +128,9 @@
   .btn-danger {
     background: transparent;
     color: var(--danger);
-    border: 1px solid rgba(192,57,43,0.4);
+    border: 1px solid rgba(209,52,56,0.3);
   }
-  .btn-danger:hover { background: rgba(192,57,43,0.15); border-color: var(--danger); }
+  .btn-danger:hover { background: rgba(209,52,56,0.08); border-color: var(--danger); }
 
   #map {
     position: fixed;
@@ -135,12 +139,12 @@
   }
 
   .leaflet-tile {
-    filter: brightness(0.72) saturate(0.7) contrast(1.1) hue-rotate(10deg);
+    filter: saturate(0.85) contrast(1.05);
   }
 
   #splash {
     position: fixed; inset: 0; z-index: 2000;
-    background: radial-gradient(ellipse at 40% 50%, #0b1520 0%, #0b1015 70%);
+    background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 50%, #e8f0fe 100%);
     display: flex; align-items: center; justify-content: center;
     flex-direction: column; gap: 32px;
     transition: opacity 0.6s, visibility 0.6s;
@@ -164,7 +168,7 @@
   .splash-globe::before {
     content: '';
     position: absolute; inset: 8px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-accent);
     border-radius: 50%;
     animation: spinGlobe 8s linear infinite reverse;
   }
@@ -177,16 +181,18 @@
   }
 
   .splash-title {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-ui);
     font-size: 2.8rem;
+    font-weight: 700;
     text-align: center;
     line-height: 1.1;
+    color: var(--text);
   }
 
   .splash-title span { color: var(--accent); }
 
   .splash-sub {
-    color: var(--muted);
+    color: var(--text-secondary);
     font-size: 0.95rem;
     text-align: center;
     max-width: 380px;
@@ -208,7 +214,7 @@
 
   #loading-overlay {
     position: fixed; inset: 0; z-index: 1900;
-    background: rgba(11,16,21,0.9);
+    background: rgba(255,255,255,0.92);
     flex-direction: column;
     align-items: center; justify-content: center; gap: 24px;
     display: none;
@@ -218,15 +224,14 @@
 
   .loading-msg {
     font-size: 0.9rem;
-    color: var(--muted);
-    letter-spacing: 0.04em;
+    color: var(--text-secondary);
     text-align: center;
     max-width: 80vw;
   }
 
   .progress-bar-wrap {
     width: 300px; height: 3px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.08);
     border-radius: 2px; overflow: hidden;
   }
 
@@ -239,8 +244,9 @@
   }
 
   #loading-count {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-ui);
     font-size: 2rem;
+    font-weight: 700;
     color: var(--accent);
   }
 
@@ -255,6 +261,7 @@
     background: var(--panel);
     border-left: 1px solid var(--border);
     backdrop-filter: blur(16px);
+    box-shadow: -2px 0 12px var(--shadow);
     transform: translateX(100%);
     transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
     display: flex;
@@ -273,10 +280,12 @@
   }
 
   .panel-location {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-ui);
     font-size: 1.1rem;
+    font-weight: 600;
     line-height: 1.3;
     max-width: 250px;
+    color: var(--text);
   }
 
   .panel-date {
@@ -306,8 +315,8 @@
   }
 
   .btn-close:hover {
-    color: var(--cream);
-    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    background: var(--surface);
   }
 
   #panel-photos {
@@ -324,18 +333,19 @@
 
   #panel-photos::-webkit-scrollbar { width: 4px; }
   #panel-photos::-webkit-scrollbar-track { background: transparent; }
-  #panel-photos::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  #panel-photos::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
 
   .thumb-card {
     width: 100%;
     aspect-ratio: 1 / 1;
     overflow: hidden;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
     position: relative;
-    background: #141a22;
+    background: var(--surface);
     border: 1px solid var(--border);
     transition: border-color 0.2s, transform 0.2s;
+    box-shadow: 0 1px 4px var(--shadow);
   }
 
   .thumb-card:hover {
@@ -367,7 +377,7 @@
     align-items: flex-end;
     padding: 8px;
     font-size: 0.68rem;
-    color: var(--cream);
+    color: #fff;
     line-height: 1.2;
   }
 
@@ -415,16 +425,17 @@
 
   .lightbox-info {
     text-align: center;
-    color: var(--muted);
+    color: rgba(255,255,255,0.7);
     font-size: 0.82rem;
     flex-shrink: 0;
   }
 
   .lightbox-info strong {
     display: block;
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-ui);
     font-size: 1rem;
-    color: var(--cream);
+    font-weight: 600;
+    color: #fff;
     margin-bottom: 4px;
   }
 
@@ -448,9 +459,9 @@
     position: fixed;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(255,255,255,0.1);
-    border: 1px solid var(--border);
-    color: var(--cream);
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
     font-size: 1.6rem;
     width: 44px;
     height: 44px;
@@ -463,7 +474,7 @@
     z-index: 3001;
   }
 
-  .lightbox-nav:hover { background: rgba(255,255,255,0.2); }
+  .lightbox-nav:hover { background: rgba(255,255,255,0.3); }
 
   #lightbox-prev { left: 20px; }
   #lightbox-next { right: 20px; }
@@ -472,9 +483,9 @@
     position: fixed;
     top: 24px;
     right: 24px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid var(--border);
-    color: var(--cream);
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
     font-size: 1.4rem;
     width: 40px;
     height: 40px;
@@ -494,10 +505,10 @@
     border-radius: 8px;
     overflow: hidden;
     border: 3px solid var(--accent);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.55);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
     transition: border-color 0.2s, transform 0.15s, width 0.15s, height 0.15s;
     cursor: pointer;
-    background: #141a22;
+    background: var(--surface);
   }
 
   .photo-marker > img,
@@ -524,7 +535,7 @@
   .marker-cluster-large div {
     background-color: rgba(0,120,212,0.7) !important;
     color: #fff !important;
-    font-family: 'DM Sans', sans-serif !important;
+    font-family: var(--font-ui) !important;
     font-weight: 500 !important;
   }
 
@@ -542,6 +553,7 @@
     gap: 6px;
     align-items: center;
     backdrop-filter: blur(12px);
+    box-shadow: 0 2px 12px var(--shadow);
     max-width: 90vw;
     overflow-x: auto;
   }
@@ -564,7 +576,7 @@
     background: transparent;
     border: 1px solid transparent;
     color: var(--muted);
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-ui);
     font-size: 0.78rem;
     padding: 4px 12px;
     border-radius: 20px;
@@ -574,7 +586,7 @@
   }
 
   .year-btn:hover {
-    color: var(--cream);
+    color: var(--text);
     border-color: var(--border);
   }
 
@@ -589,7 +601,7 @@
     position: fixed;
     inset: 0;
     z-index: 1500;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.4);
     display: none;
     align-items: center;
     justify-content: center;
@@ -598,7 +610,7 @@
   #config-panel.open { display: flex; }
 
   .config-box {
-    background: #111820;
+    background: #fff;
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 36px;
@@ -606,16 +618,19 @@
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
   }
 
   .config-box h2 {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-ui);
     font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
     margin-bottom: 8px;
   }
 
   .config-box p {
-    color: var(--muted);
+    color: var(--text-secondary);
     font-size: 0.85rem;
     line-height: 1.6;
     margin-bottom: 24px;
@@ -626,20 +641,20 @@
   .field label {
     display: block;
     font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text);
     margin-bottom: 8px;
   }
 
   .field input {
     width: 100%;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--border);
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.15);
     border-radius: 6px;
     padding: 10px 14px;
-    color: var(--cream);
-    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    font-family: var(--font-ui);
     font-size: 0.85rem;
     outline: none;
     transition: border-color 0.2s;
@@ -656,12 +671,12 @@
   }
 
   .hint {
-    background: rgba(0,120,212,0.08);
+    background: rgba(0,120,212,0.06);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 12px 16px;
     font-size: 0.78rem;
-    color: var(--muted);
+    color: var(--text-secondary);
     line-height: 1.6;
     margin-bottom: 20px;
   }
@@ -679,17 +694,18 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 4000;
-    background: #001a33;
-    border: 1px solid var(--accent);
-    color: var(--cream);
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--text);
     padding: 10px 20px;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 0.82rem;
     opacity: 0;
     transition: opacity 0.3s;
     pointer-events: none;
     max-width: 90vw;
     text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   }
 
   #toast.show { opacity: 1; }
@@ -731,7 +747,6 @@
     .btn-label { display: none; }
     #btn-config { padding: 6px 10px; font-size: 0.95rem; }
     #btn-reload { padding: 6px 10px; font-size: 0.95rem; }
-    #btn-connect { font-size: 0.65rem; padding: 7px 12px; }
 
     /* ---- MAP ---- */
     #map {
@@ -949,7 +964,7 @@
 
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
 </style>
 </head>
 <body>
@@ -961,7 +976,6 @@
     <div id="stats-pill"></div>
     <button class="btn btn-ghost" id="btn-config" style="display:none">⚙ <span class="btn-label">Config</span></button>
     <button class="btn btn-ghost" id="btn-reload" style="display:none">↺ <span class="btn-label">Recharger</span></button>
-    <button class="btn btn-primary" id="btn-connect" style="display:none"><span class="btn-label">Connecter</span> OneDrive</button>
   </div>
 </div>
 
@@ -1042,6 +1056,9 @@
       <button class="btn btn-danger" id="btn-config-logout" style="margin-right:auto;display:none">Déconnecter</button>
       <button class="btn btn-ghost" id="btn-config-cancel">Annuler</button>
       <button class="btn btn-primary" id="btn-config-save">Enregistrer & Connecter</button>
+    </div>
+    <div id="config-connect-wrap" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:none">
+      <button class="btn btn-primary" id="btn-connect" style="width:100%;padding:12px">Connecter OneDrive</button>
     </div>
   </div>
 </div>
@@ -1534,7 +1551,7 @@ async function runBackgroundSync() {
   }
 }
 
-const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23141a22'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
+const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
 
 function getMarkerSize() {
   const z = map.getZoom();
@@ -1857,13 +1874,14 @@ document.getElementById('lightbox').addEventListener('click', e => {
 });
 
 /*
- * Open in OneDrive app (iOS/Android) with web fallback.
+ * Open in OneDrive.
  *
- * Strategy:
- *  - On mobile: try the odopen:// deep link to open the native app.
- *    If the app isn't installed the link silently fails, so after a
- *    short timeout we fall back to the web URL.
- *  - On desktop: open the web URL directly in a new tab.
+ * On iOS/Android: OneDrive web URLs are registered as Universal Links /
+ * App Links by Microsoft. If the OneDrive app is installed, the OS
+ * automatically opens the app instead of the browser — no custom URL
+ * scheme needed. If the app isn't installed, it opens in the browser.
+ *
+ * On desktop: opens in a new tab.
  */
 document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -1871,37 +1889,12 @@ document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) 
   const webUrl = e.currentTarget.dataset.webUrl;
   if (!webUrl) return;
 
+  /* On mobile, navigate in same tab so iOS Universal Links can intercept */
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   if (isMobile) {
-    /* Build the odopen:// deep link (works for OneDrive iOS & Android) */
-    const appUrl = 'odopen://view/?url=' + encodeURIComponent(webUrl);
-
-    let didLeave = false;
-
-    const onBlur = () => { didLeave = true; };
-    window.addEventListener('blur', onBlur);
-
-    /* Also listen for visibility change (more reliable on iOS) */
-    const onVisibility = () => {
-      if (document.hidden) didLeave = true;
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-
-    /* Attempt to open the app */
-    window.location.href = appUrl;
-
-    /* If still here after 1.5s, the app didn't open → web fallback */
-    setTimeout(() => {
-      window.removeEventListener('blur', onBlur);
-      document.removeEventListener('visibilitychange', onVisibility);
-
-      if (!didLeave) {
-        window.open(webUrl, '_blank', 'noopener');
-      }
-    }, 1500);
+    window.location.href = webUrl;
   } else {
-    /* Desktop: just open in new tab */
     window.open(webUrl, '_blank', 'noopener');
   }
 });
@@ -2109,7 +2102,6 @@ async function _startAppInner() {
   }
 
   document.getElementById('splash').classList.add('hidden');
-  document.getElementById('btn-connect').style.display = 'none';
 
   /*
    * FIX: load cache once and reuse. No duplicate dbGetAllMedia calls.
@@ -2175,7 +2167,6 @@ async function _startAppInner() {
 
     document.getElementById('btn-reload').style.display = 'inline-flex';
     document.getElementById('btn-config').style.display = 'inline-flex';
-    document.getElementById('btn-connect').style.display = 'inline-flex';
 
     showToast('Erreur : ' + (err.message || String(err)), 8000);
   }
@@ -2190,6 +2181,9 @@ function showConfigPanel() {
 
   const hasAuth = msalInstance && msalInstance.getAllAccounts().length > 0;
   document.getElementById('btn-config-logout').style.display = hasAuth ? 'inline-flex' : 'none';
+
+  /* Show the connect button if a client ID is saved */
+  document.getElementById('config-connect-wrap').style.display = saved ? 'block' : 'none';
 
   document.getElementById('config-panel').classList.add('open');
 }
@@ -2262,7 +2256,10 @@ document.getElementById('btn-login').addEventListener('click', () => {
   startApp();
 });
 
-document.getElementById('btn-connect').addEventListener('click', startApp);
+document.getElementById('btn-connect').addEventListener('click', () => {
+  document.getElementById('config-panel').classList.remove('open');
+  startApp();
+});
 
 document.getElementById('btn-reload').addEventListener('click', async () => {
   try {
@@ -2301,9 +2298,6 @@ document.getElementById('config-panel').addEventListener('click', e => {
  */
 document.addEventListener('DOMContentLoaded', async () => {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
-  if (clientId) {
-    document.getElementById('btn-connect').style.display = 'inline-flex';
-  }
 
   try {
     const cached = await dbGetAllMedia();
