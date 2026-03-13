@@ -1290,6 +1290,9 @@ function updateUiWithCurrentPhotos(fit = false) {
 
   document.getElementById('btn-reload').style.display = 'inline-flex';
   document.getElementById('btn-config').style.display = 'inline-flex';
+
+  /* After rendering, check viewport for stale thumbnails to refresh */
+  setTimeout(refreshVisibleStaleThumbnails, 800);
 }
 
 async function initMsal(clientId) {
@@ -1437,6 +1440,154 @@ function isUrlStale(item) {
   const age = Date.now() - new Date(item.fetchedAt).getTime();
   return age > THUMBNAIL_TTL_MS;
 }
+
+/* ==========================================
+   THUMBNAIL REFRESH QUEUE
+   Automatically refreshes expired thumbnails,
+   prioritizing photos visible in the current viewport.
+   ========================================== */
+const _refreshQueue = new Set();       /* photo IDs pending refresh */
+const _refreshInProgress = new Set();  /* photo IDs currently being refreshed */
+const _failedImgElements = new Map();  /* photo ID → Set of <img> elements to update */
+let _refreshProcessing = false;
+const REFRESH_CONCURRENCY = 4;
+const REFRESH_DELAY_MS = 200;
+
+/* Register a failed <img> so we can update it after refresh */
+function queueThumbnailRefresh(photoId, imgElement) {
+  if (!_currentToken) return;         /* no token = can't refresh */
+  if (_refreshInProgress.has(photoId)) return; /* already refreshing */
+
+  _refreshQueue.add(photoId);
+
+  if (imgElement) {
+    if (!_failedImgElements.has(photoId)) _failedImgElements.set(photoId, new Set());
+    _failedImgElements.get(photoId).add(imgElement);
+  }
+
+  scheduleRefreshProcessing();
+}
+
+function scheduleRefreshProcessing() {
+  if (_refreshProcessing) return;
+  _refreshProcessing = true;
+  setTimeout(processRefreshQueue, 50);
+}
+
+async function processRefreshQueue() {
+  if (_refreshQueue.size === 0) {
+    _refreshProcessing = false;
+    return;
+  }
+
+  /* Prioritize photos visible in the current viewport */
+  const bounds = map.getBounds();
+  const priorityIds = [];
+  const normalIds = [];
+
+  for (const id of _refreshQueue) {
+    const photo = allPhotos.find(p => p.id === id);
+    if (photo && bounds.contains([photo.lat, photo.lng])) {
+      priorityIds.push(id);
+    } else {
+      normalIds.push(id);
+    }
+  }
+
+  /* Take up to REFRESH_CONCURRENCY items, priority first */
+  const batch = [...priorityIds, ...normalIds].slice(0, REFRESH_CONCURRENCY);
+
+  const promises = batch.map(async (id) => {
+    _refreshQueue.delete(id);
+    _refreshInProgress.add(id);
+
+    const photo = allPhotos.find(p => p.id === id);
+    if (!photo) { _refreshInProgress.delete(id); return; }
+
+    try {
+      await refreshMediaUrls(photo);
+
+      /* Update all registered <img> elements for this photo */
+      const newSrc = photo.thumbnailUrl || photo.downloadUrl || FALLBACK_ICON;
+      const imgSet = _failedImgElements.get(id);
+      if (imgSet) {
+        for (const img of imgSet) {
+          if (img.isConnected) { /* still in DOM */
+            img.onerror = null; /* prevent infinite loop */
+            img.src = newSrc;
+            /* Re-attach a one-shot onerror in case new URL also fails */
+            img.onerror = function() { this.src = FALLBACK_ICON; };
+          }
+        }
+        _failedImgElements.delete(id);
+      }
+
+      /* Update marker icon on the map */
+      updateMarkerThumb(id, newSrc);
+
+    } catch (err) {
+      console.warn('Thumbnail refresh failed for', id, err);
+    } finally {
+      _refreshInProgress.delete(id);
+    }
+  });
+
+  await Promise.allSettled(promises);
+
+  /* Small delay then process next batch */
+  if (_refreshQueue.size > 0) {
+    setTimeout(processRefreshQueue, REFRESH_DELAY_MS);
+  } else {
+    _refreshProcessing = false;
+  }
+}
+
+/* Find and update a marker's thumbnail on the map */
+function updateMarkerThumb(photoId, newSrc) {
+  for (const m of markers) {
+    if (m._photoData && m._photoData.id === photoId) {
+      const el = m.getElement?.();
+      if (el) {
+        const img = el.querySelector('img');
+        if (img) {
+          img.onerror = null;
+          img.src = newSrc;
+          img.onerror = function() { this.src = FALLBACK_ICON; };
+        }
+      }
+      break;
+    }
+  }
+}
+
+/* On map move/zoom: check visible markers for stale thumbnails and queue them */
+function refreshVisibleStaleThumbnails() {
+  if (!_currentToken) return;
+
+  const bounds = map.getBounds();
+  let queued = 0;
+
+  for (const m of markers) {
+    if (queued >= 20) break; /* don't queue too many at once */
+    const photo = m._photoData;
+    if (!photo) continue;
+    if (!bounds.contains([photo.lat, photo.lng])) continue;
+    if (_refreshInProgress.has(photo.id) || _refreshQueue.has(photo.id)) continue;
+
+    if (isUrlStale(photo)) {
+      _refreshQueue.add(photo.id);
+      queued++;
+    }
+  }
+
+  if (queued > 0) scheduleRefreshProcessing();
+}
+
+let _visibleRefreshTimer = null;
+map.on('moveend', () => {
+  if (_visibleRefreshTimer) clearTimeout(_visibleRefreshTimer);
+  _visibleRefreshTimer = setTimeout(refreshVisibleStaleThumbnails, 500);
+});
 
 async function flushBatchToIndexedDb(batch, allItemsRef) {
   if (!batch.length) return;
@@ -1645,11 +1796,15 @@ function createMarker(photo, filteredIdSet) {
   const isolatedCount = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet).length;
   if (isolatedCount === 1) size += 16;
 
+  const photoId = photo.id;
+
   const icon = L.divIcon({
     className: '',
     html: `
       <div class="photo-marker" style="width:${size}px;height:${size}px;">
-        <img src="${thumbSrc}" loading="lazy" onerror="this.src='${FALLBACK_ICON}'"/>
+        <img src="${thumbSrc}" loading="lazy"
+          data-photo-id="${photoId}"
+          onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${photoId}', this);"/>
       </div>
     `,
     iconSize: [size, size],
@@ -1756,7 +1911,11 @@ function renderPanelPhotos() {
     mediaEl.loading = 'lazy';
     mediaEl.decoding = 'async';
     mediaEl.alt = photo.name;
-    mediaEl.onerror = function() { this.src = FALLBACK_ICON; };
+    mediaEl.dataset.photoId = photo.id;
+    mediaEl.onerror = function() {
+      this.src = FALLBACK_ICON;
+      queueThumbnailRefresh(photo.id, this);
+    };
 
     const overlay = document.createElement('div');
     overlay.className = 'thumb-overlay';
