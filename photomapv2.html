@@ -1378,8 +1378,8 @@ function setScanStatus(state, text, count, progress) {
 
 /* Auto-hide the "done" status after a delay */
 let _scanDoneTimer = null;
-function setScanDone(count) {
-  setScanStatus('done', 'Terminé', count + ' médias', 100);
+function setScanDone(count, detail) {
+  setScanStatus('done', 'Terminé', detail || (count + ' médias'), 100);
   if (_scanDoneTimer) clearTimeout(_scanDoneTimer);
   _scanDoneTimer = setTimeout(() => setScanStatus('hidden'), 5000);
 }
@@ -1737,10 +1737,15 @@ async function scanFolderRecursive(folderId, progress, seenIds, batch, allItemsR
 
     /* Update topbar scan status every 20 items */
     if (progress.scanned % 20 === 0) {
-      setScanStatus(
-        'scanning',
-        `Analyse… ${progress.scanned} fichiers`,
-        progress.found + ' trouvés',
+      const label = progress.existingCount > 0
+        ? `Synchro… ${progress.scanned} fichiers`
+        : `Analyse… ${progress.scanned} fichiers`;
+      const newFound = progress.found - progress.existingCount;
+      const countLabel = progress.existingCount > 0
+        ? (newFound > 0 ? `+${newFound} nouveaux` : `${progress.existingCount} en cache`)
+        : progress.found + ' trouvés';
+
+      setScanStatus('scanning', label, countLabel,
         Math.min(5 + progress.scanned * 0.01, 95)
       );
     }
@@ -1788,16 +1793,21 @@ async function scanFolderRecursive(folderId, progress, seenIds, batch, allItemsR
     batch.push(mediaItem);
     progress.found++;
 
-    /* Flush every 25 items and update the map live */
-    if (batch.length >= 25) {
+    /* Flush frequently at start (every 5) then every 25 once we have enough */
+    const flushThreshold = progress.found < 50 ? 5 : 25;
+
+    if (batch.length >= flushThreshold) {
       await flushBatchToIndexedDb(batch, allItemsRef);
       allPhotos = [...allItemsRef];
-      updateUiWithCurrentPhotos(progress.found <= 25); /* fitBounds only on first batch */
 
-      setScanStatus(
-        'scanning',
+      /* fitBounds on first batch only if it's a first scan */
+      const shouldFit = progress.existingCount === 0 && progress.found <= flushThreshold;
+      updateUiWithCurrentPhotos(shouldFit);
+
+      const newFound = progress.found - progress.existingCount;
+      setScanStatus('scanning',
         `Analyse… ${progress.scanned} fichiers`,
-        progress.found + ' trouvés',
+        progress.existingCount > 0 ? `+${newFound} nouveaux` : progress.found + ' trouvés',
         Math.min(5 + progress.scanned * 0.01, 95)
       );
     }
@@ -1814,7 +1824,8 @@ async function runFullScan() {
   const batch = [];
   const progress = {
     scanned: 0,
-    found: existing.length
+    found: existing.length,
+    existingCount: existing.length  /* track how many were already cached */
   };
 
   await dbSetMeta('scan_state', {
@@ -1824,14 +1835,18 @@ async function runFullScan() {
     completed: false
   });
 
-  setScanStatus('scanning', 'Démarrage du scan…', existing.length > 0 ? existing.length + ' en cache' : '', 2);
+  if (existing.length > 0) {
+    setScanStatus('scanning', 'Synchronisation…', existing.length + ' en cache', 2);
+  } else {
+    setScanStatus('scanning', 'Premier scan…', '', 2);
+  }
 
   await scanFolderRecursive('root', progress, seenIds, batch, allItems);
   await flushBatchToIndexedDb(batch, allItems);
 
   /* Final UI update */
   allPhotos = [...allItems];
-  updateUiWithCurrentPhotos(existing.length === 0);
+  updateUiWithCurrentPhotos(existing.length === 0 && allItems.length > 0);
 
   await dbSetMeta('scan_state', {
     scanned: progress.scanned,
@@ -1840,7 +1855,13 @@ async function runFullScan() {
     completed: true
   });
 
-  setScanDone(progress.found);
+  const newFound = progress.found - existing.length;
+  if (newFound > 0) {
+    setScanDone(progress.found, `+${newFound} nouveaux`);
+  } else {
+    setScanDone(progress.found, 'à jour');
+  }
+
   return allItems;
 }
 
