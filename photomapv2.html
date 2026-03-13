@@ -84,7 +84,9 @@
     display: flex;
     gap: 12px;
     align-items: center;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
   }
 
   #stats-pill {
@@ -274,8 +276,16 @@
   }
 
   #btn-login {
-    padding: 14px 40px;
-    font-size: 0.9rem;
+    padding: 15px 44px;
+    font-size: 0.95rem;
+    border-radius: 32px;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 18px rgba(0,120,212,0.35);
+  }
+
+  #btn-login:hover {
+    box-shadow: 0 6px 24px rgba(0,120,212,0.45);
+    transform: translateY(-1px);
   }
 
   .splash-note {
@@ -524,9 +534,24 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 220px;
     gap: 8px;
-    font-size: 0.82rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 28px;
+    padding: 11px 26px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    letter-spacing: 0.01em;
+    transition: background 0.15s, border-color 0.15s;
+    min-width: 0;
+  }
+
+  #lightbox-open-onedrive:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: rgba(255,255,255,0.5);
   }
 
   .lightbox-nav {
@@ -831,14 +856,27 @@
 
     .logo { font-size: 1.2rem; }
 
-    #topbar-right { gap: 8px; }
+    #topbar-right {
+      gap: 8px;
+      flex-shrink: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
 
     #stats-pill {
       font-size: 0.78rem;
       padding: 5px 10px;
-      max-width: 160px;
+      max-width: 140px;
+      flex-shrink: 1;
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Masquer stats-pill quand le scan est visible (trop d'info dans la topbar) */
+    #topbar-right:has(#scan-status.visible) #stats-pill {
+      display: none !important;
     }
 
     /* Buttons: icon-only, large tap target */
@@ -851,6 +889,7 @@
       align-items: center;
       justify-content: center;
       border-radius: 50%;
+      flex-shrink: 0;
     }
     .btn-label { display: none; }
     #btn-config { font-size: 1.2rem; }
@@ -860,10 +899,18 @@
       font-size: 0.75rem;
       padding: 5px 10px;
       gap: 6px;
-      max-width: 200px;
+      max-width: 180px;
+      flex-shrink: 1;
+      min-width: 0;
     }
-    #scan-status-text { max-width: 110px; }
-    #scan-status-count { font-size: 0.75rem; }
+    #scan-status-text { max-width: 100px; }
+    #scan-status-count { font-size: 0.75rem; flex-shrink: 0; }
+
+    /* Bouton OneDrive dans lightbox: plus compact sur mobile */
+    #lightbox-open-onedrive {
+      font-size: 0.85rem;
+      padding: 10px 22px;
+    }
 
     /* ---- MAP ---- */
     #map {
