@@ -1072,8 +1072,7 @@ const DB_VERSION = 1;
 const STORE_MEDIA = 'media';
 const STORE_META = 'meta';
 
-/* FIX: removed DEFAULT_CLIENT_ID — users must provide their own */
-const DEFAULT_CLIENT_ID = '';
+const DEFAULT_CLIENT_ID = '74655b12-46c1-4cdb-be1a-27655fa47677';
 
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'gif', 'bmp', 'tiff']);
 const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'm4v', 'hevc', 'avi', 'webm', '3gp', 'mkv']);
@@ -2244,14 +2243,15 @@ document.getElementById('input-client-id').addEventListener('keydown', e => {
 });
 
 document.getElementById('btn-config').addEventListener('click', showConfigPanel);
-document.getElementById('btn-manual-config').addEventListener('click', showConfigPanel);
+document.getElementById('btn-manual-config').addEventListener('click', () => {
+  document.getElementById('splash').classList.add('hidden');
+  showConfigPanel();
+});
 
 document.getElementById('btn-login').addEventListener('click', () => {
-  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
-  if (!clientId) {
-    document.getElementById('splash').classList.add('hidden');
-    showConfigPanel();
-    return;
+  /* Save the default client ID if none is set, then connect directly */
+  if (!localStorage.getItem(STORAGE_KEY_CLIENT_ID)) {
+    localStorage.setItem(STORAGE_KEY_CLIENT_ID, DEFAULT_CLIENT_ID);
   }
   startApp();
 });
