@@ -84,7 +84,9 @@
     display: flex;
     gap: 12px;
     align-items: center;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
   }
 
   #stats-pill {
@@ -186,6 +188,19 @@
     white-space: nowrap;
   }
 
+  /* Bouton config : toujours une icône ronde */
+  #btn-config {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
   .btn-primary {
     background: var(--accent);
     color: #fff;
@@ -274,8 +289,16 @@
   }
 
   #btn-login {
-    padding: 14px 40px;
-    font-size: 0.9rem;
+    padding: 15px 44px;
+    font-size: 0.95rem;
+    border-radius: 32px;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 18px rgba(0,120,212,0.35);
+  }
+
+  #btn-login:hover {
+    box-shadow: 0 6px 24px rgba(0,120,212,0.45);
+    transform: translateY(-1px);
   }
 
   .splash-note {
@@ -524,9 +547,24 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 220px;
     gap: 8px;
-    font-size: 0.82rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 28px;
+    padding: 11px 26px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    letter-spacing: 0.01em;
+    transition: background 0.15s, border-color 0.15s;
+    min-width: 0;
+  }
+
+  #lightbox-open-onedrive:hover {
+    background: rgba(255,255,255,0.25);
+    border-color: rgba(255,255,255,0.5);
   }
 
   .lightbox-nav {
@@ -831,14 +869,27 @@
 
     .logo { font-size: 1.2rem; }
 
-    #topbar-right { gap: 8px; }
+    #topbar-right {
+      gap: 8px;
+      flex-shrink: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
 
     #stats-pill {
       font-size: 0.78rem;
       padding: 5px 10px;
-      max-width: 160px;
+      max-width: 140px;
+      flex-shrink: 1;
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Masquer stats-pill quand le scan est visible (trop d'info dans la topbar) */
+    #topbar-right:has(#scan-status.visible) #stats-pill {
+      display: none !important;
     }
 
     /* Buttons: icon-only, large tap target */
@@ -851,19 +902,26 @@
       align-items: center;
       justify-content: center;
       border-radius: 50%;
+      flex-shrink: 0;
     }
-    .btn-label { display: none; }
     #btn-config { font-size: 1.2rem; }
-    #btn-reload { font-size: 1.2rem; }
 
     #scan-status {
       font-size: 0.75rem;
       padding: 5px 10px;
       gap: 6px;
-      max-width: 200px;
+      max-width: 180px;
+      flex-shrink: 1;
+      min-width: 0;
     }
-    #scan-status-text { max-width: 110px; }
-    #scan-status-count { font-size: 0.75rem; }
+    #scan-status-text { max-width: 100px; }
+    #scan-status-count { font-size: 0.75rem; flex-shrink: 0; }
+
+    /* Bouton OneDrive dans lightbox: plus compact sur mobile */
+    #lightbox-open-onedrive {
+      font-size: 0.85rem;
+      padding: 10px 22px;
+    }
 
     /* ---- MAP ---- */
     #map {
@@ -1112,8 +1170,7 @@
       <span id="scan-status-count"></span>
       <div id="scan-progress-bar"><div id="scan-progress-fill"></div></div>
     </div>
-    <button class="btn btn-ghost" id="btn-config" style="display:none">⚙ <span class="btn-label">Config</span></button>
-    <button class="btn btn-ghost" id="btn-reload" style="display:none">↺ <span class="btn-label">Recharger</span></button>
+    <button class="btn btn-ghost" id="btn-config" style="display:none" title="Configuration">⚙</button>
   </div>
 </div>
 
@@ -1198,6 +1255,10 @@
     <div id="config-connect-wrap" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:none">
       <button class="btn btn-primary" id="btn-connect" style="width:100%;padding:12px">Connecter OneDrive</button>
     </div>
+    <div id="config-rescan-wrap" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:none">
+      <p style="margin:0 0 10px;font-size:0.82rem;color:var(--text-secondary)">Réindexer tous les médias depuis zéro (ignore le cache delta).</p>
+      <button class="btn btn-ghost" id="btn-full-rescan" style="width:100%;padding:12px">↺ Rescan complet</button>
+    </div>
   </div>
 </div>
 
@@ -1225,6 +1286,8 @@ let clusterGroup = null;
 let currentYear = 'all';
 let isLoading = false;
 let backgroundSyncRunning = false;
+let autoSyncTimer = null;
+const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 /* FIX: guard to prevent duplicate startApp calls */
 let startAppRunning = false;
@@ -1488,7 +1551,6 @@ function updateUiWithCurrentPhotos(fit = false) {
     map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 14 });
   }
 
-  document.getElementById('btn-reload').style.display = 'inline-flex';
   document.getElementById('btn-config').style.display = 'inline-flex';
 
   /* After rendering, check viewport for stale thumbnails to refresh */
@@ -2010,6 +2072,19 @@ async function runBackgroundSync() {
   } finally {
     backgroundSyncRunning = false;
   }
+}
+
+function startAutoSync() {
+  if (autoSyncTimer) clearInterval(autoSyncTimer);
+  autoSyncTimer = setInterval(() => {
+    if (_currentToken && !backgroundSyncRunning) {
+      runBackgroundSync();
+    }
+  }, AUTO_SYNC_INTERVAL_MS);
+}
+
+function stopAutoSync() {
+  if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
 }
 
 const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
@@ -2593,7 +2668,6 @@ async function _startAppInner() {
   }
 
   /* Show buttons right away so the user can interact */
-  document.getElementById('btn-reload').style.display = 'inline-flex';
   document.getElementById('btn-config').style.display = 'inline-flex';
 
   /* Authenticate — this is the only blocking step */
@@ -2625,6 +2699,7 @@ async function _startAppInner() {
 
     /* Auth done — launch scan in background, user can already use the map */
     runBackgroundSync();
+    startAutoSync();
 
   } catch (err) {
     console.error('PhotoMap error:', err);
@@ -2646,6 +2721,9 @@ function showConfigPanel() {
 
   /* Show the connect button if a client ID is saved */
   document.getElementById('config-connect-wrap').style.display = saved ? 'block' : 'none';
+
+  /* Show rescan button only when authenticated */
+  document.getElementById('config-rescan-wrap').style.display = hasAuth ? 'block' : 'none';
 
   document.getElementById('config-panel').classList.add('open');
 }
@@ -2686,6 +2764,7 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
     await dbDeleteMeta('scan_state').catch(() => {});
     await dbDeleteMeta('deltaLink').catch(() => {});
 
+    stopAutoSync();
     msalInstance = null;
     allPhotos = [];
     markers = [];
@@ -2694,7 +2773,6 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
     document.getElementById('config-panel').classList.remove('open');
     document.getElementById('filter-bar').classList.remove('visible');
     document.getElementById('stats-pill').style.display = 'none';
-    document.getElementById('btn-reload').style.display = 'none';
     document.getElementById('btn-config').style.display = 'none';
     document.getElementById('photo-panel').classList.remove('open');
     document.getElementById('splash').classList.remove('hidden');
@@ -2727,12 +2805,11 @@ document.getElementById('btn-connect').addEventListener('click', () => {
   startApp();
 });
 
-document.getElementById('btn-reload').addEventListener('click', async () => {
-  if (!_currentToken) {
-    await startApp();
-    return;
-  }
-  /* Just launch a background scan — topbar shows progress */
+document.getElementById('btn-full-rescan').addEventListener('click', async () => {
+  document.getElementById('config-panel').classList.remove('open');
+  /* Clear delta state to force a full re-index from scratch */
+  await dbDeleteMeta('deltaLink').catch(() => {});
+  await dbDeleteMeta('scan_state').catch(() => {});
   runBackgroundSync();
 });
 
@@ -2763,7 +2840,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (cached.length > 0) {
       allPhotos = cached;
       updateUiWithCurrentPhotos(true);
-      document.getElementById('btn-reload').style.display = 'inline-flex';
       document.getElementById('btn-config').style.display = 'inline-flex';
       document.getElementById('splash').classList.add('hidden');
 
