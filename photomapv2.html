@@ -1284,6 +1284,16 @@ async function dbSetMeta(key, value) {
   });
 }
 
+async function dbGetMeta(key) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_META, 'readonly');
+    const request = tx.objectStore(STORE_META).get(key);
+    request.onsuccess = () => resolve(request.result?.value ?? null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
 async function dbDeleteMeta(key) {
   const db = await openDb();
   await new Promise((resolve, reject) => {
@@ -1722,147 +1732,205 @@ async function flushBatchToIndexedDb(batch, allItemsRef) {
   batch.length = 0;
 }
 
-async function scanFolderRecursive(folderId, progress, seenIds, batch, allItemsRef) {
-  let children = [];
+/*
+ * DELTA-BASED SYNC
+ *
+ * Uses Microsoft Graph's delta query API:
+ * - First sync: fetches ALL files in OneDrive (flat, no recursion needed)
+ * - Subsequent syncs: only fetches changes since the last deltaLink
+ * - Handles additions, modifications, and deletions
+ * - Stores the deltaLink in IndexedDB for persistence across sessions
+ *
+ * This is dramatically faster than recursive folder scanning because
+ * it skips unchanged files entirely at the API level.
+ */
+const DELTA_BASE_URL = 'https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
 
-  try {
-    children = await listChildren(folderId);
-  } catch (err) {
-    console.warn('Dossier ignoré suite à une erreur:', folderId, err);
-    return;
-  }
-
-  for (const item of children) {
-    progress.scanned++;
-
-    /* Update topbar scan status every 20 items */
-    if (progress.scanned % 20 === 0) {
-      const label = progress.existingCount > 0
-        ? `Synchro… ${progress.scanned} fichiers`
-        : `Analyse… ${progress.scanned} fichiers`;
-      const newFound = progress.found - progress.existingCount;
-      const countLabel = progress.existingCount > 0
-        ? (newFound > 0 ? `+${newFound} nouveaux` : `${progress.existingCount} en cache`)
-        : progress.found + ' trouvés';
-
-      setScanStatus('scanning', label, countLabel,
-        Math.min(5 + progress.scanned * 0.01, 95)
-      );
-    }
-
-    if (progress.scanned % 100 === 0) {
-      await dbSetMeta('scan_state', {
-        scanned: progress.scanned,
-        found: progress.found,
-        updatedAt: new Date().toISOString(),
-        completed: false
-      });
-    }
-
-    if (item.folder) {
-      await scanFolderRecursive(item.id, progress, seenIds, batch, allItemsRef);
-      continue;
-    }
-
-    if (!isMediaFile(item)) continue;
-    if (seenIds.has(item.id)) continue;
-    seenIds.add(item.id);
-
-    const lat = item.location?.latitude;
-    const lng = item.location?.longitude;
-
-    if (lat == null || lng == null) continue;
-    if (lat === 0 && lng === 0) continue;
-
-    const thumbnailUrl = await getThumbnail(item.id);
-    const date = item.photo?.takenDateTime || item.createdDateTime;
-
-    const mediaItem = {
-      id: item.id,
-      name: item.name,
-      lat: Number(lat),
-      lng: Number(lng),
-      date: date ? new Date(date) : null,
-      thumbnailUrl,
-      downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
-      webUrl: item.webUrl || null,
-      mediaType: isVideoByName(item.name) ? 'video' : 'image',
-      fetchedAt: new Date().toISOString()
-    };
-
-    batch.push(mediaItem);
-    progress.found++;
-
-    /* Flush frequently at start (every 5) then every 25 once we have enough */
-    const flushThreshold = progress.found < 50 ? 5 : 25;
-
-    if (batch.length >= flushThreshold) {
-      await flushBatchToIndexedDb(batch, allItemsRef);
-      allPhotos = [...allItemsRef];
-
-      /* fitBounds on first batch only if it's a first scan */
-      const shouldFit = progress.existingCount === 0 && progress.found <= flushThreshold;
-      updateUiWithCurrentPhotos(shouldFit);
-
-      const newFound = progress.found - progress.existingCount;
-      setScanStatus('scanning',
-        `Analyse… ${progress.scanned} fichiers`,
-        progress.existingCount > 0 ? `+${newFound} nouveaux` : progress.found + ' trouvés',
-        Math.min(5 + progress.scanned * 0.01, 95)
-      );
-    }
-  }
+async function dbDeleteMediaItem(id) {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_MEDIA, 'readwrite');
+    tx.objectStore(STORE_MEDIA).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
 }
 
-async function runFullScan() {
+async function runDeltaSync() {
   _currentToken = await getToken();
-  if (!_currentToken) return []; /* redirect happened */
+  if (!_currentToken) return [];
 
   const existing = await dbGetAllMedia();
-  const allItems = [...existing];
-  const seenIds = new Set(existing.map(x => x.id));
-  const batch = [];
-  const progress = {
-    scanned: 0,
-    found: existing.length,
-    existingCount: existing.length  /* track how many were already cached */
-  };
+  const existingMap = new Map(existing.map(p => [p.id, p]));
+  const existingCount = existing.length;
 
-  await dbSetMeta('scan_state', {
-    scanned: 0,
-    found: existing.length,
-    updatedAt: new Date().toISOString(),
-    completed: false
-  });
+  /* Load saved deltaLink — if it exists, we only get changes */
+  let deltaLink = await dbGetMeta('deltaLink');
+  let url = deltaLink || DELTA_BASE_URL;
+  const isFirstScan = !deltaLink;
 
-  if (existing.length > 0) {
-    setScanStatus('scanning', 'Synchronisation…', existing.length + ' en cache', 2);
-  } else {
+  if (isFirstScan) {
     setScanStatus('scanning', 'Premier scan…', '', 2);
+  } else {
+    setScanStatus('scanning', 'Synchronisation…', existingCount + ' en cache', 2);
   }
 
-  await scanFolderRecursive('root', progress, seenIds, batch, allItems);
-  await flushBatchToIndexedDb(batch, allItems);
+  let scanned = 0;
+  let added = 0;
+  let deleted = 0;
+  let newDeltaLink = null;
+  const batch = [];
 
-  /* Final UI update */
-  allPhotos = [...allItems];
-  updateUiWithCurrentPhotos(existing.length === 0 && allItems.length > 0);
+  while (url) {
+    const data = await graphGet(url, _currentToken);
+    const items = data.value || [];
+
+    for (const item of items) {
+      scanned++;
+
+      /* Update topbar every 50 items */
+      if (scanned % 50 === 0) {
+        const label = isFirstScan
+          ? `Analyse… ${scanned} fichiers`
+          : `Synchro… ${scanned} changements`;
+        const countLabel = isFirstScan
+          ? (existingCount + added) + ' trouvés'
+          : (added > 0 ? `+${added} nouveaux` : 'vérification…');
+
+        setScanStatus('scanning', label, countLabel,
+          Math.min(5 + scanned * 0.005, 95)
+        );
+      }
+
+      /* Handle deletions */
+      if (item.deleted) {
+        if (existingMap.has(item.id)) {
+          existingMap.delete(item.id);
+          await dbDeleteMediaItem(item.id);
+          deleted++;
+        }
+        continue;
+      }
+
+      /* Skip folders and non-media */
+      if (item.folder) continue;
+      if (!isMediaFile(item)) continue;
+
+      /* Skip if already known and not a delta update */
+      if (!isFirstScan && existingMap.has(item.id)) {
+        /* Delta returned it = it was modified, update it */
+        const lat = item.location?.latitude;
+        const lng = item.location?.longitude;
+        if (lat != null && lng != null && !(lat === 0 && lng === 0)) {
+          const thumbnailUrl = await getThumbnail(item.id);
+          const date = item.photo?.takenDateTime || item.createdDateTime;
+          const updated = {
+            id: item.id,
+            name: item.name,
+            lat: Number(lat),
+            lng: Number(lng),
+            date: date ? new Date(date) : null,
+            thumbnailUrl,
+            downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
+            webUrl: item.webUrl || null,
+            mediaType: isVideoByName(item.name) ? 'video' : 'image',
+            fetchedAt: new Date().toISOString()
+          };
+          existingMap.set(item.id, updated);
+          batch.push(updated);
+        }
+        continue;
+      }
+
+      /* First scan: skip if already in cache */
+      if (isFirstScan && existingMap.has(item.id)) continue;
+
+      /* New item — check geo data */
+      const lat = item.location?.latitude;
+      const lng = item.location?.longitude;
+      if (lat == null || lng == null) continue;
+      if (lat === 0 && lng === 0) continue;
+
+      const thumbnailUrl = await getThumbnail(item.id);
+      const date = item.photo?.takenDateTime || item.createdDateTime;
+
+      const mediaItem = {
+        id: item.id,
+        name: item.name,
+        lat: Number(lat),
+        lng: Number(lng),
+        date: date ? new Date(date) : null,
+        thumbnailUrl,
+        downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
+        webUrl: item.webUrl || null,
+        mediaType: isVideoByName(item.name) ? 'video' : 'image',
+        fetchedAt: new Date().toISOString()
+      };
+
+      existingMap.set(item.id, mediaItem);
+      batch.push(mediaItem);
+      added++;
+
+      /* Flush to IndexedDB and update map live */
+      const flushThreshold = (existingCount + added) < 50 ? 5 : 25;
+      if (batch.length >= flushThreshold) {
+        await dbPutMediaBatch(batch);
+        batch.length = 0;
+
+        allPhotos = [...existingMap.values()];
+        const shouldFit = existingCount === 0 && added <= flushThreshold;
+        updateUiWithCurrentPhotos(shouldFit);
+
+        setScanStatus('scanning',
+          isFirstScan ? `Analyse… ${scanned} fichiers` : `Synchro… ${scanned} changements`,
+          isFirstScan ? (existingCount + added) + ' trouvés' : `+${added} nouveaux`,
+          Math.min(5 + scanned * 0.005, 95)
+        );
+      }
+    }
+
+    /* Follow pagination or store deltaLink */
+    if (data['@odata.nextLink']) {
+      url = data['@odata.nextLink'];
+    } else {
+      newDeltaLink = data['@odata.deltaLink'] || null;
+      url = null;
+    }
+  }
+
+  /* Flush remaining batch */
+  if (batch.length > 0) {
+    await dbPutMediaBatch(batch);
+  }
+
+  /* Save deltaLink for next time */
+  if (newDeltaLink) {
+    await dbSetMeta('deltaLink', newDeltaLink);
+  }
+
+  /* Final update */
+  allPhotos = [...existingMap.values()];
+  updateUiWithCurrentPhotos(existingCount === 0 && allPhotos.length > 0);
 
   await dbSetMeta('scan_state', {
-    scanned: progress.scanned,
-    found: progress.found,
+    scanned,
+    found: allPhotos.length,
     updatedAt: new Date().toISOString(),
     completed: true
   });
 
-  const newFound = progress.found - existing.length;
-  if (newFound > 0) {
-    setScanDone(progress.found, `+${newFound} nouveaux`);
+  if (isFirstScan) {
+    setScanDone(allPhotos.length, allPhotos.length + ' médias');
+  } else if (added > 0 || deleted > 0) {
+    const parts = [];
+    if (added > 0) parts.push(`+${added}`);
+    if (deleted > 0) parts.push(`-${deleted}`);
+    setScanDone(allPhotos.length, parts.join(' ') + ' · ' + allPhotos.length + ' total');
   } else {
-    setScanDone(progress.found, 'à jour');
+    setScanDone(allPhotos.length, 'à jour');
   }
 
-  return allItems;
+  return allPhotos;
 }
 
 async function runBackgroundSync() {
@@ -1870,7 +1938,7 @@ async function runBackgroundSync() {
   backgroundSyncRunning = true;
 
   try {
-    await runFullScan();
+    await runDeltaSync();
   } catch (err) {
     console.warn('Erreur pendant la synchronisation en arrière-plan', err);
     setScanStatus('error', 'Sync interrompue', '', 0);
@@ -2544,6 +2612,7 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
     localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
     await dbClearMedia().catch(() => {});
     await dbDeleteMeta('scan_state').catch(() => {});
+    await dbDeleteMeta('deltaLink').catch(() => {});
 
     msalInstance = null;
     allPhotos = [];
@@ -2557,6 +2626,7 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
     document.getElementById('btn-config').style.display = 'none';
     document.getElementById('photo-panel').classList.remove('open');
     document.getElementById('splash').classList.remove('hidden');
+    setScanStatus('hidden');
 
     showToast('Déconnecté avec succès');
   }
