@@ -6,954 +6,634 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>PhotoMap — Vos souvenirs sur la planète</title>
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
-
 <style>
-  :root {
-    --ink: #ffffff; --text: #242424; --text-secondary: #616161;
-    --accent: #0078D4; --accent-light: #28A8EA; --accent-dark: #0364B8;
-    --surface: #f5f5f5; --surface-hover: #ebebeb; --muted: #8a8886;
-    --panel: rgba(255,255,255,0.97); --border: rgba(0,0,0,0.08);
-    --border-accent: rgba(0,120,212,0.3); --danger: #d13438;
-    --shadow: rgba(0,0,0,0.08);
-    --font-ui: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-    --marker-size: 88px;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--font-ui); background: var(--ink); color: var(--text); height: 100vh; height: 100dvh; overflow: hidden; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
-
-  /* ===== TOPBAR ===== */
-  #topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: calc(56px + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px); background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); gap: 16px; backdrop-filter: blur(12px); box-shadow: 0 1px 4px var(--shadow); }
-  .logo { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.01em; color: var(--text); flex-shrink: 0; }
-  .logo span { color: var(--accent); }
-  .tagline { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; border-left: 1px solid var(--border); padding-left: 16px; flex-shrink: 0; }
-  #topbar-right { margin-left: auto; display: flex; gap: 12px; align-items: center; flex-shrink: 1; min-width: 0; overflow: hidden; }
-  #stats-pill { font-size: 0.75rem; color: var(--accent); background: rgba(0,120,212,0.08); border: 1px solid var(--border-accent); padding: 4px 12px; border-radius: 20px; display: none; white-space: nowrap; }
-  #scan-status { display: none; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; white-space: nowrap; position: relative; overflow: hidden; min-width: 0; }
-  #scan-status.visible { display: flex; }
-  #scan-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: scan-pulse 1.5s ease-in-out infinite; }
-  #scan-status.paused #scan-status-dot { background: #f0a030; animation: none; }
-  #scan-status.done #scan-status-dot { background: #2ea043; animation: none; }
-  #scan-status.error #scan-status-dot { background: var(--danger); animation: none; }
-  @keyframes scan-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  #scan-status-text { overflow: hidden; text-overflow: ellipsis; }
-  #scan-status-count { font-weight: 600; color: var(--accent); }
-  #scan-progress-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; }
-  #scan-progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s ease; border-radius: 0 0 20px 20px; }
-
-  .btn { font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600; border: none; cursor: pointer; padding: 8px 20px; border-radius: 6px; transition: all 0.15s; white-space: nowrap; }
-  #btn-config { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover { background: var(--accent-dark); }
-  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
-  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(209,52,56,0.3); }
-  .btn-danger:hover { background: rgba(209,52,56,0.08); border-color: var(--danger); }
-
-  /* ===== MAP ===== */
-  #map { position: fixed; top: calc(56px + env(safe-area-inset-top, 0px)); left: 0; right: 0; bottom: 0; z-index: 1; }
-  .leaflet-tile { filter: saturate(0.85) contrast(1.05); }
-  #map-layer-toggle { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; z-index: 500; width: 44px; height: 44px; border-radius: 8px; border: 2px solid #fff; background: var(--panel); cursor: pointer; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none; padding: 0; }
-  #map-layer-toggle.visible { display: block; }
-  #map-layer-toggle img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  #map-layer-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: #fff; font-size: 0.55rem; text-align: center; padding: 1px 0; font-weight: 600; }
-
-  /* ===== SPLASH ===== */
-  #splash { position: fixed; inset: 0; z-index: 2000; background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 50%, #e8f0fe 100%); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 32px; transition: opacity 0.6s, visibility 0.6s; }
-  #splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-  .splash-globe { width: 120px; height: 120px; border: 2px solid var(--accent); border-radius: 50%; position: relative; animation: spinGlobe 12s linear infinite; display: flex; align-items: center; justify-content: center; }
-  .splash-globe::before { content:''; position: absolute; inset: 8px; border: 1px solid var(--border-accent); border-radius: 50%; animation: spinGlobe 8s linear infinite reverse; }
-  .globe-icon { font-size: 3rem; }
-  @keyframes spinGlobe { from{transform:rotate(0)} to{transform:rotate(360deg)} }
-  .splash-title { font-size: 2.8rem; font-weight: 700; text-align: center; line-height: 1.1; color: var(--text); }
-  .splash-title span { color: var(--accent); }
-  .splash-sub { color: var(--text-secondary); font-size: 0.95rem; text-align: center; max-width: 380px; line-height: 1.6; }
-  #btn-login { padding: 15px 44px; font-size: 0.95rem; border-radius: 32px; box-shadow: 0 4px 18px rgba(0,120,212,0.35); }
-  #btn-login:hover { box-shadow: 0 6px 24px rgba(0,120,212,0.45); transform: translateY(-1px); }
-  .splash-note { font-size: 0.72rem; color: var(--muted); text-align: center; max-width: 320px; line-height: 1.5; }
-
-  /* ===== LOADING ===== */
-  #loading-overlay { position: fixed; inset: 0; z-index: 1900; background: rgba(255,255,255,0.92); flex-direction: column; align-items: center; justify-content: center; gap: 24px; display: none; }
-  #loading-overlay.visible { display: flex; }
-  .loading-msg { font-size: 0.9rem; color: var(--text-secondary); text-align: center; }
-  .progress-bar-wrap { width: 300px; height: 3px; background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden; }
-  .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.4s ease; }
-  #loading-count { font-size: 2rem; font-weight: 700; color: var(--accent); }
-
-  /* ===== PANEL ===== */
-  #photo-panel { position: fixed; right: 0; top: calc(56px + env(safe-area-inset-top, 0px)); bottom: 0; z-index: 500; width: 420px; background: var(--panel); border-left: 1px solid var(--border); backdrop-filter: blur(16px); box-shadow: -2px 0 12px var(--shadow); transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; overflow: hidden; }
-  #photo-panel.open { transform: translateX(0); }
-  .panel-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; }
-  .panel-location { font-size: 1.1rem; font-weight: 600; line-height: 1.3; max-width: 250px; color: var(--text); }
-  .panel-date { font-size: 0.72rem; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
-  .panel-count { font-size: 0.7rem; color: var(--muted); margin-top: 6px; }
-  .btn-close { background: transparent; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; padding: 4px 6px; line-height: 1; border-radius: 4px; }
-  .btn-close:hover { color: var(--text); background: var(--surface); }
-  #panel-photos { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: min-content; gap: 10px; align-content: start; }
-  #panel-photos::-webkit-scrollbar { width: 4px; }
-  #panel-photos::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
-  .thumb-card { width: 100%; aspect-ratio: 1/1; overflow: hidden; border-radius: 8px; cursor: pointer; position: relative; background: var(--surface); border: 1px solid var(--border); transition: border-color 0.2s, transform 0.2s; box-shadow: 0 1px 4px var(--shadow); }
-  .thumb-card:hover { border-color: var(--accent); transform: scale(1.02); }
-  .thumb-card img, .thumb-card video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-  .thumb-card .thumb-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, transparent 55%); opacity: 0; transition: opacity 0.2s; display: flex; align-items: flex-end; padding: 8px; font-size: 0.68rem; color: #fff; line-height: 1.2; }
-  .thumb-card:hover .thumb-overlay { opacity: 1; }
-
-  /* ===== LIGHTBOX ===== */
-  #lightbox { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; flex-direction: column; gap: 10px; padding: 8px; }
-  #lightbox.open { display: flex; }
-  .lightbox-media-wrap { position: relative; display: flex; align-items: center; justify-content: center; width: 92vw; height: 80vh; flex-shrink: 1; min-height: 0; }
-  #lightbox-img, #lightbox-video { display: none; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 0 80px rgba(0,0,0,0.85); }
-  .hd-badge { position: absolute; top: 16px; right: 16px; display: none; align-items: center; gap: 6px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; backdrop-filter: blur(8px); z-index: 10; }
-  .hd-badge.visible { display: flex; }
-  .hd-badge.done { background: rgba(46,160,67,0.7); }
-  .hd-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: hd-spin 0.8s linear infinite; }
-  @keyframes hd-spin { to{transform:rotate(360deg)} }
-  .lightbox-info { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.82rem; flex-shrink: 0; }
-  .lightbox-info strong { display: block; font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
-  #lightbox-actions { margin-top: 10px; display: flex; justify-content: center; gap: 10px; }
-  #lightbox-open-onedrive { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; font-weight: 600; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 28px; padding: 11px 26px; backdrop-filter: blur(12px); transition: background 0.15s, border-color 0.15s; }
-  #lightbox-open-onedrive:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
-  .lightbox-nav { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.6rem; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 3001; }
-  .lightbox-nav:hover { background: rgba(255,255,255,0.3); }
-  #lightbox-prev { left: 20px; }
-  #lightbox-next { right: 20px; }
-  #lightbox-close { position: fixed; top: 24px; right: 24px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.4rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 3001; }
-  #lightbox-close:hover { background: rgba(255,255,255,0.2); }
-
-  /* ===== MARKERS — uniform, SQUARE, forced cover ===== */
-  .photo-marker-wrap { display: flex; flex-direction: column; align-items: center; cursor: pointer; filter: drop-shadow(0 4px 14px rgba(0,0,0,0.35)); transition: transform 0.15s; }
-  .photo-marker-wrap:hover { transform: scale(1.08); }
-  .photo-marker { width: var(--marker-size); height: var(--marker-size); border-radius: 16px; overflow: hidden; border: 3px solid #fff; background: #e0e0e0; position: relative; flex-shrink: 0; }
-  .photo-marker > img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; object-position: center !important; }
-  .photo-marker-count { position: absolute; bottom: 5px; left: 5px; background: rgba(0,0,0,0.55); color: #fff; font-size: 12px; font-weight: 700; line-height: 1; padding: 3px 7px; border-radius: 9px; pointer-events: none; }
-  .photo-marker-tail { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 10px solid #fff; margin-top: -2px; }
-  .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background: none !important; border: none !important; box-shadow: none !important; }
-  .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background: none !important; }
-
-  /* ===== FILTER BAR ===== */
-  #filter-bar { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); z-index: 500; background: var(--panel); border: 1px solid var(--border); border-radius: 40px; padding: 8px 16px; display: none; gap: 6px; align-items: center; backdrop-filter: blur(12px); box-shadow: 0 2px 12px var(--shadow); max-width: 90vw; overflow-x: auto; }
-  #filter-bar.visible { display: flex; }
-  #filter-bar::-webkit-scrollbar { display: none; }
-  #filter-bar { -ms-overflow-style: none; scrollbar-width: none; }
-  .filter-label { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; margin-right: 4px; }
-  .year-btn { background: transparent; border: 1px solid transparent; color: var(--muted); font-family: var(--font-ui); font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-  .year-btn:hover { color: var(--text); border-color: var(--border); }
-  .year-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
-
-  /* ===== CONFIG ===== */
-  #config-panel { position: fixed; inset: 0; z-index: 1500; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; }
-  #config-panel.open { display: flex; }
-  .config-box { background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 28px 28px 32px; max-width: 420px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.15); }
-  .config-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
-  .config-box h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin: 0; }
-  .config-close-btn { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .config-buttons { display: flex; flex-direction: column; gap: 12px; }
-  .config-btn { width: 100%; padding: 14px 24px; border-radius: 28px; font-size: 0.95rem; font-weight: 600; text-align: center; }
-  .config-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); }
-  .config-toggle-info { flex: 1; min-width: 0; }
-  .config-toggle-label { font-size: 0.88rem; font-weight: 500; color: var(--text); }
-  .config-toggle-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
-  .config-toggle-status { font-size: 0.68rem; color: var(--accent); margin-top: 3px; font-weight: 500; }
-  .toggle-switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; margin-left: 12px; }
-  .toggle-switch input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 26px; cursor: pointer; transition: background 0.2s; }
-  .toggle-slider::before { content:''; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
-  .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
-  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
-  #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 4000; background: #fff; border: 1px solid var(--border); color: var(--text); padding: 10px 20px; border-radius: 8px; font-size: 0.82rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 90vw; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
-  #toast.show { opacity: 1; }
-
-  /* ===== MOBILE ===== */
-  @media (max-width: 600px) {
-    :root { --marker-size: 80px; }
-    .tagline { display: none; }
-    #topbar { height: calc(54px + env(safe-area-inset-top, 0px)); padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px)); gap: 8px; }
-    .logo { font-size: 1.2rem; }
-    #topbar-right { gap: 8px; }
-    #stats-pill { font-size: 0.78rem; padding: 5px 10px; max-width: 140px; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
-    #topbar-right:has(#scan-status.visible) #stats-pill { display: none !important; }
-    .btn { padding: 0; font-size: 1.1rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
-    #btn-config { font-size: 1.2rem; }
-    #scan-status { font-size: 0.75rem; padding: 5px 10px; gap: 6px; max-width: 180px; }
-    #scan-status-text { max-width: 100px; }
-    #map { top: calc(54px + env(safe-area-inset-top, 0px)); }
-    #map-layer-toggle { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: 12px; }
-    #photo-panel { top: auto; right: 0; left: 0; bottom: 0; width: 100%; height: 72dvh; border-left: none; border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; transform: translateY(100%); padding-bottom: env(safe-area-inset-bottom, 0px); }
-    #photo-panel.open { transform: translateY(0); }
-    .panel-header { padding: 18px 18px 14px; position: relative; }
-    .panel-header::before { content:''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: var(--muted); border-radius: 2px; opacity: 0.5; }
-    .panel-location { font-size: 1.1rem; max-width: 70vw; }
-    .btn-close { font-size: 1.5rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-    #panel-photos { grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
-    .thumb-card { border-radius: 10px; }
-    #filter-bar { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding: 8px 14px; border-radius: 32px; max-width: 96vw; }
-    .year-btn { font-size: 0.82rem; padding: 6px 14px; min-height: 34px; }
-    #lightbox { padding: 0; gap: 0; }
-    .lightbox-media-wrap { width: 100vw; height: 70dvh; }
-    #lightbox-img, #lightbox-video { border-radius: 0; box-shadow: none; }
-    .lightbox-nav { top: auto; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: none; width: 56px; height: 56px; font-size: 2rem; }
-    #lightbox-close { top: max(16px, env(safe-area-inset-top, 10px)); right: 16px; width: 48px; height: 48px; font-size: 1.5rem; }
-    .lightbox-info { padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px)); width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); }
-    .lightbox-info strong { font-size: 0.95rem; }
-    #lightbox-actions { margin-top: 10px; }
-    #lightbox-open-onedrive { min-width: 190px; font-size: 0.82rem; padding: 10px 20px; }
-    #splash { gap: 22px; padding: 28px; }
-    .splash-globe { width: 90px; height: 90px; }
-    .globe-icon { font-size: 2.4rem; }
-    .splash-title { font-size: 2rem; }
-    .splash-sub { font-size: 0.9rem; max-width: 320px; }
-    #btn-login { padding: 14px 36px; font-size: 0.95rem; }
-    .splash-note { font-size: 0.75rem; max-width: 300px; }
-    .config-box { padding: 24px 22px 28px; width: 94%; border-radius: 24px; }
-    .config-btn { font-size: 0.95rem; padding: 15px 24px; min-height: 52px; }
-    .progress-bar-wrap { width: 240px; }
-    #toast { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); font-size: 0.85rem; border-radius: 24px; }
-    .leaflet-control-zoom { margin-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important; margin-right: 12px !important; }
-    .leaflet-control-zoom a { width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 1.2rem !important; }
-    .photo-marker { border-radius: 14px; border-width: 2.5px; }
-    .photo-marker-count { font-size: 11px; }
-  }
-  @media (max-width: 375px) {
-    :root { --marker-size: 68px; }
-    .logo { font-size: 1.05rem; }
-    #stats-pill { display: none !important; }
-    #panel-photos { grid-template-columns: repeat(2, 1fr); }
-    .splash-title { font-size: 1.7rem; }
-    .splash-globe { width: 72px; height: 72px; }
-    .globe-icon { font-size: 1.8rem; }
-    .year-btn { font-size: 0.78rem; padding: 5px 11px; }
-  }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+:root{--ink:#fff;--text:#242424;--text-secondary:#616161;--accent:#0078D4;--accent-dark:#0364B8;--surface:#f5f5f5;--muted:#8a8886;--panel:rgba(255,255,255,.97);--border:rgba(0,0,0,.08);--border-accent:rgba(0,120,212,.3);--danger:#d13438;--shadow:rgba(0,0,0,.08);--font-ui:'Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;--marker-size:88px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font-ui);background:var(--ink);color:var(--text);height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+#topbar{position:fixed;top:0;left:0;right:0;z-index:1000;height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));gap:16px;backdrop-filter:blur(12px);box-shadow:0 1px 4px var(--shadow)}
+.logo{font-size:1.35rem;font-weight:600;letter-spacing:-.01em;flex-shrink:0}.logo span{color:var(--accent)}
+.tagline{font-size:.75rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-left:1px solid var(--border);padding-left:16px;flex-shrink:0}
+#topbar-right{margin-left:auto;display:flex;gap:12px;align-items:center;flex-shrink:1;min-width:0;overflow:hidden}
+#stats-pill{font-size:.75rem;color:var(--accent);background:rgba(0,120,212,.08);border:1px solid var(--border-accent);padding:4px 12px;border-radius:20px;display:none;white-space:nowrap}
+#scan-status{display:none;align-items:center;gap:8px;font-size:.72rem;color:var(--text-secondary);background:var(--surface);border:1px solid var(--border);padding:4px 12px;border-radius:20px;white-space:nowrap;position:relative;overflow:hidden;min-width:0}
+#scan-status.visible{display:flex}
+#scan-status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:sp 1.5s ease-in-out infinite}
+#scan-status.done #scan-status-dot{background:#2ea043;animation:none}
+#scan-status.error #scan-status-dot{background:var(--danger);animation:none}
+@keyframes sp{0%,100%{opacity:1}50%{opacity:.3}}
+#scan-status-text{overflow:hidden;text-overflow:ellipsis}
+#scan-status-count{font-weight:600;color:var(--accent)}
+#scan-progress-bar{position:absolute;bottom:0;left:0;right:0;height:2px}
+#scan-progress-fill{height:100%;background:var(--accent);width:0%;transition:width .5s ease;border-radius:0 0 20px 20px}
+.btn{font-family:var(--font-ui);font-size:.8rem;font-weight:600;border:none;cursor:pointer;padding:8px 20px;border-radius:6px;transition:all .15s;white-space:nowrap}
+#btn-config{width:36px;height:36px;padding:0;border-radius:50%;font-size:1.1rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-dark)}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid rgba(209,52,56,.3)}.btn-danger:hover{background:rgba(209,52,56,.08)}
+#map{position:fixed;top:calc(56px + env(safe-area-inset-top,0px));left:0;right:0;bottom:0;z-index:1}
+.leaflet-tile{filter:saturate(.85) contrast(1.05)}
+#map-layer-toggle{position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));left:16px;z-index:500;width:44px;height:44px;border-radius:8px;border:2px solid #fff;background:var(--panel);cursor:pointer;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;padding:0}
+#map-layer-toggle.visible{display:block}
+#map-layer-toggle img{width:100%;height:100%;object-fit:cover;display:block}
+#map-layer-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:.55rem;text-align:center;padding:1px 0;font-weight:600}
+#splash{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#f0f4f8,#fff 50%,#e8f0fe);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:32px;transition:opacity .6s,visibility .6s}
+#splash.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.splash-globe{width:120px;height:120px;border:2px solid var(--accent);border-radius:50%;position:relative;animation:sg 12s linear infinite;display:flex;align-items:center;justify-content:center}
+.splash-globe::before{content:'';position:absolute;inset:8px;border:1px solid var(--border-accent);border-radius:50%;animation:sg 8s linear infinite reverse}
+.globe-icon{font-size:3rem}
+@keyframes sg{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.splash-title{font-size:2.8rem;font-weight:700;text-align:center;line-height:1.1}.splash-title span{color:var(--accent)}
+.splash-sub{color:var(--text-secondary);font-size:.95rem;text-align:center;max-width:380px;line-height:1.6}
+#btn-login{padding:15px 44px;font-size:.95rem;border-radius:32px;box-shadow:0 4px 18px rgba(0,120,212,.35)}
+#btn-login:hover{box-shadow:0 6px 24px rgba(0,120,212,.45);transform:translateY(-1px)}
+.splash-note{font-size:.72rem;color:var(--muted);text-align:center;max-width:320px;line-height:1.5}
+#loading-overlay{position:fixed;inset:0;z-index:1900;background:rgba(255,255,255,.92);flex-direction:column;align-items:center;justify-content:center;gap:24px;display:none}
+#loading-overlay.visible{display:flex}
+.loading-msg{font-size:.9rem;color:var(--text-secondary);text-align:center}
+.progress-bar-wrap{width:300px;height:3px;background:rgba(0,0,0,.08);border-radius:2px;overflow:hidden}
+.progress-bar-fill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width .4s ease}
+#loading-count{font-size:2rem;font-weight:700;color:var(--accent)}
+#photo-panel{position:fixed;right:0;top:calc(56px + env(safe-area-inset-top,0px));bottom:0;z-index:500;width:420px;background:var(--panel);border-left:1px solid var(--border);backdrop-filter:blur(16px);box-shadow:-2px 0 12px var(--shadow);transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+#photo-panel.open{transform:translateX(0)}
+.panel-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between}
+.panel-location{font-size:1.1rem;font-weight:600;line-height:1.3;max-width:250px}
+.panel-date{font-size:.72rem;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
+.panel-count{font-size:.7rem;color:var(--muted);margin-top:6px}
+.btn-close{background:transparent;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px 6px;line-height:1;border-radius:4px}
+.btn-close:hover{color:var(--text);background:var(--surface)}
+#panel-photos{flex:1;min-height:0;overflow-y:auto;padding:16px;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:min-content;gap:10px;align-content:start}
+#panel-photos::-webkit-scrollbar{width:4px}
+#panel-photos::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:2px}
+.thumb-card{width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:8px;cursor:pointer;position:relative;background:var(--surface);border:1px solid var(--border);transition:border-color .2s,transform .2s;box-shadow:0 1px 4px var(--shadow)}
+.thumb-card:hover{border-color:var(--accent);transform:scale(1.02)}
+.thumb-card img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block}
+.thumb-card .thumb-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.78),transparent 55%);opacity:0;transition:opacity .2s;display:flex;align-items:flex-end;padding:8px;font-size:.68rem;color:#fff;line-height:1.2}
+.thumb-card:hover .thumb-overlay{opacity:1}
+#lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:8px}
+#lightbox.open{display:flex}
+.lightbox-media-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:92vw;height:80vh;flex-shrink:1;min-height:0}
+#lightbox-img,#lightbox-video{display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;box-shadow:0 0 80px rgba(0,0,0,.85)}
+.hd-badge{position:absolute;top:16px;right:16px;display:none;align-items:center;gap:6px;background:rgba(0,0,0,.6);color:#fff;padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:600;backdrop-filter:blur(8px);z-index:10}
+.hd-badge.visible{display:flex}
+.hd-badge.done{background:rgba(46,160,67,.7)}
+.hd-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:hs .8s linear infinite}
+@keyframes hs{to{transform:rotate(360deg)}}
+.lightbox-info{text-align:center;color:rgba(255,255,255,.7);font-size:.82rem;flex-shrink:0}
+.lightbox-info strong{display:block;font-size:1rem;font-weight:600;color:#fff;margin-bottom:4px}
+#lightbox-actions{margin-top:10px;display:flex;justify-content:center;gap:10px}
+#lightbox-open-onedrive{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:.88rem;font-weight:600;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:28px;padding:11px 26px;backdrop-filter:blur(12px);transition:background .15s}
+#lightbox-open-onedrive:hover{background:rgba(255,255,255,.25)}
+.lightbox-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.6rem;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;z-index:3001}
+.lightbox-nav:hover{background:rgba(255,255,255,.3)}
+#lightbox-prev{left:20px}#lightbox-next{right:20px}
+#lightbox-close{position:fixed;top:24px;right:24px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.4rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;z-index:3001}
+#lightbox-close:hover{background:rgba(255,255,255,.2)}
+.photo-marker-wrap{display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 4px 14px rgba(0,0,0,.35));transition:transform .15s}
+.photo-marker-wrap:hover{transform:scale(1.08)}
+.photo-marker{width:var(--marker-size);height:var(--marker-size);border-radius:16px;overflow:hidden;border:3px solid #fff;background:#e0e0e0;position:relative;flex-shrink:0}
+.photo-marker>img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;object-position:center!important}
+.photo-marker-count{position:absolute;bottom:5px;left:5px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;line-height:1;padding:3px 7px;border-radius:9px;pointer-events:none}
+.photo-marker-tail{width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:10px solid #fff;margin-top:-2px}
+.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:none!important;border:none!important;box-shadow:none!important}
+.marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:none!important}
+#filter-bar{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:500;background:var(--panel);border:1px solid var(--border);border-radius:40px;padding:8px 16px;display:none;gap:6px;align-items:center;backdrop-filter:blur(12px);box-shadow:0 2px 12px var(--shadow);max-width:90vw;overflow-x:auto}
+#filter-bar.visible{display:flex}
+#filter-bar::-webkit-scrollbar{display:none}#filter-bar{scrollbar-width:none}
+.filter-label{font-size:.7rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;margin-right:4px}
+.year-btn{background:transparent;border:1px solid transparent;color:var(--muted);font-family:var(--font-ui);font-size:.78rem;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.year-btn:hover{color:var(--text);border-color:var(--border)}
+.year-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:500}
+#config-panel{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
+#config-panel.open{display:flex}
+.config-box{background:#fff;border:1px solid var(--border);border-radius:20px;padding:28px 28px 32px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.15)}
+.config-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.config-box h2{font-size:1.4rem;font-weight:700;margin:0}
+.config-close-btn{width:34px;height:34px;padding:0;border-radius:50%;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.config-buttons{display:flex;flex-direction:column;gap:12px}
+.config-btn{width:100%;padding:14px 24px;border-radius:28px;font-size:.95rem;font-weight:600;text-align:center}
+.config-toggle{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-radius:16px;background:var(--surface);border:1px solid var(--border)}
+.config-toggle-info{flex:1;min-width:0}
+.config-toggle-label{font-size:.88rem;font-weight:500}
+.config-toggle-sub{font-size:.72rem;color:var(--muted);margin-top:2px}
+.config-toggle-status{font-size:.68rem;color:var(--accent);margin-top:3px;font-weight:500}
+.toggle-switch{position:relative;width:46px;height:26px;flex-shrink:0;margin-left:12px}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#ccc;border-radius:26px;cursor:pointer;transition:background .2s}
+.toggle-slider::before{content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle-switch input:checked+.toggle-slider{background:var(--accent)}
+.toggle-switch input:checked+.toggle-slider::before{transform:translateX(20px)}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:4000;background:#fff;border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:8px;font-size:.82rem;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+#toast.show{opacity:1}
+@media(max-width:600px){
+  :root{--marker-size:80px}
+  .tagline{display:none}
+  #topbar{height:calc(54px + env(safe-area-inset-top,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));gap:8px}
+  .logo{font-size:1.2rem}#topbar-right{gap:8px}
+  #stats-pill{font-size:.78rem;padding:5px 10px;max-width:140px;flex-shrink:1;overflow:hidden;text-overflow:ellipsis}
+  #topbar-right:has(#scan-status.visible) #stats-pill{display:none!important}
+  .btn{padding:0;font-size:1.1rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}
+  #btn-config{font-size:1.2rem}
+  #scan-status{font-size:.75rem;padding:5px 10px;gap:6px;max-width:180px}
+  #map{top:calc(54px + env(safe-area-inset-top,0px))}
+  #map-layer-toggle{bottom:calc(70px + env(safe-area-inset-bottom,0px));left:12px}
+  #photo-panel{top:auto;right:0;left:0;bottom:0;width:100%;height:72dvh;border-left:none;border-top:1px solid var(--border);border-radius:20px 20px 0 0;transform:translateY(100%);padding-bottom:env(safe-area-inset-bottom,0px)}
+  #photo-panel.open{transform:translateY(0)}
+  .panel-header{padding:18px 18px 14px;position:relative}
+  .panel-header::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:40px;height:4px;background:var(--muted);border-radius:2px;opacity:.5}
+  .panel-location{font-size:1.1rem;max-width:70vw}
+  .btn-close{font-size:1.5rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+  #panel-photos{grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
+  .thumb-card{border-radius:10px}
+  #filter-bar{bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:8px 14px;border-radius:32px;max-width:96vw}
+  .year-btn{font-size:.82rem;padding:6px 14px;min-height:34px}
+  #lightbox{padding:0;gap:0}
+  .lightbox-media-wrap{width:100vw;height:70dvh}
+  #lightbox-img,#lightbox-video{border-radius:0;box-shadow:none}
+  .lightbox-nav{top:auto;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:none;width:56px;height:56px;font-size:2rem}
+  #lightbox-close{top:max(16px,env(safe-area-inset-top,10px));right:16px;width:48px;height:48px;font-size:1.5rem}
+  .lightbox-info{padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));width:100%;background:linear-gradient(to top,rgba(0,0,0,.9),transparent)}
+  .lightbox-info strong{font-size:.95rem}
+  #lightbox-actions{margin-top:10px}
+  #lightbox-open-onedrive{min-width:190px;font-size:.82rem;padding:10px 20px}
+  #splash{gap:22px;padding:28px}.splash-globe{width:90px;height:90px}.globe-icon{font-size:2.4rem}.splash-title{font-size:2rem}.splash-sub{font-size:.9rem;max-width:320px}
+  #btn-login{padding:14px 36px;font-size:.95rem}.splash-note{font-size:.75rem;max-width:300px}
+  .config-box{padding:24px 22px 28px;width:94%;border-radius:24px}
+  .config-btn{font-size:.95rem;padding:15px 24px;min-height:52px}
+  .progress-bar-wrap{width:240px}
+  #toast{bottom:calc(70px + env(safe-area-inset-bottom,0px));font-size:.85rem;border-radius:24px}
+  .leaflet-control-zoom{margin-bottom:calc(70px + env(safe-area-inset-bottom,0px))!important;margin-right:12px!important}
+  .leaflet-control-zoom a{width:36px!important;height:36px!important;line-height:36px!important;font-size:1.2rem!important}
+  .photo-marker{border-radius:14px;border-width:2.5px}.photo-marker-count{font-size:11px}
+}
+@media(max-width:375px){:root{--marker-size:68px}.logo{font-size:1.05rem}#stats-pill{display:none!important}#panel-photos{grid-template-columns:repeat(2,1fr)}.splash-title{font-size:1.7rem}.splash-globe{width:72px;height:72px}.globe-icon{font-size:1.8rem}.year-btn{font-size:.78rem;padding:5px 11px}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15)}
 </style>
 </head>
 <body>
-
-<div id="topbar">
-  <div class="logo">Photo<span>Map</span></div>
-  <div class="tagline">Vos souvenirs sur la planète</div>
-  <div id="topbar-right">
-    <div id="stats-pill"></div>
-    <div id="scan-status" style="display:none">
-      <div id="scan-status-dot"></div>
-      <span id="scan-status-text">Scan…</span>
-      <span id="scan-status-count"></span>
-      <div id="scan-progress-bar"><div id="scan-progress-fill"></div></div>
-    </div>
-    <button class="btn btn-ghost" id="btn-config" style="display:none" title="Configuration">⚙</button>
-  </div>
-</div>
-
+<div id="topbar"><div class="logo">Photo<span>Map</span></div><div class="tagline">Vos souvenirs sur la planète</div><div id="topbar-right"><div id="stats-pill"></div><div id="scan-status" style="display:none"><div id="scan-status-dot"></div><span id="scan-status-text">Scan…</span><span id="scan-status-count"></span><div id="scan-progress-bar"><div id="scan-progress-fill"></div></div></div><button class="btn btn-ghost" id="btn-config" style="display:none" title="Configuration">⚙</button></div></div>
 <div id="map"></div>
-<button id="map-layer-toggle" title="Changer le fond de carte">
-  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10' font-family='sans-serif'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/>
-  <div id="map-layer-label">Satellite</div>
-</button>
-
-<div id="filter-bar">
-  <span class="filter-label">Année</span>
-  <button class="year-btn active" data-year="all">Toutes</button>
-</div>
-
-<div id="photo-panel">
-  <div class="panel-header">
-    <div>
-      <div class="panel-location" id="panel-location-name">Lieu</div>
-      <div class="panel-date" id="panel-date-range"></div>
-      <div class="panel-count" id="panel-count"></div>
-    </div>
-    <button class="btn-close" id="panel-close" title="Fermer">✕</button>
-  </div>
-  <div id="panel-photos"></div>
-</div>
-
-<div id="lightbox">
-  <button id="lightbox-close" title="Fermer">✕</button>
-  <button class="lightbox-nav" id="lightbox-prev" title="Précédent">‹</button>
-  <button class="lightbox-nav" id="lightbox-next" title="Suivant">›</button>
-  <div class="lightbox-media-wrap">
-    <img id="lightbox-img" src="" alt="Média"/>
-    <video id="lightbox-video" controls playsinline></video>
-    <div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div><span>HD</span></div>
-    <div class="hd-badge done" id="hd-done"><span>✓ HD</span></div>
-  </div>
-  <div class="lightbox-info">
-    <strong id="lightbox-name"></strong>
-    <span id="lightbox-meta"></span>
-    <div id="lightbox-actions">
-      <button id="lightbox-open-onedrive" class="btn btn-primary" type="button">↗ Ouvrir dans OneDrive</button>
-    </div>
-  </div>
-</div>
-
-<div id="splash">
-  <div class="splash-globe"><div class="globe-icon">🌍</div></div>
-  <div class="splash-title">Vos photos,<br><span>sur la planète</span></div>
-  <div class="splash-sub">Connectez votre OneDrive pour visualiser toutes vos photos et vidéos géolocalisées sur une mappemonde interactive.</div>
-  <button class="btn btn-primary btn-lg" id="btn-login">Connecter OneDrive</button>
-  <div class="splash-note">Vos données restent privées — tout est traité localement dans votre navigateur. Aucune photo n'est envoyée à un serveur tiers.</div>
-</div>
-
-<div id="loading-overlay">
-  <div id="loading-count">0</div>
-  <div class="loading-msg" id="loading-msg">Connexion à OneDrive…</div>
-  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill"></div></div>
-</div>
-
-<div id="config-panel">
-  <div class="config-box">
-    <div class="config-header">
-      <h2>PhotoMap</h2>
-      <button class="btn btn-ghost config-close-btn" id="btn-config-cancel">✕</button>
-    </div>
-    <div class="config-buttons">
-      <div id="config-connect-wrap">
-        <button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button>
-      </div>
-      <div class="config-toggle" id="config-cache-toggle">
-        <div class="config-toggle-info">
-          <div class="config-toggle-label">Cache local des vignettes</div>
-          <div class="config-toggle-sub" id="cache-toggle-sub">Chargement instantané hors-ligne</div>
-          <div class="config-toggle-status" id="cache-toggle-status"></div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-local-cache">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-      <div id="config-rescan-wrap" style="display:none">
-        <button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button>
-      </div>
-      <div id="config-logout-wrap" style="display:none">
-        <button class="btn btn-danger config-btn" id="btn-config-logout">Disconnect &amp; Delete</button>
-      </div>
-    </div>
-  </div>
-</div>
-
+<button id="map-layer-toggle" title="Changer le fond de carte"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10' font-family='sans-serif'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/><div id="map-layer-label">Satellite</div></button>
+<div id="filter-bar"><span class="filter-label">Année</span><button class="year-btn active" data-year="all">Toutes</button></div>
+<div id="photo-panel"><div class="panel-header"><div><div class="panel-location" id="panel-location-name">Lieu</div><div class="panel-date" id="panel-date-range"></div><div class="panel-count" id="panel-count"></div></div><button class="btn-close" id="panel-close" title="Fermer">✕</button></div><div id="panel-photos"></div></div>
+<div id="lightbox"><button id="lightbox-close" title="Fermer">✕</button><button class="lightbox-nav" id="lightbox-prev" title="Précédent">‹</button><button class="lightbox-nav" id="lightbox-next" title="Suivant">›</button><div class="lightbox-media-wrap"><img id="lightbox-img" src="" alt="Média"/><video id="lightbox-video" controls playsinline></video><div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div><span>HD</span></div><div class="hd-badge done" id="hd-done"><span>✓ HD</span></div></div><div class="lightbox-info"><strong id="lightbox-name"></strong><span id="lightbox-meta"></span><div id="lightbox-actions"><button id="lightbox-open-onedrive" class="btn btn-primary" type="button">↗ Ouvrir dans OneDrive</button></div></div></div>
+<div id="splash"><div class="splash-globe"><div class="globe-icon">🌍</div></div><div class="splash-title">Vos photos,<br><span>sur la planète</span></div><div class="splash-sub">Connectez votre OneDrive pour visualiser toutes vos photos et vidéos géolocalisées sur une mappemonde interactive.</div><button class="btn btn-primary btn-lg" id="btn-login">Connecter OneDrive</button><div class="splash-note">Vos données restent privées — tout est traité localement dans votre navigateur.</div></div>
+<div id="loading-overlay"><div id="loading-count">0</div><div class="loading-msg" id="loading-msg">Connexion…</div><div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill"></div></div></div>
+<div id="config-panel"><div class="config-box"><div class="config-header"><h2>PhotoMap</h2><button class="btn btn-ghost config-close-btn" id="btn-config-cancel">✕</button></div><div class="config-buttons"><div id="config-connect-wrap"><button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button></div><div class="config-toggle"><div class="config-toggle-info"><div class="config-toggle-label">Cache local des vignettes</div><div class="config-toggle-sub" id="cache-toggle-sub">Chargement instantané hors-ligne</div><div class="config-toggle-status" id="cache-toggle-status"></div></div><label class="toggle-switch"><input type="checkbox" id="toggle-local-cache"><span class="toggle-slider"></span></label></div><div id="config-rescan-wrap" style="display:none"><button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button></div><div id="config-logout-wrap" style="display:none"><button class="btn btn-danger config-btn" id="btn-config-logout">Disconnect &amp; Delete</button></div></div></div></div>
 <div id="toast"></div>
-
 <script>
-/* ================================================================
-   PhotoMap v2.1 — Fixed: marker sizes, grey band, lightbox loading,
-   cache status, stale URL handling
-   ================================================================ */
-const STORAGE_KEY_CLIENT_ID = 'photomap_client_id';
-const DB_NAME = 'photomap_db';
-const DB_VERSION = 2;
-const STORE_MEDIA = 'media';
-const STORE_META = 'meta';
-const STORE_THUMBS = 'thumbs';
-const DEFAULT_CLIENT_ID = '74655b12-46c1-4cdb-be1a-27655fa47677';
-const IMAGE_EXTENSIONS = new Set(['jpg','jpeg','png','heic','heif','webp','gif','bmp','tiff']);
-const VIDEO_EXTENSIONS = new Set(['mp4','mov','m4v','hevc','avi','webm','3gp','mkv']);
-const THUMBNAIL_TTL_MS = 4 * 60 * 60 * 1000;
-const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
+/* PhotoMap v2.2 */
+const DB_NAME='photomap_db',DB_VERSION=2,STORE_MEDIA='media',STORE_META='meta',STORE_THUMBS='thumbs';
+const DEFAULT_CLIENT_ID='74655b12-46c1-4cdb-be1a-27655fa47677';
+const IMAGE_EXT=new Set(['jpg','jpeg','png','heic','heif','webp','gif','bmp','tiff']);
+const VIDEO_EXT=new Set(['mp4','mov','m4v','hevc','avi','webm','3gp','mkv']);
+const THUMB_TTL=4*3600*1000;
+const FALLBACK="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
 
-let msalInstance = null, allPhotos = [], markers = [], clusterGroup = null;
-let currentYear = 'all', isLoading = false, backgroundSyncRunning = false;
-let autoSyncTimer = null, startAppRunning = false;
-let lightboxPhotos = [], lightboxIndex = 0, panelAllPhotos = [];
-let _dbInstance = null, _currentToken = null;
-const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
+let msal=null,allPhotos=[],markers=[],clusterGroup,currentYear='all',bgSyncRunning=false,startRunning=false;
+let lightboxPhotos=[],lightboxIdx=0,panelPhotos=[];
+let _db=null,_token=null,autoTimer=null;
 
-/* Marker size from CSS variable */
-function getMarkerSizePx() {
-  const v = getComputedStyle(document.documentElement).getPropertyValue('--marker-size').trim();
-  return parseInt(v) || 88;
+/* Local cache */
+const LC_KEY='photomap_local_thumb_cache';
+let lcEnabled=localStorage.getItem(LC_KEY)==='true';
+const thumbUrls=new Map(); /* photoId → objectURL */
+
+let curLayer='standard',stdLayer,satLayer;
+
+/* ===== DB ===== */
+function openDb(){if(_db)return Promise.resolve(_db);return new Promise((ok,no)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE_MEDIA)){d.createObjectStore(STORE_MEDIA,{keyPath:'id'}).createIndex('by_date','date',{unique:false})}if(!d.objectStoreNames.contains(STORE_META))d.createObjectStore(STORE_META,{keyPath:'key'});if(!d.objectStoreNames.contains(STORE_THUMBS))d.createObjectStore(STORE_THUMBS,{keyPath:'id'})};r.onsuccess=()=>{_db=r.result;_db.onclose=()=>{_db=null};_db.onversionchange=()=>{_db.close();_db=null};ok(_db)};r.onerror=()=>no(r.error)})}
+async function dbPut(items){if(!items?.length)return;const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_MEDIA,'readwrite'),s=tx.objectStore(STORE_MEDIA);for(const i of items)s.put({...i,date:i.date?i.date.toISOString():null,fetchedAt:i.fetchedAt||new Date().toISOString()});tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
+async function dbAll(){const d=await openDb();return new Promise((ok,no)=>{const r=d.transaction(STORE_MEDIA,'readonly').objectStore(STORE_MEDIA).getAll();r.onsuccess=()=>ok((r.result||[]).map(i=>({...i,date:i.date?new Date(i.date):null})));r.onerror=()=>no(r.error)})}
+async function dbClear(){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_MEDIA,'readwrite');tx.objectStore(STORE_MEDIA).clear();tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
+async function dbMeta(k){const d=await openDb();return new Promise((ok,no)=>{const r=d.transaction(STORE_META,'readonly').objectStore(STORE_META).get(k);r.onsuccess=()=>ok(r.result?.value??null);r.onerror=()=>no(r.error)})}
+async function dbSetMeta(k,v){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_META,'readwrite');tx.objectStore(STORE_META).put({key:k,value:v});tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
+async function dbDelMeta(k){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_META,'readwrite');tx.objectStore(STORE_META).delete(k);tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
+async function dbDelMedia(id){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_MEDIA,'readwrite');tx.objectStore(STORE_MEDIA).delete(id);tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
+
+/* Thumb blob store */
+async function dbPutThumb(id,blob){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_THUMBS,'readwrite');tx.objectStore(STORE_THUMBS).put({id,blob,at:new Date().toISOString()});tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
+async function dbThumbIds(){const d=await openDb();return new Promise((ok,no)=>{const r=d.transaction(STORE_THUMBS,'readonly').objectStore(STORE_THUMBS).getAllKeys();r.onsuccess=()=>ok(new Set(r.result||[]));r.onerror=()=>no(r.error)})}
+async function dbClearThumbs(){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_THUMBS,'readwrite');tx.objectStore(STORE_THUMBS).clear();tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
+async function dbDelThumb(id){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_THUMBS,'readwrite');tx.objectStore(STORE_THUMBS).delete(id);tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
+
+async function loadCachedThumbs(){
+  if(!lcEnabled)return;
+  const d=await openDb();
+  return new Promise((ok,no)=>{const r=d.transaction(STORE_THUMBS,'readonly').objectStore(STORE_THUMBS).openCursor();r.onsuccess=e=>{const c=e.target.result;if(c){const{id,blob}=c.value;if(blob&&!thumbUrls.has(id))try{thumbUrls.set(id,URL.createObjectURL(blob))}catch{}c.continue()}else ok()};r.onerror=()=>no(r.error)})
 }
 
-/* === LOCAL CACHE === */
-const STORAGE_KEY_LOCAL_CACHE = 'photomap_local_thumb_cache';
-let localCacheEnabled = localStorage.getItem(STORAGE_KEY_LOCAL_CACHE) === 'true';
-const thumbObjectUrls = new Map();
-
-let currentLayerType = 'standard';
-let standardLayer, satelliteLayer;
-
-/* ==================== IndexedDB ==================== */
-function openDb() {
-  if (_dbInstance) return Promise.resolve(_dbInstance);
-  return new Promise((ok, fail) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE_MEDIA)) { const s = db.createObjectStore(STORE_MEDIA, {keyPath:'id'}); s.createIndex('by_date','date',{unique:false}); }
-      if (!db.objectStoreNames.contains(STORE_META)) db.createObjectStore(STORE_META, {keyPath:'key'});
-      if (!db.objectStoreNames.contains(STORE_THUMBS)) db.createObjectStore(STORE_THUMBS, {keyPath:'id'});
-    };
-    req.onsuccess = () => { _dbInstance = req.result; _dbInstance.onclose = () => { _dbInstance = null; }; _dbInstance.onversionchange = () => { _dbInstance.close(); _dbInstance = null; }; ok(_dbInstance); };
-    req.onerror = () => fail(req.error);
-  });
-}
-async function dbPutMediaBatch(items) { if (!items?.length) return; const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_MEDIA,'readwrite'); const s = tx.objectStore(STORE_MEDIA); for (const it of items) s.put({...it, date: it.date ? it.date.toISOString() : null, fetchedAt: it.fetchedAt || new Date().toISOString()}); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
-async function dbGetAllMedia() { const db = await openDb(); return new Promise((ok, fail) => { const req = db.transaction(STORE_MEDIA,'readonly').objectStore(STORE_MEDIA).getAll(); req.onsuccess = () => ok((req.result||[]).map(i => ({...i, date: i.date ? new Date(i.date) : null}))); req.onerror = () => fail(req.error); }); }
-async function dbClearMedia() { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_MEDIA,'readwrite'); tx.objectStore(STORE_MEDIA).clear(); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
-async function dbSetMeta(k, v) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_META,'readwrite'); tx.objectStore(STORE_META).put({key:k,value:v}); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
-async function dbGetMeta(k) { const db = await openDb(); return new Promise((ok, fail) => { const req = db.transaction(STORE_META,'readonly').objectStore(STORE_META).get(k); req.onsuccess = () => ok(req.result?.value ?? null); req.onerror = () => fail(req.error); }); }
-async function dbDeleteMeta(k) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_META,'readwrite'); tx.objectStore(STORE_META).delete(k); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
-async function dbDeleteMediaItem(id) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_MEDIA,'readwrite'); tx.objectStore(STORE_MEDIA).delete(id); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
-
-/* Thumbnail blob store */
-async function dbPutThumb(id, blob) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_THUMBS,'readwrite'); tx.objectStore(STORE_THUMBS).put({id, blob, savedAt: new Date().toISOString()}); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
-async function dbGetThumb(id) { const db = await openDb(); return new Promise((ok, fail) => { const req = db.transaction(STORE_THUMBS,'readonly').objectStore(STORE_THUMBS).get(id); req.onsuccess = () => ok(req.result || null); req.onerror = () => fail(req.error); }); }
-async function dbGetAllThumbIds() { const db = await openDb(); return new Promise((ok, fail) => { const req = db.transaction(STORE_THUMBS,'readonly').objectStore(STORE_THUMBS).getAllKeys(); req.onsuccess = () => ok(new Set(req.result || [])); req.onerror = () => fail(req.error); }); }
-async function dbClearThumbs() { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_THUMBS,'readwrite'); tx.objectStore(STORE_THUMBS).clear(); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
-async function dbDeleteThumb(id) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_THUMBS,'readwrite'); tx.objectStore(STORE_THUMBS).delete(id); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
-
-/* Thumbnail helpers */
-function getThumbSrc(photo) {
-  if (localCacheEnabled && thumbObjectUrls.has(photo.id)) return thumbObjectUrls.get(photo.id);
-  return photo.thumbnailUrl || FALLBACK_ICON;
+/*
+ * KEY FIX: getThumbSrc returns local blob URL if available,
+ * otherwise the remote URL. If neither is valid, returns FALLBACK.
+ */
+function getThumbSrc(p){
+  if(lcEnabled&&thumbUrls.has(p.id))return thumbUrls.get(p.id);
+  return p.thumbnailUrl||FALLBACK;
 }
 
-async function loadCachedThumbs() {
-  if (!localCacheEnabled) return;
-  const db = await openDb();
-  return new Promise((ok, fail) => {
-    const req = db.transaction(STORE_THUMBS,'readonly').objectStore(STORE_THUMBS).openCursor();
-    req.onsuccess = e => {
-      const c = e.target.result;
-      if (c) { const {id, blob} = c.value; if (blob && !thumbObjectUrls.has(id)) try { thumbObjectUrls.set(id, URL.createObjectURL(blob)); } catch {} c.continue(); }
-      else ok();
-    };
-    req.onerror = () => fail(req.error);
-  });
-}
-
-async function downloadAndCacheThumb(photo) {
-  const url = photo.thumbnailUrl;
-  if (!url) return;
-  try { const res = await fetch(url); if (!res.ok) return; const blob = await res.blob(); await dbPutThumb(photo.id, blob); thumbObjectUrls.set(photo.id, URL.createObjectURL(blob)); } catch {}
-}
-
-let _thumbCacheRunning = false;
-let _thumbCacheCached = 0;
-let _thumbCacheTotal = 0;
-
-async function backgroundCacheThumbs() {
-  if (!localCacheEnabled || _thumbCacheRunning) return;
-  _thumbCacheRunning = true;
-  try {
-    const cachedIds = await dbGetAllThumbIds();
-    const missing = allPhotos.filter(p => !cachedIds.has(p.id) && p.thumbnailUrl);
-    _thumbCacheTotal = allPhotos.length;
-    _thumbCacheCached = cachedIds.size;
-    updateCacheStatus();
-
-    for (let i = 0; i < missing.length; i++) {
-      if (!localCacheEnabled) break;
-      await downloadAndCacheThumb(missing[i]);
-      _thumbCacheCached++;
-      if (i % 5 === 0) updateCacheStatus();
-      if (i % 10 === 9) await new Promise(r => setTimeout(r, 100));
+/*
+ * KEY FIX: Download thumb blob. If the URL fails (expired),
+ * refresh the URL from Graph API first, then retry.
+ */
+async function downloadThumb(photo){
+  if(!photo.thumbnailUrl)return false;
+  try{
+    let res=await fetch(photo.thumbnailUrl);
+    if(!res.ok&&_token){
+      /* URL expired — refresh from Graph */
+      await refreshUrls(photo);
+      if(!photo.thumbnailUrl)return false;
+      res=await fetch(photo.thumbnailUrl);
     }
-    updateCacheStatus();
-  } catch (err) { console.warn('Thumb cache error:', err); }
-  finally { _thumbCacheRunning = false; }
+    if(!res.ok)return false;
+    const blob=await res.blob();
+    await dbPutThumb(photo.id,blob);
+    thumbUrls.set(photo.id,URL.createObjectURL(blob));
+    return true;
+  }catch{return false}
 }
 
-function updateCacheStatus() {
-  const el = document.getElementById('cache-toggle-status');
-  if (!el) return;
-  if (!localCacheEnabled) { el.textContent = ''; return; }
-  if (_thumbCacheTotal === 0) { el.textContent = ''; return; }
-  if (_thumbCacheCached >= _thumbCacheTotal) {
-    el.textContent = `✓ ${_thumbCacheCached} vignettes en cache`;
-  } else {
-    el.textContent = `⟳ ${_thumbCacheCached} / ${_thumbCacheTotal} vignettes téléchargées…`;
-  }
+let _tcRunning=false;
+async function bgCacheThumbs(){
+  if(!lcEnabled||_tcRunning)return;_tcRunning=true;
+  try{
+    const have=await dbThumbIds();
+    const need=allPhotos.filter(p=>!have.has(p.id)&&p.thumbnailUrl);
+    const total=allPhotos.length;let cached=have.size;
+    setCacheStatus(cached,total);
+    for(let i=0;i<need.length;i++){
+      if(!lcEnabled)break;
+      const ok=await downloadThumb(need[i]);
+      if(ok)cached++;
+      if(i%5===0)setCacheStatus(cached,total);
+      if(i%10===9)await new Promise(r=>setTimeout(r,100));
+    }
+    setCacheStatus(cached,total);
+  }catch(e){console.warn('Cache err',e)}
+  finally{_tcRunning=false}
 }
 
-/* ==================== MAP ==================== */
-const map = L.map('map', { center: [20, 0], zoom: 2, zoomControl: false, minZoom: 2, maxBoundsViscosity: 0, worldCopyJump: true });
-standardLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19, noWrap: false });
-satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri', maxZoom: 19, noWrap: false });
-standardLayer.addTo(map);
-L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-document.getElementById('map-layer-toggle').addEventListener('click', () => {
-  const label = document.getElementById('map-layer-label');
-  if (currentLayerType === 'standard') { map.removeLayer(standardLayer); satelliteLayer.addTo(map); currentLayerType = 'satellite'; label.textContent = 'Plan'; }
-  else { map.removeLayer(satelliteLayer); standardLayer.addTo(map); currentLayerType = 'standard'; label.textContent = 'Satellite'; }
-});
-
-clusterGroup = L.markerClusterGroup({
-  showCoverageOnHover: false, maxClusterRadius: 50, spiderfyOnMaxZoom: true, disableClusteringAtZoom: 18,
-  iconCreateFunction(cluster) {
-    const count = cluster.getChildCount();
-    const first = cluster.getAllChildMarkers()[0]?._photoData;
-    const src = first ? getThumbSrc(first) : FALLBACK_ICON;
-    const pid = first?.id || '';
-    const sz = getMarkerSizePx();
-    return L.divIcon({
-      className: '',
-      html: `<div class="photo-marker-wrap"><div class="photo-marker"><img src="${src}" loading="lazy" data-photo-id="${pid}" onerror="this.src='${FALLBACK_ICON}'"/><div class="photo-marker-count">${count}</div></div><div class="photo-marker-tail"></div></div>`,
-      iconSize: [sz, sz+12], iconAnchor: [sz/2, sz+12]
-    });
-  }
-});
-map.addLayer(clusterGroup);
-
-/* ==================== UI HELPERS ==================== */
-let toastTimer = null;
-function showToast(msg, dur=3000) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); if (toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), dur); }
-function setLoading(v, msg='', p=0) { const el = document.getElementById('loading-overlay'); el.classList.toggle('visible',v); if (msg) document.getElementById('loading-msg').textContent = msg; document.getElementById('progress-fill').style.width = p+'%'; isLoading = v; }
-function setLoadingCount(n) { document.getElementById('loading-count').textContent = n; }
-function setScanStatus(state, text, count, progress) {
-  const el = document.getElementById('scan-status'), te = document.getElementById('scan-status-text'), ce = document.getElementById('scan-status-count'), fe = document.getElementById('scan-progress-fill');
-  if (state === 'hidden') { el.style.display = 'none'; el.classList.remove('visible','paused','done','error'); return; }
-  el.style.display = 'flex'; el.classList.add('visible'); el.classList.remove('paused','done','error');
-  if (state==='paused') el.classList.add('paused'); if (state==='done') el.classList.add('done'); if (state==='error') el.classList.add('error');
-  if (text) te.textContent = text; if (count!=null) ce.textContent = count; if (progress!=null) fe.style.width = Math.min(progress,100)+'%';
+function setCacheStatus(cached,total){
+  const el=document.getElementById('cache-toggle-status');
+  if(!el||!lcEnabled){if(el)el.textContent='';return}
+  if(total===0){el.textContent='';return}
+  el.textContent=cached>=total?`✓ ${cached} vignettes en cache`:`⟳ ${cached} / ${total} en cours…`;
 }
-let _scanDoneTimer = null;
-function setScanDone(c, d) { setScanStatus('done','Terminé', d||(c+' médias'), 100); if (_scanDoneTimer) clearTimeout(_scanDoneTimer); _scanDoneTimer = setTimeout(() => setScanStatus('hidden'), 5000); }
-function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-function isVideoByName(n='') { return VIDEO_EXTENSIONS.has(n.split('.').pop()?.toLowerCase()); }
 
-function updateUiWithCurrentPhotos(fit=false) {
-  if (!allPhotos?.length) return;
-  buildYearFilter(allPhotos);
-  const filtered = currentYear==='all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear()==currentYear);
-  renderMarkers(filtered); updateStats(filtered.length);
-  if (fit && markers.length) { map.fitBounds(L.featureGroup(markers).getBounds().pad(0.15), {maxZoom:14}); }
-  document.getElementById('btn-config').style.display = 'inline-flex';
+/* ===== MAP ===== */
+const map=L.map('map',{center:[20,0],zoom:2,zoomControl:false,minZoom:2,worldCopyJump:true});
+stdLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19,noWrap:false});
+satLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19,noWrap:false});
+stdLayer.addTo(map);L.control.zoom({position:'bottomright'}).addTo(map);
+document.getElementById('map-layer-toggle').addEventListener('click',()=>{const l=document.getElementById('map-layer-label');if(curLayer==='standard'){map.removeLayer(stdLayer);satLayer.addTo(map);curLayer='satellite';l.textContent='Plan'}else{map.removeLayer(satLayer);stdLayer.addTo(map);curLayer='standard';l.textContent='Satellite'}});
+function msz(){return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--marker-size'))||88}
+
+clusterGroup=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:50,spiderfyOnMaxZoom:true,disableClusteringAtZoom:18,
+  iconCreateFunction(c){const n=c.getChildCount(),f=c.getAllChildMarkers()[0]?._pd,s=f?getThumbSrc(f):FALLBACK,sz=msz();
+    return L.divIcon({className:'',html:`<div class="photo-marker-wrap"><div class="photo-marker"><img src="${s}" loading="lazy" onerror="this.src='${FALLBACK}'"/><div class="photo-marker-count">${n}</div></div><div class="photo-marker-tail"></div></div>`,iconSize:[sz,sz+12],iconAnchor:[sz/2,sz+12]})}
+});map.addLayer(clusterGroup);
+
+/* ===== UI ===== */
+let tt;function toast(m,d=3000){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),d)}
+function setScan(st,txt,cnt,pct){const el=document.getElementById('scan-status'),te=document.getElementById('scan-status-text'),ce=document.getElementById('scan-status-count'),fe=document.getElementById('scan-progress-fill');if(st==='hidden'){el.style.display='none';el.classList.remove('visible','done','error');return}el.style.display='flex';el.classList.add('visible');el.classList.remove('done','error');if(st==='done')el.classList.add('done');if(st==='error')el.classList.add('error');if(txt)te.textContent=txt;if(cnt!=null)ce.textContent=cnt;if(pct!=null)fe.style.width=Math.min(pct,100)+'%'}
+let _sdt;function scanDone(c,d){setScan('done','Terminé',d||(c+' médias'),100);clearTimeout(_sdt);_sdt=setTimeout(()=>setScan('hidden'),5000)}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function isVid(n=''){return VIDEO_EXT.has(n.split('.').pop()?.toLowerCase())}
+
+function updateUI(fit=false){
+  if(!allPhotos?.length)return;
+  buildYears(allPhotos);
+  const f=currentYear==='all'?allPhotos:allPhotos.filter(p=>p.date&&p.date.getFullYear()==currentYear);
+  render(f);updStats(f.length);
+  if(fit&&markers.length)map.fitBounds(L.featureGroup(markers).getBounds().pad(.15),{maxZoom:14});
+  document.getElementById('btn-config').style.display='inline-flex';
   document.getElementById('map-layer-toggle').classList.add('visible');
-  setTimeout(refreshVisibleStaleThumbnails, 800);
+  setTimeout(refreshVisible,800);
 }
 
-/* ==================== MSAL ==================== */
-async function initMsal(cid) { msalInstance = new msal.PublicClientApplication({ auth: { clientId: cid, authority: 'https://login.microsoftonline.com/common', redirectUri: location.origin + location.pathname }, cache: { cacheLocation: 'localStorage' } }); await msalInstance.initialize(); }
-async function getToken() { const a = msalInstance.getAllAccounts(); try { return (await msalInstance.acquireTokenSilent({scopes:['Files.Read','User.Read'], account:a[0]})).accessToken; } catch { await msalInstance.acquireTokenRedirect({scopes:['Files.Read','User.Read'], account:a[0]}); return null; } }
-async function getTokenFresh() { const a = msalInstance.getAllAccounts(); try { return (await msalInstance.acquireTokenSilent({scopes:['Files.Read','User.Read'], account:a[0], forceRefresh:true})).accessToken; } catch { await msalInstance.acquireTokenRedirect({scopes:['Files.Read','User.Read'], account:a[0]}); return null; } }
+/* ===== AUTH ===== */
+async function initMsal(cid){msal=new window.msal.PublicClientApplication({auth:{clientId:cid,authority:'https://login.microsoftonline.com/common',redirectUri:location.origin+location.pathname},cache:{cacheLocation:'localStorage'}});await msal.initialize()}
+async function getToken(){const a=msal.getAllAccounts();try{return(await msal.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0]})).accessToken}catch{await msal.acquireTokenRedirect({scopes:['Files.Read','User.Read'],account:a[0]});return null}}
+async function freshToken(){const a=msal.getAllAccounts();try{return(await msal.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0],forceRefresh:true})).accessToken}catch{await msal.acquireTokenRedirect({scopes:['Files.Read','User.Read'],account:a[0]});return null}}
 
-async function graphGet(url, token, retried=false) {
-  const res = await fetch(url, {headers:{Authorization:`Bearer ${token}`}});
-  if (res.status===401 && !retried) { const ft = await getTokenFresh(); if (ft) { _currentToken = ft; return graphGet(url, ft, true); } return null; }
-  if (res.status===401) throw new Error('Session expirée. Veuillez vous reconnecter.');
-  if (res.status===429) { await new Promise(r => setTimeout(r, parseInt(res.headers.get('Retry-After')||'5',10)*1000)); return graphGet(url, token); }
-  if (!res.ok) { const t = await res.text(); throw new Error(`Erreur API Graph (${res.status}) : ${t.substring(0,200)}`); }
-  return res.json();
+async function gql(url,tok,retry=false){
+  const r=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
+  if(r.status===401&&!retry){const ft=await freshToken();if(ft){_token=ft;return gql(url,ft,true)}return null}
+  if(r.status===401)throw new Error('Session expirée');
+  if(r.status===429){await new Promise(ok=>setTimeout(ok,parseInt(r.headers.get('Retry-After')||'5')*1000));return gql(url,tok)}
+  if(!r.ok)throw new Error('Graph '+r.status);
+  return r.json();
 }
-function isMediaFile(item) { if (!item.file||!item.name) return false; const ext = item.name.split('.').pop()?.toLowerCase(); return IMAGE_EXTENSIONS.has(ext)||VIDEO_EXTENSIONS.has(ext); }
-async function getThumbnail(id) { try { const d = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${id}/thumbnails`, _currentToken); return d.value?.[0]?.medium?.url || d.value?.[0]?.large?.url || d.value?.[0]?.small?.url || null; } catch { return null; } }
+function isMF(i){if(!i.file||!i.name)return false;const e=i.name.split('.').pop()?.toLowerCase();return IMAGE_EXT.has(e)||VIDEO_EXT.has(e)}
+async function getThumb(id){try{const d=await gql('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/thumbnails',_token);return d.value?.[0]?.medium?.url||d.value?.[0]?.large?.url||d.value?.[0]?.small?.url||null}catch{return null}}
 
-async function refreshMediaUrls(item) {
-  try {
-    const d = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${item.id}?$select=id,@microsoft.graph.downloadUrl,webUrl`, _currentToken);
-    const tu = await getThumbnail(item.id);
-    item.downloadUrl = d['@microsoft.graph.downloadUrl'] || tu || item.downloadUrl;
-    item.thumbnailUrl = tu || item.thumbnailUrl;
-    item.fetchedAt = new Date().toISOString();
-    await dbPutMediaBatch([item]);
-    if (localCacheEnabled && tu) downloadAndCacheThumb(item).catch(()=>{});
-  } catch (err) { console.warn('Failed to refresh URLs for', item.id, err); }
+/*
+ * KEY FIX: refreshUrls — gets fresh downloadUrl + thumbnailUrl from Graph.
+ * This is the ONLY way to get working URLs after they expire.
+ */
+async function refreshUrls(item){
+  try{
+    const d=await gql('https://graph.microsoft.com/v1.0/me/drive/items/'+item.id+'?$select=id,@microsoft.graph.downloadUrl,webUrl',_token);
+    const tu=await getThumb(item.id);
+    item.downloadUrl=d['@microsoft.graph.downloadUrl']||tu||item.downloadUrl;
+    item.thumbnailUrl=tu||item.thumbnailUrl;
+    item.webUrl=d.webUrl||item.webUrl;
+    item.fetchedAt=new Date().toISOString();
+    await dbPut([item]);
+    if(lcEnabled&&tu)downloadThumb(item).catch(()=>{});
+  }catch(e){console.warn('Refresh fail',item.id,e)}
 }
-function isUrlStale(item) {
-  if (localCacheEnabled && thumbObjectUrls.has(item.id)) return false;
-  if (!item.fetchedAt) return true;
-  return (Date.now() - new Date(item.fetchedAt).getTime()) > THUMBNAIL_TTL_MS;
+
+function isStale(item){
+  if(lcEnabled&&thumbUrls.has(item.id))return false;
+  if(!item.fetchedAt)return true;
+  return(Date.now()-new Date(item.fetchedAt).getTime())>THUMB_TTL;
 }
 
-/* ==================== THUMB REFRESH QUEUE ==================== */
-const _refreshQueue = new Set(), _refreshInProgress = new Set(), _failedImgElements = new Map();
-let _refreshProcessing = false;
-function queueThumbnailRefresh(pid, img) { if (!_currentToken||_refreshInProgress.has(pid)) return; _refreshQueue.add(pid); if (img) { if (!_failedImgElements.has(pid)) _failedImgElements.set(pid, new Set()); _failedImgElements.get(pid).add(img); } if (!_refreshProcessing) { _refreshProcessing = true; setTimeout(processRefreshQueue, 50); } }
-
-async function processRefreshQueue() {
-  if (!_refreshQueue.size) { _refreshProcessing = false; return; }
-  const bounds = map.getBounds(); const pri = [], norm = [];
-  for (const id of _refreshQueue) { const p = allPhotos.find(x=>x.id===id); if (p && bounds.contains([p.lat,p.lng])) pri.push(id); else norm.push(id); }
-  const batch = [...pri,...norm].slice(0,4);
-  await Promise.allSettled(batch.map(async id => {
-    _refreshQueue.delete(id); _refreshInProgress.add(id);
-    const photo = allPhotos.find(p=>p.id===id);
-    if (!photo) { _refreshInProgress.delete(id); return; }
-    try {
-      await refreshMediaUrls(photo);
-      const src = getThumbSrc(photo);
-      const imgs = _failedImgElements.get(id);
-      if (imgs) { for (const im of imgs) if (im.isConnected) { im.onerror=null; im.src=src; im.onerror=function(){this.src=FALLBACK_ICON;}; } _failedImgElements.delete(id); }
-      updateMarkerThumb(id, src);
-    } catch {} finally { _refreshInProgress.delete(id); }
+/* ===== REFRESH QUEUE ===== */
+const _rq=new Set(),_rip=new Set(),_rfail=new Map();let _rp=false;
+function queueRefresh(pid,img){if(!_token||_rip.has(pid))return;_rq.add(pid);if(img){if(!_rfail.has(pid))_rfail.set(pid,new Set());_rfail.get(pid).add(img)}if(!_rp){_rp=true;setTimeout(processQ,50)}}
+async function processQ(){
+  if(!_rq.size){_rp=false;return}
+  const b=map.getBounds(),pri=[],norm=[];
+  for(const id of _rq){const p=allPhotos.find(x=>x.id===id);if(p&&b.contains([p.lat,p.lng]))pri.push(id);else norm.push(id)}
+  const batch=[...pri,...norm].slice(0,4);
+  await Promise.allSettled(batch.map(async id=>{
+    _rq.delete(id);_rip.add(id);
+    const photo=allPhotos.find(p=>p.id===id);
+    if(!photo){_rip.delete(id);return}
+    try{
+      await refreshUrls(photo);
+      const src=getThumbSrc(photo);
+      const imgs=_rfail.get(id);
+      if(imgs){for(const im of imgs)if(im.isConnected){im.onerror=null;im.src=src;im.onerror=function(){this.src=FALLBACK}}_rfail.delete(id)}
+      /* Update marker on map */
+      for(const m of markers){if(m._pd?.id===id){const el=m.getElement?.();if(el){const img=el.querySelector('img');if(img){img.onerror=null;img.src=src;img.onerror=function(){this.src=FALLBACK}}}break}}
+    }catch{}finally{_rip.delete(id)}
   }));
-  if (_refreshQueue.size) setTimeout(processRefreshQueue, 200); else _refreshProcessing = false;
+  if(_rq.size)setTimeout(processQ,200);else _rp=false;
 }
-function updateMarkerThumb(pid, src) { for (const m of markers) { if (m._photoData?.id===pid) { const img = m.getElement?.()?.querySelector('img'); if (img) { img.onerror=null; img.src=src; img.onerror=function(){this.src=FALLBACK_ICON;}; } break; } } }
-function refreshVisibleStaleThumbnails() {
-  if (!_currentToken) return; const b = map.getBounds(); let q=0;
-  for (const m of markers) { if (q>=20) break; const p=m._photoData; if (!p||!b.contains([p.lat,p.lng])||_refreshInProgress.has(p.id)||_refreshQueue.has(p.id)) continue; if (isUrlStale(p)) { _refreshQueue.add(p.id); q++; } }
-  if (q>0 && !_refreshProcessing) { _refreshProcessing=true; setTimeout(processRefreshQueue,50); }
+function refreshVisible(){
+  if(!_token)return;const b=map.getBounds();let q=0;
+  for(const m of markers){if(q>=20)break;const p=m._pd;if(!p||!b.contains([p.lat,p.lng])||_rip.has(p.id)||_rq.has(p.id))continue;if(isStale(p)){_rq.add(p.id);q++}}
+  if(q>0&&!_rp){_rp=true;setTimeout(processQ,50)}
 }
-let _visibleRefreshTimer = null;
-map.on('moveend', () => { clearTimeout(_visibleRefreshTimer); _visibleRefreshTimer = setTimeout(refreshVisibleStaleThumbnails, 500); });
+let _vrt;map.on('moveend',()=>{clearTimeout(_vrt);_vrt=setTimeout(refreshVisible,500)});
 
-/* ==================== DELTA SYNC ==================== */
-const DELTA_BASE_URL = 'https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
-
-async function runDeltaSync() {
-  _currentToken = await getToken(); if (!_currentToken) return [];
-  const existing = await dbGetAllMedia();
-  const eMap = new Map(existing.map(p=>[p.id,p]));
-  const eCount = existing.length;
-  let deltaLink = await dbGetMeta('deltaLink');
-  let url = deltaLink || DELTA_BASE_URL;
-  const isFirst = !deltaLink;
-  setScanStatus('scanning', isFirst ? 'Premier scan…' : 'Synchronisation…', isFirst ? '' : eCount+' en cache', 2);
-  let scanned=0, added=0, deleted=0, newDelta=null;
-  const batch = [];
-
-  while (url) {
-    const data = await graphGet(url, _currentToken);
-    for (const item of (data.value||[])) {
-      scanned++;
-      if (scanned%50===0) setScanStatus('scanning', isFirst?`Analyse… ${scanned} fichiers`:`Synchro… ${scanned} changements`, isFirst?(eCount+added)+' trouvés':(added>0?`+${added} nouveaux`:'vérification…'), Math.min(5+scanned*0.005,95));
-      if (item.deleted) { if (eMap.has(item.id)) { eMap.delete(item.id); await dbDeleteMediaItem(item.id); if (localCacheEnabled) dbDeleteThumb(item.id).catch(()=>{}); deleted++; } continue; }
-      if (item.folder || !isMediaFile(item)) continue;
-
-      if (!isFirst && eMap.has(item.id)) {
-        const lat=item.location?.latitude, lng=item.location?.longitude;
-        if (lat!=null && lng!=null && !(lat===0&&lng===0)) {
-          const tu = await getThumbnail(item.id);
-          const dt = item.photo?.takenDateTime || item.createdDateTime;
-          const u = { id:item.id, name:item.name, lat:Number(lat), lng:Number(lng), date:dt?new Date(dt):null, thumbnailUrl:tu, downloadUrl:item['@microsoft.graph.downloadUrl']||tu, webUrl:item.webUrl||null, mediaType:isVideoByName(item.name)?'video':'image', fetchedAt:new Date().toISOString() };
-          eMap.set(item.id, u); batch.push(u);
-          if (localCacheEnabled && tu) downloadAndCacheThumb(u).catch(()=>{});
-        }
-        continue;
-      }
-      if (isFirst && eMap.has(item.id)) continue;
-      const lat=item.location?.latitude, lng=item.location?.longitude;
-      if (lat==null||lng==null||(lat===0&&lng===0)) continue;
-      const tu = await getThumbnail(item.id);
-      const dt = item.photo?.takenDateTime || item.createdDateTime;
-      const mi = { id:item.id, name:item.name, lat:Number(lat), lng:Number(lng), date:dt?new Date(dt):null, thumbnailUrl:tu, downloadUrl:item['@microsoft.graph.downloadUrl']||tu, webUrl:item.webUrl||null, mediaType:isVideoByName(item.name)?'video':'image', fetchedAt:new Date().toISOString() };
-      eMap.set(item.id, mi); batch.push(mi); added++;
-      if (localCacheEnabled && tu) downloadAndCacheThumb(mi).catch(()=>{});
-      const ft = (eCount+added)<50 ? 5 : 25;
-      if (batch.length>=ft) {
-        await dbPutMediaBatch(batch); batch.length=0;
-        allPhotos=[...eMap.values()]; updateUiWithCurrentPhotos(eCount===0 && added<=ft);
-      }
+/* ===== DELTA SYNC ===== */
+const DELTA_URL='https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
+async function deltaSync(){
+  _token=await getToken();if(!_token)return[];
+  const ex=await dbAll(),eMap=new Map(ex.map(p=>[p.id,p])),eC=ex.length;
+  let dl=await dbMeta('deltaLink'),url=dl||DELTA_URL,isFirst=!dl;
+  setScan('scanning',isFirst?'Premier scan…':'Synchro…',isFirst?'':eC+' en cache',2);
+  let sc=0,add=0,del=0,nd=null;const batch=[];
+  while(url){
+    const data=await gql(url,_token);
+    for(const it of(data.value||[])){
+      sc++;if(sc%50===0)setScan('scanning',isFirst?`Analyse… ${sc}`:`Synchro… ${sc}`,isFirst?(eC+add)+' trouvés':(add>0?`+${add}`:'…'),Math.min(5+sc*.005,95));
+      if(it.deleted){if(eMap.has(it.id)){eMap.delete(it.id);await dbDelMedia(it.id);if(lcEnabled)dbDelThumb(it.id).catch(()=>{});del++}continue}
+      if(it.folder||!isMF(it))continue;
+      if(!isFirst&&eMap.has(it.id)){const la=it.location?.latitude,lo=it.location?.longitude;if(la!=null&&lo!=null&&!(la===0&&lo===0)){const tu=await getThumb(it.id),dt=it.photo?.takenDateTime||it.createdDateTime;const u={id:it.id,name:it.name,lat:+la,lng:+lo,date:dt?new Date(dt):null,thumbnailUrl:tu,downloadUrl:it['@microsoft.graph.downloadUrl']||tu,webUrl:it.webUrl,mediaType:isVid(it.name)?'video':'image',fetchedAt:new Date().toISOString()};eMap.set(it.id,u);batch.push(u);if(lcEnabled&&tu)downloadThumb(u).catch(()=>{})}continue}
+      if(isFirst&&eMap.has(it.id))continue;
+      const la=it.location?.latitude,lo=it.location?.longitude;
+      if(la==null||lo==null||(la===0&&lo===0))continue;
+      const tu=await getThumb(it.id),dt=it.photo?.takenDateTime||it.createdDateTime;
+      const mi={id:it.id,name:it.name,lat:+la,lng:+lo,date:dt?new Date(dt):null,thumbnailUrl:tu,downloadUrl:it['@microsoft.graph.downloadUrl']||tu,webUrl:it.webUrl,mediaType:isVid(it.name)?'video':'image',fetchedAt:new Date().toISOString()};
+      eMap.set(it.id,mi);batch.push(mi);add++;
+      if(lcEnabled&&tu)downloadThumb(mi).catch(()=>{});
+      if(batch.length>=((eC+add)<50?5:25)){await dbPut(batch);batch.length=0;allPhotos=[...eMap.values()];updateUI(eC===0&&add<=5)}
     }
-    url = data['@odata.nextLink'] || (newDelta=data['@odata.deltaLink']||null, null);
+    url=data['@odata.nextLink']||(nd=data['@odata.deltaLink']||null,null);
   }
-  if (batch.length) await dbPutMediaBatch(batch);
-  if (newDelta) await dbSetMeta('deltaLink', newDelta);
-  allPhotos=[...eMap.values()];
-  updateUiWithCurrentPhotos(eCount===0 && allPhotos.length>0);
-  await dbSetMeta('scan_state', {scanned, found:allPhotos.length, updatedAt:new Date().toISOString(), completed:true});
-
-  if (isFirst) setScanDone(allPhotos.length, allPhotos.length+' médias');
-  else if (added>0||deleted>0) { const p=[]; if(added>0)p.push(`+${added}`); if(deleted>0)p.push(`-${deleted}`); setScanDone(allPhotos.length, p.join(' ')+' · '+allPhotos.length+' total'); }
-  else setScanDone(allPhotos.length, 'à jour');
-  if (localCacheEnabled) setTimeout(backgroundCacheThumbs, 2000);
+  if(batch.length)await dbPut(batch);
+  if(nd)await dbSetMeta('deltaLink',nd);
+  allPhotos=[...eMap.values()];updateUI(eC===0&&allPhotos.length>0);
+  await dbSetMeta('scan_state',{found:allPhotos.length,at:new Date().toISOString()});
+  if(isFirst)scanDone(allPhotos.length,allPhotos.length+' médias');
+  else if(add||del){const p=[];if(add)p.push('+'+add);if(del)p.push('-'+del);scanDone(allPhotos.length,p.join(' ')+' · '+allPhotos.length+' total')}
+  else scanDone(allPhotos.length,'à jour');
+  if(lcEnabled)setTimeout(bgCacheThumbs,2000);
   return allPhotos;
 }
-async function runBackgroundSync() { if (backgroundSyncRunning) return; backgroundSyncRunning=true; try { await runDeltaSync(); } catch(e) { console.warn('Sync error',e); setScanStatus('error','Sync interrompue','',0); setTimeout(()=>setScanStatus('hidden'),4000); } finally { backgroundSyncRunning=false; } }
-function startAutoSync() { if(autoSyncTimer) clearInterval(autoSyncTimer); autoSyncTimer = setInterval(()=>{ if(_currentToken&&!backgroundSyncRunning) runBackgroundSync(); }, AUTO_SYNC_INTERVAL_MS); }
-function stopAutoSync() { if(autoSyncTimer){clearInterval(autoSyncTimer);autoSyncTimer=null;} }
+async function bgSync(){if(bgSyncRunning)return;bgSyncRunning=true;try{await deltaSync()}catch(e){console.warn('Sync err',e);setScan('error','Erreur','',0);setTimeout(()=>setScan('hidden'),4000)}finally{bgSyncRunning=false}}
+function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(()=>{if(_token&&!bgSyncRunning)bgSync()},15*60*1000)}
+function stopAuto(){clearInterval(autoTimer);autoTimer=null}
 
-/* ==================== SPATIAL INDEX ==================== */
-let spatialIndex = {};
-const SPATIAL_CELL_SIZE = 0.0005;
-function buildSpatialIndex(photos) { spatialIndex={}; for (const p of photos) { const k=Math.round(p.lat/SPATIAL_CELL_SIZE)+','+Math.round(p.lng/SPATIAL_CELL_SIZE); (spatialIndex[k]||(spatialIndex[k]=[])).push(p); } }
-function getNearbyPhotos(lat, lng, fSet) {
-  const cLat=Math.round(lat/SPATIAL_CELL_SIZE), cLng=Math.round(lng/SPATIAL_CELL_SIZE), r=[];
-  for (let di=-1;di<=1;di++) for (let dj=-1;dj<=1;dj++) { const c=spatialIndex[(cLat+di)+','+(cLng+dj)]; if (!c) continue; for (const p of c) { if (fSet&&!fSet.has(p.id)) continue; if (Math.abs(p.lat-lat)<SPATIAL_CELL_SIZE&&Math.abs(p.lng-lng)<SPATIAL_CELL_SIZE) r.push(p); } }
-  return r;
-}
+/* ===== SPATIAL INDEX ===== */
+let si={};const CS=.0005;
+function buildSI(ph){si={};for(const p of ph){const k=Math.round(p.lat/CS)+','+Math.round(p.lng/CS);(si[k]||(si[k]=[])).push(p)}}
+function nearby(lat,lng,fs){const cl=Math.round(lat/CS),cg=Math.round(lng/CS),r=[];for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const c=si[(cl+i)+','+(cg+j)];if(!c)continue;for(const p of c){if(fs&&!fs.has(p.id))continue;if(Math.abs(p.lat-lat)<CS&&Math.abs(p.lng-lng)<CS)r.push(p)}}return r}
 
-/* ==================== MARKERS ==================== */
-function createMarker(photo, fIdSet) {
-  const src = getThumbSrc(photo), pid = photo.id;
-  const nearby = getNearbyPhotos(photo.lat, photo.lng, fIdSet);
-  const badge = nearby.length>1 ? `<div class="photo-marker-count">${nearby.length}</div>` : '';
-  const sz = getMarkerSizePx();
-  const icon = L.divIcon({
-    className: '',
-    html: `<div class="photo-marker-wrap"><div class="photo-marker"><img src="${src}" loading="lazy" data-photo-id="${pid}" onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${pid}', this);"/>${badge}</div><div class="photo-marker-tail"></div></div>`,
-    iconSize: [sz, sz+12], iconAnchor: [sz/2, sz+12]
-  });
-  const m = L.marker([photo.lat, photo.lng], {icon});
-  m.on('click', () => { const np = getNearbyPhotos(photo.lat,photo.lng,fIdSet); openPanel(np.length?np:[photo], photo.lat, photo.lng); });
-  m._photoData = photo;
-  return m;
+/* ===== MARKERS ===== */
+function mkMarker(p,fs){
+  const src=getThumbSrc(p),pid=p.id,nb=nearby(p.lat,p.lng,fs);
+  const badge=nb.length>1?`<div class="photo-marker-count">${nb.length}</div>`:'';
+  const sz=msz();
+  const icon=L.divIcon({className:'',
+    html:`<div class="photo-marker-wrap"><div class="photo-marker"><img src="${src}" loading="lazy" data-pid="${pid}" onerror="this.src='${FALLBACK}';if(window.queueRefresh)queueRefresh('${pid}',this)"/>${badge}</div><div class="photo-marker-tail"></div></div>`,
+    iconSize:[sz,sz+12],iconAnchor:[sz/2,sz+12]});
+  const m=L.marker([p.lat,p.lng],{icon});
+  m.on('click',()=>{const np=nearby(p.lat,p.lng,fs);openPanel(np.length?np:[p],p.lat,p.lng)});
+  m._pd=p;return m;
 }
-function renderMarkers(filtered) {
-  clusterGroup.off('clusterclick'); clusterGroup.clearLayers(); markers=[];
-  buildSpatialIndex(allPhotos);
-  const fIdSet = new Set(filtered.map(p=>p.id));
-  filtered.forEach(p => markers.push(createMarker(p, fIdSet)));
+function render(filtered){
+  clusterGroup.off('clusterclick');clusterGroup.clearLayers();markers=[];
+  buildSI(allPhotos);const fs=new Set(filtered.map(p=>p.id));
+  filtered.forEach(p=>markers.push(mkMarker(p,fs)));
   clusterGroup.addLayers(markers);
-  clusterGroup.on('clusterclick', e => { openPanel(e.layer.getAllChildMarkers().map(m=>m._photoData), e.latlng.lat, e.latlng.lng); });
+  clusterGroup.on('clusterclick',e=>openPanel(e.layer.getAllChildMarkers().map(m=>m._pd),e.latlng.lat,e.latlng.lng));
 }
 
-/* ==================== PANEL ==================== */
-function openPanel(photos, lat, lng) {
-  panelAllPhotos = [...photos].sort((a,b) => (b.date||0)-(a.date||0));
-  const dates = panelAllPhotos.filter(p=>p.date).map(p=>p.date);
-  const dr = document.getElementById('panel-date-range');
-  if (dates.length) { const mn=new Date(Math.min(...dates)), mx=new Date(Math.max(...dates)); const f=d=>d.toLocaleDateString('fr-FR',{month:'short',year:'numeric'}); dr.textContent = mn.getFullYear()===mx.getFullYear()&&mn.getMonth()===mx.getMonth()?f(mn):`${f(mn)} — ${f(mx)}`; } else dr.textContent='';
-  document.getElementById('panel-count').textContent = `${panelAllPhotos.length} média${panelAllPhotos.length>1?'s':''}`;
-  const loc = document.getElementById('panel-location-name'); loc.textContent='Chargement…';
-  reverseGeocode(lat,lng).then(n => loc.textContent=n);
-  renderPanelPhotos();
-  document.getElementById('photo-panel').classList.add('open');
+/* ===== PANEL ===== */
+function openPanel(photos,lat,lng){
+  panelPhotos=[...photos].sort((a,b)=>(b.date||0)-(a.date||0));
+  const dates=panelPhotos.filter(p=>p.date).map(p=>p.date);
+  const dr=document.getElementById('panel-date-range');
+  if(dates.length){const mn=new Date(Math.min(...dates)),mx=new Date(Math.max(...dates)),f=d=>d.toLocaleDateString('fr-FR',{month:'short',year:'numeric'});dr.textContent=mn.getFullYear()===mx.getFullYear()&&mn.getMonth()===mx.getMonth()?f(mn):`${f(mn)} — ${f(mx)}`}else dr.textContent='';
+  document.getElementById('panel-count').textContent=panelPhotos.length+' média'+(panelPhotos.length>1?'s':'');
+  const loc=document.getElementById('panel-location-name');loc.textContent='Chargement…';
+  geocode(lat,lng).then(n=>loc.textContent=n);
+  renderPanel();document.getElementById('photo-panel').classList.add('open');
 }
-function renderPanelPhotos() {
-  const g = document.getElementById('panel-photos'); g.innerHTML='';
-  panelAllPhotos.forEach((photo,idx) => {
-    const card=document.createElement('div'); card.className='thumb-card';
-    const ds = photo.date ? photo.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : '';
+function renderPanel(){
+  const g=document.getElementById('panel-photos');g.innerHTML='';
+  panelPhotos.forEach((p,idx)=>{
+    const card=document.createElement('div');card.className='thumb-card';
+    const ds=p.date?p.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'';
     const img=document.createElement('img');
-    img.src=getThumbSrc(photo);
-    img.loading='lazy'; img.decoding='async'; img.alt=photo.name; img.dataset.photoId=photo.id;
-    /* Force cover style inline as extra safety */
-    img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;';
-    img.onerror = function() { this.src=FALLBACK_ICON; queueThumbnailRefresh(photo.id,this); };
-    const ov=document.createElement('div'); ov.className='thumb-overlay'; ov.innerHTML=`${escapeHtml(photo.name)}<br>${ds}`;
-    card.appendChild(img); card.appendChild(ov);
-    card.addEventListener('click', () => { lightboxPhotos=panelAllPhotos; lightboxIndex=idx; showLightboxPhoto(); });
+    img.src=getThumbSrc(p);img.loading='lazy';img.decoding='async';img.alt=p.name;
+    img.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover';
+    img.onerror=function(){this.src=FALLBACK;queueRefresh(p.id,this)};
+    const ov=document.createElement('div');ov.className='thumb-overlay';ov.innerHTML=esc(p.name)+'<br>'+ds;
+    card.appendChild(img);card.appendChild(ov);
+    card.addEventListener('click',()=>{lightboxPhotos=panelPhotos;lightboxIdx=idx;showLB()});
     g.appendChild(card);
   });
 }
 
-/* ==================== LIGHTBOX WITH HD ==================== */
+/* ===== LIGHTBOX ===== */
 /*
- * FIX: The core issue was that without local cache, thumbnailUrl can be expired.
- * The lightbox showed thumbSrc (expired URL) → broken image.
- * Now: if the URL looks stale, we FIRST refresh URLs before trying to display,
- * and we always show FALLBACK_ICON as initial placeholder if URL is stale.
+ * KEY FIX: The lightbox ALWAYS fetches fresh URLs from Graph API if the
+ * current URLs are stale. It shows the local cached thumb or FALLBACK
+ * immediately, then loads the fresh full-res image.
  */
-function showLightboxPhoto() {
-  if (!lightboxPhotos.length) return;
-  const photo = lightboxPhotos[lightboxIndex];
-  const lb=document.getElementById('lightbox'), img=document.getElementById('lightbox-img'), video=document.getElementById('lightbox-video');
-  const hdLoad=document.getElementById('hd-loader'), hdDone=document.getElementById('hd-done'), openBtn=document.getElementById('lightbox-open-onedrive');
-  img.style.display='none'; video.style.display='none';
-  hdLoad.classList.remove('visible'); hdDone.classList.remove('visible');
-  video.onloadedmetadata=null; img.onload=null; img.onerror=null;
-  video.pause(); try{video.removeAttribute('src');video.load();}catch{}
+function showLB(){
+  if(!lightboxPhotos.length)return;
+  const p=lightboxPhotos[lightboxIdx];
+  const lb=document.getElementById('lightbox'),img=document.getElementById('lightbox-img'),vid=document.getElementById('lightbox-video');
+  const hdL=document.getElementById('hd-loader'),hdD=document.getElementById('hd-done'),oBtn=document.getElementById('lightbox-open-onedrive');
+  img.style.display='none';vid.style.display='none';hdL.classList.remove('visible');hdD.classList.remove('visible');
+  vid.onloadedmetadata=null;img.onload=null;img.onerror=null;
+  vid.pause();try{vid.removeAttribute('src');vid.load()}catch{}
+  const cid=p.id;
 
-  const currentId = photo.id;
-  const stale = isUrlStale(photo) && !localCacheEnabled;
+  /* Step 1: Show best available thumbnail immediately */
+  const thumbSrc=getThumbSrc(p);
 
-  /* Get best available thumb src (local blob or remote URL) */
-  const thumbSrc = stale ? FALLBACK_ICON : getThumbSrc(photo);
-  const fullSrc = stale ? null : (photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || null);
-
-  if (photo.mediaType === 'video') {
-    video.style.display = 'block';
-    if (stale && _currentToken) {
-      hdLoad.classList.add('visible');
-      refreshMediaUrls(photo).then(() => {
-        if (lightboxPhotos[lightboxIndex]?.id!==currentId) return;
-        video.src = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || '';
-        hdLoad.classList.remove('visible');
-      }).catch(() => hdLoad.classList.remove('visible'));
-    } else {
-      video.src = fullSrc || '';
+  if(p.mediaType==='video'){
+    vid.style.display='block';
+    /* For video, always try to get a fresh download URL */
+    if(_token){
+      hdL.classList.add('visible');
+      refreshUrls(p).then(()=>{
+        if(lightboxPhotos[lightboxIdx]?.id!==cid)return;
+        vid.src=p.downloadUrl||p.webUrl||'';
+        hdL.classList.remove('visible');
+      }).catch(()=>hdL.classList.remove('visible'));
+    }else{
+      vid.src=p.downloadUrl||p.webUrl||'';
     }
-  } else {
-    img.src = thumbSrc;
-    img.style.display = 'block';
-    img.onerror = () => { img.src = FALLBACK_ICON; };
+  }else{
+    img.src=thumbSrc;img.style.display='block';
+    img.onerror=()=>{img.src=FALLBACK};
 
-    if (stale && _currentToken) {
-      /* URLs are expired: refresh first, then load thumb + HD */
-      hdLoad.classList.add('visible');
-      refreshMediaUrls(photo).then(() => {
-        if (lightboxPhotos[lightboxIndex]?.id!==currentId) return;
-        /* Now URLs are fresh — show thumb first */
-        const freshThumb = getThumbSrc(photo);
-        img.src = freshThumb;
-        /* Then load HD */
-        const freshFull = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl;
-        if (freshFull && freshFull !== freshThumb) {
-          const hd = new Image();
-          hd.onload = () => { if(lightboxPhotos[lightboxIndex]?.id===currentId){img.src=hd.src; hdLoad.classList.remove('visible'); hdDone.classList.add('visible'); setTimeout(()=>{if(lightboxPhotos[lightboxIndex]?.id===currentId)hdDone.classList.remove('visible');},2000);} };
-          hd.onerror = () => { hdLoad.classList.remove('visible'); };
-          hd.src = freshFull;
-        } else {
-          hdLoad.classList.remove('visible');
-        }
-      }).catch(() => { hdLoad.classList.remove('visible'); });
-    } else if (fullSrc && fullSrc !== thumbSrc && fullSrc !== FALLBACK_ICON) {
-      /* URLs are fresh: show thumb immediately, load HD in background */
-      hdLoad.classList.add('visible');
-      const hd = new Image();
-      hd.onload = () => { if(lightboxPhotos[lightboxIndex]?.id!==currentId) return; img.src=hd.src; hdLoad.classList.remove('visible'); hdDone.classList.add('visible'); setTimeout(()=>{if(lightboxPhotos[lightboxIndex]?.id===currentId)hdDone.classList.remove('visible');},2000); };
-      hd.onerror = () => {
-        if(lightboxPhotos[lightboxIndex]?.id!==currentId) return;
-        hdLoad.classList.remove('visible');
-        /* Try refreshing if the full URL failed */
-        if (_currentToken) {
-          refreshMediaUrls(photo).then(() => {
-            if(lightboxPhotos[lightboxIndex]?.id!==currentId) return;
-            const ns = photo.downloadUrl||photo.thumbnailUrl;
-            if (ns) { const r=new Image(); r.onload=()=>{if(lightboxPhotos[lightboxIndex]?.id===currentId){img.src=r.src;hdDone.classList.add('visible');setTimeout(()=>hdDone.classList.remove('visible'),2000);}}; r.src=ns; }
-          }).catch(()=>{});
-        }
-      };
-      hd.src = fullSrc;
+    /* Step 2: Always fetch fresh full-res URL from Graph API */
+    if(_token){
+      hdL.classList.add('visible');
+      refreshUrls(p).then(()=>{
+        if(lightboxPhotos[lightboxIdx]?.id!==cid)return;
+        const freshThumb=getThumbSrc(p);
+        /* If we were showing fallback, update to fresh thumb first */
+        if(thumbSrc===FALLBACK&&freshThumb!==FALLBACK)img.src=freshThumb;
+        /* Now load full-res */
+        const fullUrl=p.downloadUrl||p.thumbnailUrl;
+        if(fullUrl){
+          const hd=new Image();
+          hd.onload=()=>{if(lightboxPhotos[lightboxIdx]?.id!==cid)return;img.src=hd.src;hdL.classList.remove('visible');hdD.classList.add('visible');setTimeout(()=>{if(lightboxPhotos[lightboxIdx]?.id===cid)hdD.classList.remove('visible')},2000)};
+          hd.onerror=()=>{hdL.classList.remove('visible')};
+          hd.src=fullUrl;
+        }else{hdL.classList.remove('visible')}
+      }).catch(()=>{hdL.classList.remove('visible')});
     }
   }
 
-  document.getElementById('lightbox-name').textContent = photo.name;
-  const dateStr = photo.date ? photo.date.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '';
-  document.getElementById('lightbox-meta').textContent = [dateStr, `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`].filter(Boolean).join('  ·  ');
-  const odUrl = photo.webUrl||photo.downloadUrl;
-  if (odUrl) { openBtn.dataset.webUrl=odUrl; openBtn.style.display='inline-flex'; } else { delete openBtn.dataset.webUrl; openBtn.style.display='none'; }
-  document.getElementById('lightbox-prev').style.display = lightboxPhotos.length>1?'flex':'none';
-  document.getElementById('lightbox-next').style.display = lightboxPhotos.length>1?'flex':'none';
+  document.getElementById('lightbox-name').textContent=p.name;
+  const ds=p.date?p.date.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
+  document.getElementById('lightbox-meta').textContent=[ds,p.lat.toFixed(4)+', '+p.lng.toFixed(4)].filter(Boolean).join('  ·  ');
+  const od=p.webUrl||p.downloadUrl;
+  if(od){oBtn.dataset.webUrl=od;oBtn.style.display='inline-flex'}else{delete oBtn.dataset.webUrl;oBtn.style.display='none'}
+  document.getElementById('lightbox-prev').style.display=lightboxPhotos.length>1?'flex':'none';
+  document.getElementById('lightbox-next').style.display=lightboxPhotos.length>1?'flex':'none';
   lb.classList.add('open');
 }
 
-/* ==================== EVENT LISTENERS ==================== */
-document.getElementById('panel-close').addEventListener('click', () => document.getElementById('photo-panel').classList.remove('open'));
-map.on('click', () => document.getElementById('photo-panel').classList.remove('open'));
-document.getElementById('lightbox-close').addEventListener('click', () => document.getElementById('lightbox').classList.remove('open'));
-document.getElementById('lightbox-prev').addEventListener('click', e => { e.stopPropagation(); lightboxIndex=(lightboxIndex-1+lightboxPhotos.length)%lightboxPhotos.length; showLightboxPhoto(); });
-document.getElementById('lightbox-next').addEventListener('click', e => { e.stopPropagation(); lightboxIndex=(lightboxIndex+1)%lightboxPhotos.length; showLightboxPhoto(); });
-document.getElementById('lightbox').addEventListener('click', e => { if(e.target===document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('open'); });
-document.getElementById('lightbox-open-onedrive').addEventListener('click', e => { e.stopPropagation(); const u=e.currentTarget.dataset.webUrl; if(!u)return; if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) location.href=u; else window.open(u,'_blank','noopener'); });
-document.addEventListener('keydown', e => { const lb=document.getElementById('lightbox'); if(!lb.classList.contains('open'))return; if(e.key==='Escape')lb.classList.remove('open'); if(e.key==='ArrowLeft'){lightboxIndex=(lightboxIndex-1+lightboxPhotos.length)%lightboxPhotos.length;showLightboxPhoto();} if(e.key==='ArrowRight'){lightboxIndex=(lightboxIndex+1)%lightboxPhotos.length;showLightboxPhoto();} });
-document.addEventListener('keydown', e => { if(e.key==='Escape') document.getElementById('photo-panel').classList.remove('open'); });
+/* ===== EVENTS ===== */
+document.getElementById('panel-close').addEventListener('click',()=>document.getElementById('photo-panel').classList.remove('open'));
+map.on('click',()=>document.getElementById('photo-panel').classList.remove('open'));
+document.getElementById('lightbox-close').addEventListener('click',()=>document.getElementById('lightbox').classList.remove('open'));
+document.getElementById('lightbox-prev').addEventListener('click',e=>{e.stopPropagation();lightboxIdx=(lightboxIdx-1+lightboxPhotos.length)%lightboxPhotos.length;showLB()});
+document.getElementById('lightbox-next').addEventListener('click',e=>{e.stopPropagation();lightboxIdx=(lightboxIdx+1)%lightboxPhotos.length;showLB()});
+document.getElementById('lightbox').addEventListener('click',e=>{if(e.target===document.getElementById('lightbox'))document.getElementById('lightbox').classList.remove('open')});
+document.getElementById('lightbox-open-onedrive').addEventListener('click',e=>{e.stopPropagation();const u=e.currentTarget.dataset.webUrl;if(!u)return;if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))location.href=u;else window.open(u,'_blank','noopener')});
+document.addEventListener('keydown',e=>{const lb=document.getElementById('lightbox');if(!lb.classList.contains('open'))return;if(e.key==='Escape')lb.classList.remove('open');if(e.key==='ArrowLeft'){lightboxIdx=(lightboxIdx-1+lightboxPhotos.length)%lightboxPhotos.length;showLB()}if(e.key==='ArrowRight'){lightboxIdx=(lightboxIdx+1)%lightboxPhotos.length;showLB()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('photo-panel').classList.remove('open')});
 
 /* Touch */
-(function() {
-  let sx=0,sy=0; const T=50, lb=document.getElementById('lightbox');
-  lb.addEventListener('touchstart', e=>{sx=e.changedTouches[0].screenX;sy=e.changedTouches[0].screenY;},{passive:true});
-  lb.addEventListener('touchend', e=>{const dx=e.changedTouches[0].screenX-sx,dy=e.changedTouches[0].screenY-sy; if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>T){if(dx<0){lightboxIndex=(lightboxIndex+1)%lightboxPhotos.length;}else{lightboxIndex=(lightboxIndex-1+lightboxPhotos.length)%lightboxPhotos.length;}showLightboxPhoto();}else if(dy>T*1.5&&Math.abs(dy)>Math.abs(dx))lb.classList.remove('open');},{passive:true});
-  const ph=document.querySelector('.panel-header'); let py=0;
-  ph.addEventListener('touchstart', e=>{py=e.changedTouches[0].screenY;},{passive:true});
-  ph.addEventListener('touchend', e=>{if(e.changedTouches[0].screenY-py>60) document.getElementById('photo-panel').classList.remove('open');},{passive:true});
-})();
+(function(){let sx=0,sy=0;const T=50,lb=document.getElementById('lightbox');
+lb.addEventListener('touchstart',e=>{sx=e.changedTouches[0].screenX;sy=e.changedTouches[0].screenY},{passive:true});
+lb.addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-sx,dy=e.changedTouches[0].screenY-sy;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>T){lightboxIdx=dx<0?(lightboxIdx+1)%lightboxPhotos.length:(lightboxIdx-1+lightboxPhotos.length)%lightboxPhotos.length;showLB()}else if(dy>T*1.5&&Math.abs(dy)>Math.abs(dx))lb.classList.remove('open')},{passive:true});
+const ph=document.querySelector('.panel-header');let py=0;
+ph.addEventListener('touchstart',e=>{py=e.changedTouches[0].screenY},{passive:true});
+ph.addEventListener('touchend',e=>{if(e.changedTouches[0].screenY-py>60)document.getElementById('photo-panel').classList.remove('open')},{passive:true})})();
 
-/* ==================== GEOCODING ==================== */
-const geocodeCache = {}; let lastGeoTime = 0;
-async function reverseGeocode(lat,lng,retries=0) {
-  const k=`${lat.toFixed(2)},${lng.toFixed(2)}`; if(geocodeCache[k]) return geocodeCache[k];
-  const w=Math.max(0,1100-(Date.now()-lastGeoTime)); if(w>0) await new Promise(r=>setTimeout(r,w)); lastGeoTime=Date.now();
-  try { const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`,{headers:{'User-Agent':'PhotoMap/1.0'}});
-    if(res.status===429){if(retries<3){await new Promise(r=>setTimeout(r,(2**retries)*1500));return reverseGeocode(lat,lng,retries+1);}throw new Error('Rate limit');}
-    if(!res.ok)throw new Error(res.status); const d=await res.json(); const a=d.address||{};
-    const n=a.city||a.town||a.village||a.county||a.state||a.country||'Lieu inconnu'; const c=a.country||'';
-    const r=c&&n!==c?`${n}, ${c}`:n; geocodeCache[k]=r; return r;
-  } catch { return `${lat.toFixed(3)}°, ${lng.toFixed(3)}°`; }
-}
+/* ===== GEOCODING ===== */
+const gc={};let glt=0;
+async function geocode(lat,lng,rt=0){const k=lat.toFixed(2)+','+lng.toFixed(2);if(gc[k])return gc[k];const w=Math.max(0,1100-(Date.now()-glt));if(w>0)await new Promise(r=>setTimeout(r,w));glt=Date.now();try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`,{headers:{'User-Agent':'PhotoMap/1.0'}});if(r.status===429){if(rt<3){await new Promise(ok=>setTimeout(ok,(2**rt)*1500));return geocode(lat,lng,rt+1)}throw 0}if(!r.ok)throw 0;const d=await r.json(),a=d.address||{},n=a.city||a.town||a.village||a.county||a.state||a.country||'Lieu inconnu',c=a.country||'';const res=c&&n!==c?n+', '+c:n;gc[k]=res;return res}catch{return lat.toFixed(3)+'°, '+lng.toFixed(3)+'°'}}
 
-/* ==================== YEAR FILTER ==================== */
-let yearFilterInit = false;
-function buildYearFilter(photos) {
-  const years=[...new Set(photos.filter(p=>p.date).map(p=>p.date.getFullYear()))].sort((a,b)=>b-a);
-  const bar=document.getElementById('filter-bar');
-  bar.innerHTML=`<span class="filter-label">Année</span><button class="year-btn${currentYear==='all'?' active':''}" data-year="all">Toutes</button>`;
-  years.forEach(y=>{const b=document.createElement('button');b.className='year-btn'+(currentYear==y?' active':'');b.dataset.year=y;b.textContent=y;bar.appendChild(b);});
-  bar.classList.add('visible');
-  if(!yearFilterInit){yearFilterInit=true;bar.addEventListener('click',e=>{const b=e.target.closest('.year-btn');if(!b)return;bar.querySelectorAll('.year-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');currentYear=b.dataset.year;applyFilter();});}
-}
-function applyFilter() { const f=currentYear==='all'?allPhotos:allPhotos.filter(p=>p.date&&p.date.getFullYear()==currentYear); renderMarkers(f); updateStats(f.length); document.getElementById('photo-panel').classList.remove('open'); }
-function updateStats(c) { const el=document.getElementById('stats-pill'); el.textContent=`${c} média${c>1?'s':''} géolocalisé${c>1?'s':''}`; el.style.display='block'; }
+/* ===== YEAR FILTER ===== */
+let yfi=false;
+function buildYears(ph){const yrs=[...new Set(ph.filter(p=>p.date).map(p=>p.date.getFullYear()))].sort((a,b)=>b-a);const bar=document.getElementById('filter-bar');bar.innerHTML='<span class="filter-label">Année</span><button class="year-btn'+(currentYear==='all'?' active':'')+'" data-year="all">Toutes</button>';yrs.forEach(y=>{const b=document.createElement('button');b.className='year-btn'+(currentYear==y?' active':'');b.dataset.year=y;b.textContent=y;bar.appendChild(b)});bar.classList.add('visible');if(!yfi){yfi=true;bar.addEventListener('click',e=>{const b=e.target.closest('.year-btn');if(!b)return;bar.querySelectorAll('.year-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');currentYear=b.dataset.year;applyF()})}}
+function applyF(){const f=currentYear==='all'?allPhotos:allPhotos.filter(p=>p.date&&p.date.getFullYear()==currentYear);render(f);updStats(f.length);document.getElementById('photo-panel').classList.remove('open')}
+function updStats(c){const el=document.getElementById('stats-pill');el.textContent=c+' média'+(c>1?'s':'')+' géolocalisé'+(c>1?'s':'');el.style.display='block'}
 
-/* ==================== APP STARTUP ==================== */
-async function startApp() { if(startAppRunning)return; startAppRunning=true; try{await _startAppInner();}finally{startAppRunning=false;} }
-async function _startAppInner() {
-  const cid=localStorage.getItem(STORAGE_KEY_CLIENT_ID)||DEFAULT_CLIENT_ID;
-  if(!cid){document.getElementById('splash').classList.add('hidden');showConfigPanel();return;}
+/* ===== STARTUP ===== */
+async function startApp(){if(startRunning)return;startRunning=true;try{await _start()}finally{startRunning=false}}
+async function _start(){
+  const cid=localStorage.getItem('photomap_client_id')||DEFAULT_CLIENT_ID;
+  if(!cid){document.getElementById('splash').classList.add('hidden');showConfig();return}
   document.getElementById('splash').classList.add('hidden');
-  try { const cached=await dbGetAllMedia(); if(cached.length){allPhotos=cached;if(localCacheEnabled)await loadCachedThumbs();updateUiWithCurrentPhotos(true);} } catch{}
-  document.getElementById('btn-config').style.display='inline-flex';
-  document.getElementById('map-layer-toggle').classList.add('visible');
-  setScanStatus('scanning','Connexion à Microsoft…','',0);
-  try {
-    try{await initMsal(cid);const rr=await msalInstance.handleRedirectPromise();if(rr)setScanStatus('scanning','Authentification réussie','',3);}catch(e){msalInstance=null;throw new Error('Impossible d\'initialiser l\'authentification. '+e.message);}
-    setScanStatus('scanning','Authentification…','',3);
-    const t=await getToken(); if(!t)return; _currentToken=t;
-    runBackgroundSync(); startAutoSync();
-  } catch(err) { console.error('PhotoMap error:',err); setScanStatus('error','Erreur de connexion','',0); setTimeout(()=>setScanStatus('hidden'),6000); showToast('Erreur : '+err.message,8000); }
+  try{const c=await dbAll();if(c.length){allPhotos=c;if(lcEnabled)await loadCachedThumbs();updateUI(true)}}catch{}
+  document.getElementById('btn-config').style.display='inline-flex';document.getElementById('map-layer-toggle').classList.add('visible');
+  setScan('scanning','Connexion…','',0);
+  try{
+    try{await initMsal(cid);await msal.handleRedirectPromise()}catch(e){msal=null;throw new Error('Auth init: '+e.message)}
+    setScan('scanning','Authentification…','',3);
+    const t=await getToken();if(!t)return;_token=t;
+    bgSync();startAuto();
+  }catch(e){console.error(e);setScan('error','Erreur','',0);setTimeout(()=>setScan('hidden'),6000);toast('Erreur: '+e.message,8000)}
 }
 
-/* ==================== CONFIG ==================== */
-function showConfigPanel() {
-  const hasAuth=msalInstance&&msalInstance.getAllAccounts().length>0;
-  document.getElementById('config-rescan-wrap').style.display=hasAuth?'block':'none';
-  document.getElementById('config-logout-wrap').style.display=hasAuth?'block':'none';
-  document.getElementById('toggle-local-cache').checked=localCacheEnabled;
-  updateCacheSub();
-  /* Update cache status count when opening config */
-  if (localCacheEnabled) {
-    dbGetAllThumbIds().then(ids => {
-      _thumbCacheCached = ids.size;
-      _thumbCacheTotal = allPhotos.length;
-      updateCacheStatus();
-    }).catch(()=>{});
-  }
+/* ===== CONFIG ===== */
+function showConfig(){
+  const ha=msal&&msal.getAllAccounts().length>0;
+  document.getElementById('config-rescan-wrap').style.display=ha?'block':'none';
+  document.getElementById('config-logout-wrap').style.display=ha?'block':'none';
+  document.getElementById('toggle-local-cache').checked=lcEnabled;
+  updCacheSub();
+  if(lcEnabled)dbThumbIds().then(ids=>{setCacheStatus(ids.size,allPhotos.length)}).catch(()=>{});
   document.getElementById('config-panel').classList.add('open');
 }
-function updateCacheSub() { document.getElementById('cache-toggle-sub').textContent = localCacheEnabled ? 'Activé — vignettes stockées hors-ligne' : 'Désactivé — vignettes chargées à la volée'; }
+function updCacheSub(){document.getElementById('cache-toggle-sub').textContent=lcEnabled?'Activé — vignettes hors-ligne':'Désactivé — chargement à la volée'}
 
-document.getElementById('toggle-local-cache').addEventListener('change', async e => {
-  localCacheEnabled=e.target.checked; localStorage.setItem(STORAGE_KEY_LOCAL_CACHE, localCacheEnabled?'true':'false');
-  updateCacheSub();
-  if(localCacheEnabled){
-    showToast('Cache local activé — téléchargement en cours…',4000);
-    _thumbCacheTotal = allPhotos.length; _thumbCacheCached = 0;
-    updateCacheStatus();
-    backgroundCacheThumbs();
-  } else {
-    for(const[,u]of thumbObjectUrls)try{URL.revokeObjectURL(u);}catch{}thumbObjectUrls.clear();
-    await dbClearThumbs().catch(()=>{});
-    document.getElementById('cache-toggle-status').textContent = '';
-    showToast('Cache local désactivé');
-  }
+document.getElementById('toggle-local-cache').addEventListener('change',async e=>{
+  lcEnabled=e.target.checked;localStorage.setItem(LC_KEY,lcEnabled?'true':'false');updCacheSub();
+  if(lcEnabled){toast('Cache activé — téléchargement en cours…',4000);setCacheStatus(0,allPhotos.length);bgCacheThumbs()}
+  else{for(const[,u]of thumbUrls)try{URL.revokeObjectURL(u)}catch{}thumbUrls.clear();await dbClearThumbs().catch(()=>{});document.getElementById('cache-toggle-status').textContent='';toast('Cache désactivé')}
 });
-
-document.getElementById('btn-config-cancel').addEventListener('click', ()=>document.getElementById('config-panel').classList.remove('open'));
-document.getElementById('btn-config-logout').addEventListener('click', async()=>{
-  try{if(msalInstance){const a=msalInstance.getAllAccounts();if(a.length){await msalInstance.logoutRedirect({account:a[0]}).catch(()=>{});return;}}}finally{
-    localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
-    await dbClearMedia().catch(()=>{}); await dbClearThumbs().catch(()=>{});
-    await dbDeleteMeta('scan_state').catch(()=>{}); await dbDeleteMeta('deltaLink').catch(()=>{});
-    for(const[,u]of thumbObjectUrls)try{URL.revokeObjectURL(u);}catch{}thumbObjectUrls.clear();
-    stopAutoSync(); msalInstance=null; allPhotos=[]; markers=[]; clusterGroup.clearLayers();
-    document.getElementById('config-panel').classList.remove('open');
-    document.getElementById('filter-bar').classList.remove('visible');
-    document.getElementById('stats-pill').style.display='none';
-    document.getElementById('btn-config').style.display='none';
-    document.getElementById('map-layer-toggle').classList.remove('visible');
-    document.getElementById('photo-panel').classList.remove('open');
-    document.getElementById('splash').classList.remove('hidden');
-    setScanStatus('hidden'); showToast('Déconnecté avec succès');
-  }
+document.getElementById('btn-config-cancel').addEventListener('click',()=>document.getElementById('config-panel').classList.remove('open'));
+document.getElementById('btn-config-logout').addEventListener('click',async()=>{
+  try{if(msal){const a=msal.getAllAccounts();if(a.length){await msal.logoutRedirect({account:a[0]}).catch(()=>{});return}}}finally{
+    localStorage.removeItem('photomap_client_id');await dbClear().catch(()=>{});await dbClearThumbs().catch(()=>{});
+    await dbDelMeta('scan_state').catch(()=>{});await dbDelMeta('deltaLink').catch(()=>{});
+    for(const[,u]of thumbUrls)try{URL.revokeObjectURL(u)}catch{}thumbUrls.clear();
+    stopAuto();msal=null;allPhotos=[];markers=[];clusterGroup.clearLayers();
+    document.getElementById('config-panel').classList.remove('open');document.getElementById('filter-bar').classList.remove('visible');
+    document.getElementById('stats-pill').style.display='none';document.getElementById('btn-config').style.display='none';
+    document.getElementById('map-layer-toggle').classList.remove('visible');document.getElementById('photo-panel').classList.remove('open');
+    document.getElementById('splash').classList.remove('hidden');setScan('hidden');toast('Déconnecté')}
 });
-document.getElementById('btn-config').addEventListener('click', showConfigPanel);
-document.getElementById('btn-login').addEventListener('click', ()=>{if(!localStorage.getItem(STORAGE_KEY_CLIENT_ID))localStorage.setItem(STORAGE_KEY_CLIENT_ID,DEFAULT_CLIENT_ID);startApp();});
-document.getElementById('btn-connect').addEventListener('click', ()=>{document.getElementById('config-panel').classList.remove('open');startApp();});
-document.getElementById('btn-full-rescan').addEventListener('click', async()=>{document.getElementById('config-panel').classList.remove('open');await dbDeleteMeta('deltaLink').catch(()=>{});await dbDeleteMeta('scan_state').catch(()=>{});runBackgroundSync();});
-document.getElementById('config-panel').addEventListener('click', e=>{if(e.target===document.getElementById('config-panel'))document.getElementById('config-panel').classList.remove('open');});
+document.getElementById('btn-config').addEventListener('click',showConfig);
+document.getElementById('btn-login').addEventListener('click',()=>{if(!localStorage.getItem('photomap_client_id'))localStorage.setItem('photomap_client_id',DEFAULT_CLIENT_ID);startApp()});
+document.getElementById('btn-connect').addEventListener('click',()=>{document.getElementById('config-panel').classList.remove('open');startApp()});
+document.getElementById('btn-full-rescan').addEventListener('click',async()=>{document.getElementById('config-panel').classList.remove('open');await dbDelMeta('deltaLink').catch(()=>{});await dbDelMeta('scan_state').catch(()=>{});bgSync()});
+document.getElementById('config-panel').addEventListener('click',e=>{if(e.target===document.getElementById('config-panel'))document.getElementById('config-panel').classList.remove('open')});
 
-/* ==================== INIT ==================== */
-document.addEventListener('DOMContentLoaded', async()=>{
-  const cid=localStorage.getItem(STORAGE_KEY_CLIENT_ID)||DEFAULT_CLIENT_ID;
+/* ===== INIT ===== */
+document.addEventListener('DOMContentLoaded',async()=>{
+  const cid=localStorage.getItem('photomap_client_id')||DEFAULT_CLIENT_ID;
   const hs=location.hash+location.search;
-  const isRedir=hs.includes('code=')||hs.includes('access_token')||hs.includes('id_token')||hs.includes('error=');
-  try{const cached=await dbGetAllMedia();if(cached.length){allPhotos=cached;if(localCacheEnabled)await loadCachedThumbs();updateUiWithCurrentPhotos(true);document.getElementById('btn-config').style.display='inline-flex';document.getElementById('map-layer-toggle').classList.add('visible');document.getElementById('splash').classList.add('hidden');if(cid&&!isRedir)trySilentBackgroundSync(cid);}}catch{}
-  if(cid&&isRedir)startApp();
+  const isR=hs.includes('code=')||hs.includes('access_token')||hs.includes('id_token')||hs.includes('error=');
+  try{const c=await dbAll();if(c.length){allPhotos=c;if(lcEnabled)await loadCachedThumbs();updateUI(true);document.getElementById('btn-config').style.display='inline-flex';document.getElementById('map-layer-toggle').classList.add('visible');document.getElementById('splash').classList.add('hidden');if(cid&&!isR)silentSync(cid)}}catch{}
+  if(cid&&isR)startApp();
 });
-
-async function trySilentBackgroundSync(cid){
-  try{if(!msalInstance){await initMsal(cid);await msalInstance.handleRedirectPromise();}const a=msalInstance.getAllAccounts();if(!a.length)return;const r=await msalInstance.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0]});_currentToken=r.accessToken;runBackgroundSync();startAutoSync();}catch{console.log('Silent sync skipped — reconnection needed.');}
-}
+async function silentSync(cid){try{if(!msal){await initMsal(cid);await msal.handleRedirectPromise()}const a=msal.getAllAccounts();if(!a.length)return;const r=await msal.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0]});_token=r.accessToken;bgSync();startAuto()}catch{}}
 </script>
 </body>
 </html>
