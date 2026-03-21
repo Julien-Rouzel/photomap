@@ -21,16 +21,15 @@ body{font-family:var(--font-ui);background:var(--ink);color:var(--text);height:1
 .tagline{font-size:.75rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-left:1px solid var(--border);padding-left:16px;flex-shrink:0}
 #topbar-right{margin-left:auto;display:flex;gap:12px;align-items:center;flex-shrink:1;min-width:0;overflow:hidden}
 #stats-pill{font-size:.75rem;color:var(--accent);background:rgba(0,120,212,.08);border:1px solid var(--border-accent);padding:4px 12px;border-radius:20px;display:none;white-space:nowrap}
-#scan-status{display:none;align-items:center;gap:8px;font-size:.72rem;color:var(--text-secondary);background:var(--surface);border:1px solid var(--border);padding:4px 12px;border-radius:20px;white-space:nowrap;position:relative;overflow:hidden;min-width:0}
+#scan-status{display:none;align-items:center;gap:8px;font-size:.72rem;color:var(--text-secondary);background:var(--surface);border:1px solid var(--border);padding:4px 12px;border-radius:20px;white-space:nowrap;position:relative;overflow:hidden}
 #scan-status.visible{display:flex}
 #scan-status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:sp 1.5s ease-in-out infinite}
 #scan-status.done #scan-status-dot{background:#2ea043;animation:none}
 #scan-status.error #scan-status-dot{background:var(--danger);animation:none}
 @keyframes sp{0%,100%{opacity:1}50%{opacity:.3}}
-#scan-status-text{overflow:hidden;text-overflow:ellipsis}
-#scan-status-count{font-weight:600;color:var(--accent)}
+#scan-status-text{overflow:hidden;text-overflow:ellipsis}#scan-status-count{font-weight:600;color:var(--accent)}
 #scan-progress-bar{position:absolute;bottom:0;left:0;right:0;height:2px}
-#scan-progress-fill{height:100%;background:var(--accent);width:0%;transition:width .5s ease;border-radius:0 0 20px 20px}
+#scan-progress-fill{height:100%;background:var(--accent);width:0%;transition:width .5s ease}
 .btn{font-family:var(--font-ui);font-size:.8rem;font-weight:600;border:none;cursor:pointer;padding:8px 20px;border-radius:6px;transition:all .15s;white-space:nowrap}
 #btn-config{width:36px;height:36px;padding:0;border-radius:50%;font-size:1.1rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-dark)}
@@ -46,18 +45,15 @@ body{font-family:var(--font-ui);background:var(--ink);color:var(--text);height:1
 #splash.hidden{opacity:0;visibility:hidden;pointer-events:none}
 .splash-globe{width:120px;height:120px;border:2px solid var(--accent);border-radius:50%;position:relative;animation:sg 12s linear infinite;display:flex;align-items:center;justify-content:center}
 .splash-globe::before{content:'';position:absolute;inset:8px;border:1px solid var(--border-accent);border-radius:50%;animation:sg 8s linear infinite reverse}
-.globe-icon{font-size:3rem}
-@keyframes sg{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.globe-icon{font-size:3rem}@keyframes sg{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 .splash-title{font-size:2.8rem;font-weight:700;text-align:center;line-height:1.1}.splash-title span{color:var(--accent)}
 .splash-sub{color:var(--text-secondary);font-size:.95rem;text-align:center;max-width:380px;line-height:1.6}
 #btn-login{padding:15px 44px;font-size:.95rem;border-radius:32px;box-shadow:0 4px 18px rgba(0,120,212,.35)}
-#btn-login:hover{box-shadow:0 6px 24px rgba(0,120,212,.45);transform:translateY(-1px)}
 .splash-note{font-size:.72rem;color:var(--muted);text-align:center;max-width:320px;line-height:1.5}
 #loading-overlay{position:fixed;inset:0;z-index:1900;background:rgba(255,255,255,.92);flex-direction:column;align-items:center;justify-content:center;gap:24px;display:none}
 #loading-overlay.visible{display:flex}
-.loading-msg{font-size:.9rem;color:var(--text-secondary);text-align:center}
 .progress-bar-wrap{width:300px;height:3px;background:rgba(0,0,0,.08);border-radius:2px;overflow:hidden}
-.progress-bar-fill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width .4s ease}
+.progress-bar-fill{height:100%;background:var(--accent);width:0%;transition:width .4s ease}
 #loading-count{font-size:2rem;font-weight:700;color:var(--accent)}
 #photo-panel{position:fixed;right:0;top:calc(56px + env(safe-area-inset-top,0px));bottom:0;z-index:500;width:420px;background:var(--panel);border-left:1px solid var(--border);backdrop-filter:blur(16px);box-shadow:-2px 0 12px var(--shadow);transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
 #photo-panel.open{transform:translateX(0)}
@@ -65,11 +61,9 @@ body{font-family:var(--font-ui);background:var(--ink);color:var(--text);height:1
 .panel-location{font-size:1.1rem;font-weight:600;line-height:1.3;max-width:250px}
 .panel-date{font-size:.72rem;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
 .panel-count{font-size:.7rem;color:var(--muted);margin-top:6px}
-.btn-close{background:transparent;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px 6px;line-height:1;border-radius:4px}
-.btn-close:hover{color:var(--text);background:var(--surface)}
+.btn-close{background:transparent;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px 6px;line-height:1;border-radius:4px}.btn-close:hover{color:var(--text);background:var(--surface)}
 #panel-photos{flex:1;min-height:0;overflow-y:auto;padding:16px;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:min-content;gap:10px;align-content:start}
-#panel-photos::-webkit-scrollbar{width:4px}
-#panel-photos::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:2px}
+#panel-photos::-webkit-scrollbar{width:4px}#panel-photos::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:2px}
 .thumb-card{width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:8px;cursor:pointer;position:relative;background:var(--surface);border:1px solid var(--border);transition:border-color .2s,transform .2s;box-shadow:0 1px 4px var(--shadow)}
 .thumb-card:hover{border-color:var(--accent);transform:scale(1.02)}
 .thumb-card img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block}
@@ -80,20 +74,17 @@ body{font-family:var(--font-ui);background:var(--ink);color:var(--text);height:1
 .lightbox-media-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:92vw;height:80vh;flex-shrink:1;min-height:0}
 #lightbox-img,#lightbox-video{display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;box-shadow:0 0 80px rgba(0,0,0,.85)}
 .hd-badge{position:absolute;top:16px;right:16px;display:none;align-items:center;gap:6px;background:rgba(0,0,0,.6);color:#fff;padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:600;backdrop-filter:blur(8px);z-index:10}
-.hd-badge.visible{display:flex}
-.hd-badge.done{background:rgba(46,160,67,.7)}
+.hd-badge.visible{display:flex}.hd-badge.done{background:rgba(46,160,67,.7)}
 .hd-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:hs .8s linear infinite}
 @keyframes hs{to{transform:rotate(360deg)}}
 .lightbox-info{text-align:center;color:rgba(255,255,255,.7);font-size:.82rem;flex-shrink:0}
 .lightbox-info strong{display:block;font-size:1rem;font-weight:600;color:#fff;margin-bottom:4px}
-#lightbox-actions{margin-top:10px;display:flex;justify-content:center;gap:10px}
-#lightbox-open-onedrive{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:.88rem;font-weight:600;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:28px;padding:11px 26px;backdrop-filter:blur(12px);transition:background .15s}
+#lightbox-actions{margin-top:10px;display:flex;justify-content:center}
+#lightbox-open-onedrive{display:inline-flex;align-items:center;gap:8px;font-size:.88rem;font-weight:600;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:28px;padding:11px 26px;backdrop-filter:blur(12px);transition:background .15s;cursor:pointer}
 #lightbox-open-onedrive:hover{background:rgba(255,255,255,.25)}
-.lightbox-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.6rem;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;z-index:3001}
-.lightbox-nav:hover{background:rgba(255,255,255,.3)}
+.lightbox-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.6rem;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3001}
 #lightbox-prev{left:20px}#lightbox-next{right:20px}
-#lightbox-close{position:fixed;top:24px;right:24px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.4rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;z-index:3001}
-#lightbox-close:hover{background:rgba(255,255,255,.2)}
+#lightbox-close{position:fixed;top:24px;right:24px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.4rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3001}
 .photo-marker-wrap{display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 4px 14px rgba(0,0,0,.35));transition:transform .15s}
 .photo-marker-wrap:hover{transform:scale(1.08)}
 .photo-marker{width:var(--marker-size);height:var(--marker-size);border-radius:16px;overflow:hidden;border:3px solid #fff;background:#e0e0e0;position:relative;flex-shrink:0}
@@ -103,18 +94,17 @@ body{font-family:var(--font-ui);background:var(--ink);color:var(--text);height:1
 .marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:none!important;border:none!important;box-shadow:none!important}
 .marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:none!important}
 #filter-bar{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:500;background:var(--panel);border:1px solid var(--border);border-radius:40px;padding:8px 16px;display:none;gap:6px;align-items:center;backdrop-filter:blur(12px);box-shadow:0 2px 12px var(--shadow);max-width:90vw;overflow-x:auto}
-#filter-bar.visible{display:flex}
-#filter-bar::-webkit-scrollbar{display:none}#filter-bar{scrollbar-width:none}
+#filter-bar.visible{display:flex}#filter-bar::-webkit-scrollbar{display:none}#filter-bar{scrollbar-width:none}
 .filter-label{font-size:.7rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;margin-right:4px}
 .year-btn{background:transparent;border:1px solid transparent;color:var(--muted);font-family:var(--font-ui);font-size:.78rem;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .2s;white-space:nowrap}
 .year-btn:hover{color:var(--text);border-color:var(--border)}
 .year-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:500}
 #config-panel{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
 #config-panel.open{display:flex}
-.config-box{background:#fff;border:1px solid var(--border);border-radius:20px;padding:28px 28px 32px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.15)}
+.config-box{background:#fff;border:1px solid var(--border);border-radius:20px;padding:28px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.15)}
 .config-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
 .config-box h2{font-size:1.4rem;font-weight:700;margin:0}
-.config-close-btn{width:34px;height:34px;padding:0;border-radius:50%;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.config-close-btn{width:34px;height:34px;padding:0;border-radius:50%;font-size:1rem;display:flex;align-items:center;justify-content:center}
 .config-buttons{display:flex;flex-direction:column;gap:12px}
 .config-btn{width:100%;padding:14px 24px;border-radius:28px;font-size:.95rem;font-weight:600;text-align:center}
 .config-toggle{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-radius:16px;background:var(--surface);border:1px solid var(--border)}
@@ -128,408 +118,371 @@ body{font-family:var(--font-ui);background:var(--ink);color:var(--text);height:1
 .toggle-slider::before{content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s}
 .toggle-switch input:checked+.toggle-slider{background:var(--accent)}
 .toggle-switch input:checked+.toggle-slider::before{transform:translateX(20px)}
-#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:4000;background:#fff;border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:8px;font-size:.82rem;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:4000;background:#fff;border:1px solid var(--border);padding:10px 20px;border-radius:8px;font-size:.82rem;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.12)}
 #toast.show{opacity:1}
 @media(max-width:600px){
-  :root{--marker-size:80px}
-  .tagline{display:none}
-  #topbar{height:calc(54px + env(safe-area-inset-top,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));gap:8px}
-  .logo{font-size:1.2rem}#topbar-right{gap:8px}
-  #stats-pill{font-size:.78rem;padding:5px 10px;max-width:140px;flex-shrink:1;overflow:hidden;text-overflow:ellipsis}
-  #topbar-right:has(#scan-status.visible) #stats-pill{display:none!important}
-  .btn{padding:0;font-size:1.1rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}
-  #btn-config{font-size:1.2rem}
-  #scan-status{font-size:.75rem;padding:5px 10px;gap:6px;max-width:180px}
-  #map{top:calc(54px + env(safe-area-inset-top,0px))}
-  #map-layer-toggle{bottom:calc(70px + env(safe-area-inset-bottom,0px));left:12px}
-  #photo-panel{top:auto;right:0;left:0;bottom:0;width:100%;height:72dvh;border-left:none;border-top:1px solid var(--border);border-radius:20px 20px 0 0;transform:translateY(100%);padding-bottom:env(safe-area-inset-bottom,0px)}
-  #photo-panel.open{transform:translateY(0)}
-  .panel-header{padding:18px 18px 14px;position:relative}
-  .panel-header::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:40px;height:4px;background:var(--muted);border-radius:2px;opacity:.5}
-  .panel-location{font-size:1.1rem;max-width:70vw}
-  .btn-close{font-size:1.5rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%}
-  #panel-photos{grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
-  .thumb-card{border-radius:10px}
-  #filter-bar{bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:8px 14px;border-radius:32px;max-width:96vw}
-  .year-btn{font-size:.82rem;padding:6px 14px;min-height:34px}
-  #lightbox{padding:0;gap:0}
-  .lightbox-media-wrap{width:100vw;height:70dvh}
-  #lightbox-img,#lightbox-video{border-radius:0;box-shadow:none}
-  .lightbox-nav{top:auto;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:none;width:56px;height:56px;font-size:2rem}
-  #lightbox-close{top:max(16px,env(safe-area-inset-top,10px));right:16px;width:48px;height:48px;font-size:1.5rem}
-  .lightbox-info{padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));width:100%;background:linear-gradient(to top,rgba(0,0,0,.9),transparent)}
-  .lightbox-info strong{font-size:.95rem}
-  #lightbox-actions{margin-top:10px}
-  #lightbox-open-onedrive{min-width:190px;font-size:.82rem;padding:10px 20px}
-  #splash{gap:22px;padding:28px}.splash-globe{width:90px;height:90px}.globe-icon{font-size:2.4rem}.splash-title{font-size:2rem}.splash-sub{font-size:.9rem;max-width:320px}
-  #btn-login{padding:14px 36px;font-size:.95rem}.splash-note{font-size:.75rem;max-width:300px}
-  .config-box{padding:24px 22px 28px;width:94%;border-radius:24px}
-  .config-btn{font-size:.95rem;padding:15px 24px;min-height:52px}
-  .progress-bar-wrap{width:240px}
-  #toast{bottom:calc(70px + env(safe-area-inset-bottom,0px));font-size:.85rem;border-radius:24px}
-  .leaflet-control-zoom{margin-bottom:calc(70px + env(safe-area-inset-bottom,0px))!important;margin-right:12px!important}
-  .leaflet-control-zoom a{width:36px!important;height:36px!important;line-height:36px!important;font-size:1.2rem!important}
-  .photo-marker{border-radius:14px;border-width:2.5px}.photo-marker-count{font-size:11px}
+:root{--marker-size:80px}
+.tagline{display:none}
+#topbar{height:calc(54px + env(safe-area-inset-top,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));gap:8px}
+.logo{font-size:1.2rem}
+.btn{padding:0;font-size:1.1rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}
+#btn-config{font-size:1.2rem}
+#stats-pill{font-size:.78rem;padding:5px 10px;max-width:140px;flex-shrink:1;overflow:hidden;text-overflow:ellipsis}
+#topbar-right:has(#scan-status.visible) #stats-pill{display:none!important}
+#scan-status{font-size:.75rem;padding:5px 10px;gap:6px;max-width:180px}
+#map{top:calc(54px + env(safe-area-inset-top,0px))}
+#map-layer-toggle{bottom:calc(70px + env(safe-area-inset-bottom,0px));left:12px}
+#photo-panel{top:auto;right:0;left:0;bottom:0;width:100%;height:72dvh;border-left:none;border-top:1px solid var(--border);border-radius:20px 20px 0 0;transform:translateY(100%);padding-bottom:env(safe-area-inset-bottom,0px)}
+#photo-panel.open{transform:translateY(0)}
+.panel-header{padding:18px 18px 14px;position:relative}
+.panel-header::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:40px;height:4px;background:var(--muted);border-radius:2px;opacity:.5}
+.panel-location{max-width:70vw}.btn-close{font-size:1.5rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+#panel-photos{grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}.thumb-card{border-radius:10px}
+#filter-bar{bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:8px 14px;border-radius:32px;max-width:96vw}
+.year-btn{font-size:.82rem;padding:6px 14px;min-height:34px}
+#lightbox{padding:0;gap:0}.lightbox-media-wrap{width:100vw;height:70dvh}
+#lightbox-img,#lightbox-video{border-radius:0;box-shadow:none}
+.lightbox-nav{top:auto;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:none;width:56px;height:56px;font-size:2rem}
+#lightbox-close{top:max(16px,env(safe-area-inset-top,10px));right:16px;width:48px;height:48px;font-size:1.5rem}
+.lightbox-info{padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));width:100%;background:linear-gradient(to top,rgba(0,0,0,.9),transparent)}
+#lightbox-open-onedrive{min-width:190px;font-size:.82rem;padding:10px 20px}
+#splash{gap:22px;padding:28px}.splash-globe{width:90px;height:90px}.globe-icon{font-size:2.4rem}.splash-title{font-size:2rem}
+.splash-sub{font-size:.9rem;max-width:320px}#btn-login{padding:14px 36px;font-size:.95rem}.splash-note{font-size:.75rem;max-width:300px}
+.config-box{padding:24px 22px 28px;width:94%;border-radius:24px}.config-btn{font-size:.95rem;padding:15px 24px;min-height:52px}
+#toast{bottom:calc(70px + env(safe-area-inset-bottom,0px));font-size:.85rem;border-radius:24px}
+.leaflet-control-zoom{margin-bottom:calc(70px + env(safe-area-inset-bottom,0px))!important;margin-right:12px!important}
+.leaflet-control-zoom a{width:36px!important;height:36px!important;line-height:36px!important;font-size:1.2rem!important}
+.photo-marker{border-radius:14px;border-width:2.5px}
 }
-@media(max-width:375px){:root{--marker-size:68px}.logo{font-size:1.05rem}#stats-pill{display:none!important}#panel-photos{grid-template-columns:repeat(2,1fr)}.splash-title{font-size:1.7rem}.splash-globe{width:72px;height:72px}.globe-icon{font-size:1.8rem}.year-btn{font-size:.78rem;padding:5px 11px}}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15)}
+@media(max-width:375px){:root{--marker-size:68px}.logo{font-size:1.05rem}#stats-pill{display:none!important}#panel-photos{grid-template-columns:repeat(2,1fr)}.splash-title{font-size:1.7rem}.splash-globe{width:72px;height:72px}.globe-icon{font-size:1.8rem}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15)}
 </style>
 </head>
 <body>
-<div id="topbar"><div class="logo">Photo<span>Map</span></div><div class="tagline">Vos souvenirs sur la planète</div><div id="topbar-right"><div id="stats-pill"></div><div id="scan-status" style="display:none"><div id="scan-status-dot"></div><span id="scan-status-text">Scan…</span><span id="scan-status-count"></span><div id="scan-progress-bar"><div id="scan-progress-fill"></div></div></div><button class="btn btn-ghost" id="btn-config" style="display:none" title="Configuration">⚙</button></div></div>
+<div id="topbar"><div class="logo">Photo<span>Map</span></div><div class="tagline">Vos souvenirs sur la planète</div><div id="topbar-right"><div id="stats-pill"></div><div id="scan-status" style="display:none"><div id="scan-status-dot"></div><span id="scan-status-text"></span><span id="scan-status-count"></span><div id="scan-progress-bar"><div id="scan-progress-fill"></div></div></div><button class="btn btn-ghost" id="btn-config" style="display:none" title="Configuration">⚙</button></div></div>
 <div id="map"></div>
-<button id="map-layer-toggle" title="Changer le fond de carte"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10' font-family='sans-serif'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/><div id="map-layer-label">Satellite</div></button>
+<button id="map-layer-toggle" title="Fond de carte"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/><div id="map-layer-label">Satellite</div></button>
 <div id="filter-bar"><span class="filter-label">Année</span><button class="year-btn active" data-year="all">Toutes</button></div>
-<div id="photo-panel"><div class="panel-header"><div><div class="panel-location" id="panel-location-name">Lieu</div><div class="panel-date" id="panel-date-range"></div><div class="panel-count" id="panel-count"></div></div><button class="btn-close" id="panel-close" title="Fermer">✕</button></div><div id="panel-photos"></div></div>
-<div id="lightbox"><button id="lightbox-close" title="Fermer">✕</button><button class="lightbox-nav" id="lightbox-prev" title="Précédent">‹</button><button class="lightbox-nav" id="lightbox-next" title="Suivant">›</button><div class="lightbox-media-wrap"><img id="lightbox-img" src="" alt="Média"/><video id="lightbox-video" controls playsinline></video><div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div><span>HD</span></div><div class="hd-badge done" id="hd-done"><span>✓ HD</span></div></div><div class="lightbox-info"><strong id="lightbox-name"></strong><span id="lightbox-meta"></span><div id="lightbox-actions"><button id="lightbox-open-onedrive" class="btn btn-primary" type="button">↗ Ouvrir dans OneDrive</button></div></div></div>
-<div id="splash"><div class="splash-globe"><div class="globe-icon">🌍</div></div><div class="splash-title">Vos photos,<br><span>sur la planète</span></div><div class="splash-sub">Connectez votre OneDrive pour visualiser toutes vos photos et vidéos géolocalisées sur une mappemonde interactive.</div><button class="btn btn-primary btn-lg" id="btn-login">Connecter OneDrive</button><div class="splash-note">Vos données restent privées — tout est traité localement dans votre navigateur.</div></div>
+<div id="photo-panel"><div class="panel-header"><div><div class="panel-location" id="panel-location-name">Lieu</div><div class="panel-date" id="panel-date-range"></div><div class="panel-count" id="panel-count"></div></div><button class="btn-close" id="panel-close">✕</button></div><div id="panel-photos"></div></div>
+<div id="lightbox"><button id="lightbox-close">✕</button><button class="lightbox-nav" id="lightbox-prev">‹</button><button class="lightbox-nav" id="lightbox-next">›</button><div class="lightbox-media-wrap"><img id="lightbox-img" src="" alt=""/><video id="lightbox-video" controls playsinline></video><div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div><span>HD</span></div><div class="hd-badge done" id="hd-done"><span>✓ HD</span></div></div><div class="lightbox-info"><strong id="lightbox-name"></strong><span id="lightbox-meta"></span><div id="lightbox-actions"><button id="lightbox-open-onedrive">↗ Ouvrir dans OneDrive</button></div></div></div>
+<div id="splash"><div class="splash-globe"><div class="globe-icon">🌍</div></div><div class="splash-title">Vos photos,<br><span>sur la planète</span></div><div class="splash-sub">Connectez votre OneDrive pour visualiser vos photos géolocalisées sur une carte interactive.</div><button class="btn btn-primary" id="btn-login">Connecter OneDrive</button><div class="splash-note">Tout est traité localement — aucune donnée envoyée à un tiers.</div></div>
 <div id="loading-overlay"><div id="loading-count">0</div><div class="loading-msg" id="loading-msg">Connexion…</div><div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill"></div></div></div>
-<div id="config-panel"><div class="config-box"><div class="config-header"><h2>PhotoMap</h2><button class="btn btn-ghost config-close-btn" id="btn-config-cancel">✕</button></div><div class="config-buttons"><div id="config-connect-wrap"><button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button></div><div class="config-toggle"><div class="config-toggle-info"><div class="config-toggle-label">Cache local des vignettes</div><div class="config-toggle-sub" id="cache-toggle-sub">Chargement instantané hors-ligne</div><div class="config-toggle-status" id="cache-toggle-status"></div></div><label class="toggle-switch"><input type="checkbox" id="toggle-local-cache"><span class="toggle-slider"></span></label></div><div id="config-rescan-wrap" style="display:none"><button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button></div><div id="config-logout-wrap" style="display:none"><button class="btn btn-danger config-btn" id="btn-config-logout">Disconnect &amp; Delete</button></div></div></div></div>
+<div id="config-panel"><div class="config-box"><div class="config-header"><h2>PhotoMap</h2><button class="btn btn-ghost config-close-btn" id="btn-config-cancel">✕</button></div><div class="config-buttons"><div id="config-connect-wrap"><button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button></div><div class="config-toggle"><div class="config-toggle-info"><div class="config-toggle-label">Cache local des vignettes</div><div class="config-toggle-sub" id="cache-toggle-sub"></div><div class="config-toggle-status" id="cache-toggle-status"></div></div><label class="toggle-switch"><input type="checkbox" id="toggle-local-cache"><span class="toggle-slider"></span></label></div><div id="config-rescan-wrap" style="display:none"><button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button></div><div id="config-logout-wrap" style="display:none"><button class="btn btn-danger config-btn" id="btn-config-logout">Disconnect &amp; Delete</button></div></div></div></div>
 <div id="toast"></div>
+
 <script>
-/* PhotoMap v2.2 */
-const DB_NAME='photomap_db',DB_VERSION=2,STORE_MEDIA='media',STORE_META='meta',STORE_THUMBS='thumbs';
-const DEFAULT_CLIENT_ID='74655b12-46c1-4cdb-be1a-27655fa47677';
-const IMAGE_EXT=new Set(['jpg','jpeg','png','heic','heif','webp','gif','bmp','tiff']);
-const VIDEO_EXT=new Set(['mp4','mov','m4v','hevc','avi','webm','3gp','mkv']);
-const THUMB_TTL=4*3600*1000;
+/* PhotoMap v2.3 — Graph API authenticated downloads for thumbnails & HD */
+const DB='photomap_db',DBV=2,SM='media',SMT='meta',STH='thumbs';
+const CID_DEFAULT='74655b12-46c1-4cdb-be1a-27655fa47677';
+const IMG_EXT=new Set('jpg jpeg png heic heif webp gif bmp tiff'.split(' '));
+const VID_EXT=new Set('mp4 mov m4v hevc avi webm 3gp mkv'.split(' '));
 const FALLBACK="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
 
-let msal=null,allPhotos=[],markers=[],clusterGroup,currentYear='all',bgSyncRunning=false,startRunning=false;
-let lightboxPhotos=[],lightboxIdx=0,panelPhotos=[];
-let _db=null,_token=null,autoTimer=null;
-
-/* Local cache */
-const LC_KEY='photomap_local_thumb_cache';
-let lcEnabled=localStorage.getItem(LC_KEY)==='true';
-const thumbUrls=new Map(); /* photoId → objectURL */
-
-let curLayer='standard',stdLayer,satLayer;
+let ms=null,allP=[],mkrs=[],cg,curY='all',bgRun=false,startRun=false;
+let lbP=[],lbI=0,panP=[];
+let _db=null,_tk=null,atm=null;
+const LC='photomap_local_thumb_cache';
+let lc=localStorage.getItem(LC)==='true';
+const tUrls=new Map();
+let cLayer='standard',stdL,satL;
 
 /* ===== DB ===== */
-function openDb(){if(_db)return Promise.resolve(_db);return new Promise((ok,no)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE_MEDIA)){d.createObjectStore(STORE_MEDIA,{keyPath:'id'}).createIndex('by_date','date',{unique:false})}if(!d.objectStoreNames.contains(STORE_META))d.createObjectStore(STORE_META,{keyPath:'key'});if(!d.objectStoreNames.contains(STORE_THUMBS))d.createObjectStore(STORE_THUMBS,{keyPath:'id'})};r.onsuccess=()=>{_db=r.result;_db.onclose=()=>{_db=null};_db.onversionchange=()=>{_db.close();_db=null};ok(_db)};r.onerror=()=>no(r.error)})}
-async function dbPut(items){if(!items?.length)return;const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_MEDIA,'readwrite'),s=tx.objectStore(STORE_MEDIA);for(const i of items)s.put({...i,date:i.date?i.date.toISOString():null,fetchedAt:i.fetchedAt||new Date().toISOString()});tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
-async function dbAll(){const d=await openDb();return new Promise((ok,no)=>{const r=d.transaction(STORE_MEDIA,'readonly').objectStore(STORE_MEDIA).getAll();r.onsuccess=()=>ok((r.result||[]).map(i=>({...i,date:i.date?new Date(i.date):null})));r.onerror=()=>no(r.error)})}
-async function dbClear(){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_MEDIA,'readwrite');tx.objectStore(STORE_MEDIA).clear();tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
-async function dbMeta(k){const d=await openDb();return new Promise((ok,no)=>{const r=d.transaction(STORE_META,'readonly').objectStore(STORE_META).get(k);r.onsuccess=()=>ok(r.result?.value??null);r.onerror=()=>no(r.error)})}
-async function dbSetMeta(k,v){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_META,'readwrite');tx.objectStore(STORE_META).put({key:k,value:v});tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
-async function dbDelMeta(k){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_META,'readwrite');tx.objectStore(STORE_META).delete(k);tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
-async function dbDelMedia(id){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_MEDIA,'readwrite');tx.objectStore(STORE_MEDIA).delete(id);tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
+function odb(){if(_db)return Promise.resolve(_db);return new Promise((y,n)=>{const r=indexedDB.open(DB,DBV);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(SM)){d.createObjectStore(SM,{keyPath:'id'}).createIndex('by_date','date',{unique:false})}if(!d.objectStoreNames.contains(SMT))d.createObjectStore(SMT,{keyPath:'key'});if(!d.objectStoreNames.contains(STH))d.createObjectStore(STH,{keyPath:'id'})};r.onsuccess=()=>{_db=r.result;_db.onclose=()=>{_db=null};_db.onversionchange=()=>{_db.close();_db=null};y(_db)};r.onerror=()=>n(r.error)})}
+async function dPut(items){if(!items?.length)return;const d=await odb();await new Promise((y,n)=>{const t=d.transaction(SM,'readwrite'),s=t.objectStore(SM);for(const i of items)s.put({...i,date:i.date?i.date.toISOString():null,fetchedAt:i.fetchedAt||new Date().toISOString()});t.oncomplete=y;t.onerror=()=>n(t.error)})}
+async function dAll(){const d=await odb();return new Promise((y,n)=>{const r=d.transaction(SM,'readonly').objectStore(SM).getAll();r.onsuccess=()=>y((r.result||[]).map(i=>({...i,date:i.date?new Date(i.date):null})));r.onerror=()=>n(r.error)})}
+async function dClr(){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(SM,'readwrite');t.objectStore(SM).clear();t.oncomplete=y;t.onerror=()=>n(t.error)})}
+async function dM(k){const d=await odb();return new Promise((y,n)=>{const r=d.transaction(SMT,'readonly').objectStore(SMT).get(k);r.onsuccess=()=>y(r.result?.value??null);r.onerror=()=>n(r.error)})}
+async function dSM(k,v){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(SMT,'readwrite');t.objectStore(SMT).put({key:k,value:v});t.oncomplete=y;t.onerror=()=>n(t.error)})}
+async function dDM(k){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(SMT,'readwrite');t.objectStore(SMT).delete(k);t.oncomplete=y;t.onerror=()=>n(t.error)})}
+async function dDel(id){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(SM,'readwrite');t.objectStore(SM).delete(id);t.oncomplete=y;t.onerror=()=>n(t.error)})}
+async function tPut(id,blob){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(STH,'readwrite');t.objectStore(STH).put({id,blob,at:Date.now()});t.oncomplete=y;t.onerror=()=>n(t.error)})}
+async function tIds(){const d=await odb();return new Promise((y,n)=>{const r=d.transaction(STH,'readonly').objectStore(STH).getAllKeys();r.onsuccess=()=>y(new Set(r.result||[]));r.onerror=()=>n(r.error)})}
+async function tClr(){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(STH,'readwrite');t.objectStore(STH).clear();t.oncomplete=y;t.onerror=()=>n(t.error)})}
+async function tDel(id){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(STH,'readwrite');t.objectStore(STH).delete(id);t.oncomplete=y;t.onerror=()=>n(t.error)})}
 
-/* Thumb blob store */
-async function dbPutThumb(id,blob){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_THUMBS,'readwrite');tx.objectStore(STORE_THUMBS).put({id,blob,at:new Date().toISOString()});tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
-async function dbThumbIds(){const d=await openDb();return new Promise((ok,no)=>{const r=d.transaction(STORE_THUMBS,'readonly').objectStore(STORE_THUMBS).getAllKeys();r.onsuccess=()=>ok(new Set(r.result||[]));r.onerror=()=>no(r.error)})}
-async function dbClearThumbs(){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_THUMBS,'readwrite');tx.objectStore(STORE_THUMBS).clear();tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
-async function dbDelThumb(id){const d=await openDb();await new Promise((ok,no)=>{const tx=d.transaction(STORE_THUMBS,'readwrite');tx.objectStore(STORE_THUMBS).delete(id);tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}
+/* Load all cached thumb blobs as objectURLs */
+async function loadThumbs(){if(!lc)return;const d=await odb();return new Promise((y,n)=>{const r=d.transaction(STH,'readonly').objectStore(STH).openCursor();r.onsuccess=e=>{const c=e.target.result;if(c){const{id,blob}=c.value;if(blob&&!tUrls.has(id))try{tUrls.set(id,URL.createObjectURL(blob))}catch{}c.continue()}else y()};r.onerror=()=>n(r.error)})}
 
-async function loadCachedThumbs(){
-  if(!lcEnabled)return;
-  const d=await openDb();
-  return new Promise((ok,no)=>{const r=d.transaction(STORE_THUMBS,'readonly').objectStore(STORE_THUMBS).openCursor();r.onsuccess=e=>{const c=e.target.result;if(c){const{id,blob}=c.value;if(blob&&!thumbUrls.has(id))try{thumbUrls.set(id,URL.createObjectURL(blob))}catch{}c.continue()}else ok()};r.onerror=()=>no(r.error)})
+function thumbSrc(p){if(lc&&tUrls.has(p.id))return tUrls.get(p.id);return p.thumbnailUrl||FALLBACK}
+
+/*
+ * ===== KEY FIX: fetchThumbBlob =====
+ * Downloads thumbnail bytes using Graph API WITH auth token.
+ * This endpoint follows redirects to the actual image and includes
+ * the auth header, so it works regardless of URL expiry.
+ *
+ * GET /me/drive/items/{id}/thumbnails/0/medium/content
+ * Returns: 302 → image bytes
+ *
+ * We use the thumbnails metadata endpoint to get a fresh signed URL,
+ * then fetch that URL (which is freshly signed, not expired).
+ */
+async function fetchThumbBlob(photoId){
+  if(!_tk)return null;
+  try{
+    /* Get a FRESH thumbnail URL from Graph API (with auth) */
+    const meta=await gql('https://graph.microsoft.com/v1.0/me/drive/items/'+photoId+'/thumbnails',_tk);
+    const url=meta.value?.[0]?.medium?.url||meta.value?.[0]?.large?.url||meta.value?.[0]?.small?.url;
+    if(!url)return null;
+    /* This URL is freshly signed — fetch it immediately */
+    const res=await fetch(url);
+    if(!res.ok)return null;
+    return await res.blob();
+  }catch{return null}
 }
 
 /*
- * KEY FIX: getThumbSrc returns local blob URL if available,
- * otherwise the remote URL. If neither is valid, returns FALLBACK.
+ * ===== KEY FIX: fetchFullUrl =====
+ * Gets a fresh downloadUrl for the full-res image.
  */
-function getThumbSrc(p){
-  if(lcEnabled&&thumbUrls.has(p.id))return thumbUrls.get(p.id);
-  return p.thumbnailUrl||FALLBACK;
+async function fetchFullUrl(photoId){
+  if(!_tk)return null;
+  try{
+    const d=await gql('https://graph.microsoft.com/v1.0/me/drive/items/'+photoId+'?$select=id,@microsoft.graph.downloadUrl,webUrl',_tk);
+    return{downloadUrl:d['@microsoft.graph.downloadUrl']||null,webUrl:d.webUrl||null};
+  }catch{return null}
 }
 
-/*
- * KEY FIX: Download thumb blob. If the URL fails (expired),
- * refresh the URL from Graph API first, then retry.
- */
-async function downloadThumb(photo){
-  if(!photo.thumbnailUrl)return false;
-  try{
-    let res=await fetch(photo.thumbnailUrl);
-    if(!res.ok&&_token){
-      /* URL expired — refresh from Graph */
-      await refreshUrls(photo);
-      if(!photo.thumbnailUrl)return false;
-      res=await fetch(photo.thumbnailUrl);
-    }
-    if(!res.ok)return false;
-    const blob=await res.blob();
-    await dbPutThumb(photo.id,blob);
-    thumbUrls.set(photo.id,URL.createObjectURL(blob));
-    return true;
-  }catch{return false}
+/* Download and cache a thumb */
+async function cacheThumb(photo){
+  const blob=await fetchThumbBlob(photo.id);
+  if(!blob)return false;
+  await tPut(photo.id,blob);
+  tUrls.set(photo.id,URL.createObjectURL(blob));
+  return true;
 }
 
-let _tcRunning=false;
-async function bgCacheThumbs(){
-  if(!lcEnabled||_tcRunning)return;_tcRunning=true;
+let _tcRun=false;
+async function bgCache(){
+  if(!lc||_tcRun)return;_tcRun=true;
   try{
-    const have=await dbThumbIds();
-    const need=allPhotos.filter(p=>!have.has(p.id)&&p.thumbnailUrl);
-    const total=allPhotos.length;let cached=have.size;
-    setCacheStatus(cached,total);
+    const have=await tIds();
+    const need=allP.filter(p=>!have.has(p.id));
+    const total=allP.length;let done=have.size;
+    cStat(done,total);
     for(let i=0;i<need.length;i++){
-      if(!lcEnabled)break;
-      const ok=await downloadThumb(need[i]);
-      if(ok)cached++;
-      if(i%5===0)setCacheStatus(cached,total);
-      if(i%10===9)await new Promise(r=>setTimeout(r,100));
+      if(!lc)break;
+      if(await cacheThumb(need[i]))done++;
+      if(i%5===0)cStat(done,total);
+      if(i%10===9)await new Promise(r=>setTimeout(r,50));
     }
-    setCacheStatus(cached,total);
-  }catch(e){console.warn('Cache err',e)}
-  finally{_tcRunning=false}
+    cStat(done,total);
+  }catch(e){console.warn('bgCache err',e)}
+  finally{_tcRun=false}
 }
-
-function setCacheStatus(cached,total){
-  const el=document.getElementById('cache-toggle-status');
-  if(!el||!lcEnabled){if(el)el.textContent='';return}
-  if(total===0){el.textContent='';return}
-  el.textContent=cached>=total?`✓ ${cached} vignettes en cache`:`⟳ ${cached} / ${total} en cours…`;
-}
+function cStat(done,total){const el=document.getElementById('cache-toggle-status');if(!el||!lc){if(el)el.textContent='';return}if(!total)return;el.textContent=done>=total?`✓ ${done} vignettes en cache`:`⟳ ${done} / ${total} en cours…`}
 
 /* ===== MAP ===== */
 const map=L.map('map',{center:[20,0],zoom:2,zoomControl:false,minZoom:2,worldCopyJump:true});
-stdLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19,noWrap:false});
-satLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19,noWrap:false});
-stdLayer.addTo(map);L.control.zoom({position:'bottomright'}).addTo(map);
-document.getElementById('map-layer-toggle').addEventListener('click',()=>{const l=document.getElementById('map-layer-label');if(curLayer==='standard'){map.removeLayer(stdLayer);satLayer.addTo(map);curLayer='satellite';l.textContent='Plan'}else{map.removeLayer(satLayer);stdLayer.addTo(map);curLayer='standard';l.textContent='Satellite'}});
+stdL=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19,noWrap:false});
+satL=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19,noWrap:false});
+stdL.addTo(map);L.control.zoom({position:'bottomright'}).addTo(map);
+document.getElementById('map-layer-toggle').addEventListener('click',()=>{const l=document.getElementById('map-layer-label');if(cLayer==='standard'){map.removeLayer(stdL);satL.addTo(map);cLayer='satellite';l.textContent='Plan'}else{map.removeLayer(satL);stdL.addTo(map);cLayer='standard';l.textContent='Satellite'}});
 function msz(){return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--marker-size'))||88}
 
-clusterGroup=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:50,spiderfyOnMaxZoom:true,disableClusteringAtZoom:18,
-  iconCreateFunction(c){const n=c.getChildCount(),f=c.getAllChildMarkers()[0]?._pd,s=f?getThumbSrc(f):FALLBACK,sz=msz();
+cg=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:50,spiderfyOnMaxZoom:true,disableClusteringAtZoom:18,
+  iconCreateFunction(c){const n=c.getChildCount(),f=c.getAllChildMarkers()[0]?._pd,s=f?thumbSrc(f):FALLBACK,sz=msz();
     return L.divIcon({className:'',html:`<div class="photo-marker-wrap"><div class="photo-marker"><img src="${s}" loading="lazy" onerror="this.src='${FALLBACK}'"/><div class="photo-marker-count">${n}</div></div><div class="photo-marker-tail"></div></div>`,iconSize:[sz,sz+12],iconAnchor:[sz/2,sz+12]})}
-});map.addLayer(clusterGroup);
+});map.addLayer(cg);
 
 /* ===== UI ===== */
 let tt;function toast(m,d=3000){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),d)}
-function setScan(st,txt,cnt,pct){const el=document.getElementById('scan-status'),te=document.getElementById('scan-status-text'),ce=document.getElementById('scan-status-count'),fe=document.getElementById('scan-progress-fill');if(st==='hidden'){el.style.display='none';el.classList.remove('visible','done','error');return}el.style.display='flex';el.classList.add('visible');el.classList.remove('done','error');if(st==='done')el.classList.add('done');if(st==='error')el.classList.add('error');if(txt)te.textContent=txt;if(cnt!=null)ce.textContent=cnt;if(pct!=null)fe.style.width=Math.min(pct,100)+'%'}
-let _sdt;function scanDone(c,d){setScan('done','Terminé',d||(c+' médias'),100);clearTimeout(_sdt);_sdt=setTimeout(()=>setScan('hidden'),5000)}
+function ssc(st,tx,ct,pc){const e=document.getElementById('scan-status'),t=document.getElementById('scan-status-text'),c=document.getElementById('scan-status-count'),f=document.getElementById('scan-progress-fill');if(st==='hidden'){e.style.display='none';e.classList.remove('visible','done','error');return}e.style.display='flex';e.classList.add('visible');e.classList.remove('done','error');if(st==='done')e.classList.add('done');if(st==='error')e.classList.add('error');if(tx)t.textContent=tx;if(ct!=null)c.textContent=ct;if(pc!=null)f.style.width=Math.min(pc,100)+'%'}
+let _sdt;function sDone(c,d){ssc('done','Terminé',d||c+' médias',100);clearTimeout(_sdt);_sdt=setTimeout(()=>ssc('hidden'),5000)}
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
-function isVid(n=''){return VIDEO_EXT.has(n.split('.').pop()?.toLowerCase())}
+function isV(n=''){return VID_EXT.has(n.split('.').pop()?.toLowerCase())}
 
-function updateUI(fit=false){
-  if(!allPhotos?.length)return;
-  buildYears(allPhotos);
-  const f=currentYear==='all'?allPhotos:allPhotos.filter(p=>p.date&&p.date.getFullYear()==currentYear);
-  render(f);updStats(f.length);
-  if(fit&&markers.length)map.fitBounds(L.featureGroup(markers).getBounds().pad(.15),{maxZoom:14});
+function updateUI(fit){
+  if(!allP?.length)return;bldYr(allP);
+  const f=curY==='all'?allP:allP.filter(p=>p.date&&p.date.getFullYear()==curY);
+  rndr(f);uSt(f.length);
+  if(fit&&mkrs.length)map.fitBounds(L.featureGroup(mkrs).getBounds().pad(.15),{maxZoom:14});
   document.getElementById('btn-config').style.display='inline-flex';
   document.getElementById('map-layer-toggle').classList.add('visible');
-  setTimeout(refreshVisible,800);
+  setTimeout(refreshVis,800);
 }
 
 /* ===== AUTH ===== */
-async function initMsal(cid){msal=new window.msal.PublicClientApplication({auth:{clientId:cid,authority:'https://login.microsoftonline.com/common',redirectUri:location.origin+location.pathname},cache:{cacheLocation:'localStorage'}});await msal.initialize()}
-async function getToken(){const a=msal.getAllAccounts();try{return(await msal.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0]})).accessToken}catch{await msal.acquireTokenRedirect({scopes:['Files.Read','User.Read'],account:a[0]});return null}}
-async function freshToken(){const a=msal.getAllAccounts();try{return(await msal.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0],forceRefresh:true})).accessToken}catch{await msal.acquireTokenRedirect({scopes:['Files.Read','User.Read'],account:a[0]});return null}}
+async function initMs(cid){ms=new window.msal.PublicClientApplication({auth:{clientId:cid,authority:'https://login.microsoftonline.com/common',redirectUri:location.origin+location.pathname},cache:{cacheLocation:'localStorage'}});await ms.initialize()}
+async function getTk(){const a=ms.getAllAccounts();try{return(await ms.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0]})).accessToken}catch{await ms.acquireTokenRedirect({scopes:['Files.Read','User.Read'],account:a[0]});return null}}
+async function freshTk(){const a=ms.getAllAccounts();try{return(await ms.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0],forceRefresh:true})).accessToken}catch{await ms.acquireTokenRedirect({scopes:['Files.Read','User.Read'],account:a[0]});return null}}
 
-async function gql(url,tok,retry=false){
-  const r=await fetch(url,{headers:{Authorization:'Bearer '+tok}});
-  if(r.status===401&&!retry){const ft=await freshToken();if(ft){_token=ft;return gql(url,ft,true)}return null}
+async function gql(url,tk,re=false){
+  const r=await fetch(url,{headers:{Authorization:'Bearer '+tk}});
+  if(r.status===401&&!re){const f=await freshTk();if(f){_tk=f;return gql(url,f,true)}return null}
   if(r.status===401)throw new Error('Session expirée');
-  if(r.status===429){await new Promise(ok=>setTimeout(ok,parseInt(r.headers.get('Retry-After')||'5')*1000));return gql(url,tok)}
+  if(r.status===429){await new Promise(y=>setTimeout(y,parseInt(r.headers.get('Retry-After')||'5')*1000));return gql(url,tk)}
   if(!r.ok)throw new Error('Graph '+r.status);
   return r.json();
 }
-function isMF(i){if(!i.file||!i.name)return false;const e=i.name.split('.').pop()?.toLowerCase();return IMAGE_EXT.has(e)||VIDEO_EXT.has(e)}
-async function getThumb(id){try{const d=await gql('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/thumbnails',_token);return d.value?.[0]?.medium?.url||d.value?.[0]?.large?.url||d.value?.[0]?.small?.url||null}catch{return null}}
+function isMF(i){if(!i.file||!i.name)return false;const e=i.name.split('.').pop()?.toLowerCase();return IMG_EXT.has(e)||VID_EXT.has(e)}
+async function getThUrl(id){try{const d=await gql('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/thumbnails',_tk);return d.value?.[0]?.medium?.url||d.value?.[0]?.large?.url||d.value?.[0]?.small?.url||null}catch{return null}}
 
-/*
- * KEY FIX: refreshUrls — gets fresh downloadUrl + thumbnailUrl from Graph.
- * This is the ONLY way to get working URLs after they expire.
- */
-async function refreshUrls(item){
-  try{
-    const d=await gql('https://graph.microsoft.com/v1.0/me/drive/items/'+item.id+'?$select=id,@microsoft.graph.downloadUrl,webUrl',_token);
-    const tu=await getThumb(item.id);
-    item.downloadUrl=d['@microsoft.graph.downloadUrl']||tu||item.downloadUrl;
-    item.thumbnailUrl=tu||item.thumbnailUrl;
-    item.webUrl=d.webUrl||item.webUrl;
-    item.fetchedAt=new Date().toISOString();
-    await dbPut([item]);
-    if(lcEnabled&&tu)downloadThumb(item).catch(()=>{});
-  }catch(e){console.warn('Refresh fail',item.id,e)}
-}
-
-function isStale(item){
-  if(lcEnabled&&thumbUrls.has(item.id))return false;
-  if(!item.fetchedAt)return true;
-  return(Date.now()-new Date(item.fetchedAt).getTime())>THUMB_TTL;
-}
-
-/* ===== REFRESH QUEUE ===== */
-const _rq=new Set(),_rip=new Set(),_rfail=new Map();let _rp=false;
-function queueRefresh(pid,img){if(!_token||_rip.has(pid))return;_rq.add(pid);if(img){if(!_rfail.has(pid))_rfail.set(pid,new Set());_rfail.get(pid).add(img)}if(!_rp){_rp=true;setTimeout(processQ,50)}}
-async function processQ(){
+/* Refresh + update on visible markers that have stale thumbnails */
+const _rq=new Set(),_ri=new Set();let _rp=false;
+function qR(pid,imgEl){if(!_tk||_ri.has(pid))return;_rq.add(pid);if(!_rp){_rp=true;setTimeout(pQ,50)}}
+async function pQ(){
   if(!_rq.size){_rp=false;return}
-  const b=map.getBounds(),pri=[],norm=[];
-  for(const id of _rq){const p=allPhotos.find(x=>x.id===id);if(p&&b.contains([p.lat,p.lng]))pri.push(id);else norm.push(id)}
-  const batch=[...pri,...norm].slice(0,4);
+  const batch=[..._rq].slice(0,4);
   await Promise.allSettled(batch.map(async id=>{
-    _rq.delete(id);_rip.add(id);
-    const photo=allPhotos.find(p=>p.id===id);
-    if(!photo){_rip.delete(id);return}
+    _rq.delete(id);_ri.add(id);
+    const p=allP.find(x=>x.id===id);if(!p){_ri.delete(id);return}
     try{
-      await refreshUrls(photo);
-      const src=getThumbSrc(photo);
-      const imgs=_rfail.get(id);
-      if(imgs){for(const im of imgs)if(im.isConnected){im.onerror=null;im.src=src;im.onerror=function(){this.src=FALLBACK}}_rfail.delete(id)}
+      /* Get fresh thumbnail URL */
+      const tu=await getThUrl(id);
+      if(tu){p.thumbnailUrl=tu;p.fetchedAt=new Date().toISOString();await dPut([p])}
+      if(lc){await cacheThumb(p)}
+      /* Update all visible img elements with this photo id */
+      const newSrc=thumbSrc(p);
+      document.querySelectorAll(`img[data-pid="${id}"]`).forEach(img=>{img.onerror=null;img.src=newSrc;img.onerror=function(){this.src=FALLBACK}});
       /* Update marker on map */
-      for(const m of markers){if(m._pd?.id===id){const el=m.getElement?.();if(el){const img=el.querySelector('img');if(img){img.onerror=null;img.src=src;img.onerror=function(){this.src=FALLBACK}}}break}}
-    }catch{}finally{_rip.delete(id)}
+      for(const m of mkrs){if(m._pd?.id===id){const el=m.getElement?.();if(el){const img=el.querySelector('img');if(img){img.onerror=null;img.src=newSrc;img.onerror=function(){this.src=FALLBACK}}}break}}
+    }catch{}finally{_ri.delete(id)}
   }));
-  if(_rq.size)setTimeout(processQ,200);else _rp=false;
+  if(_rq.size)setTimeout(pQ,200);else _rp=false;
 }
-function refreshVisible(){
-  if(!_token)return;const b=map.getBounds();let q=0;
-  for(const m of markers){if(q>=20)break;const p=m._pd;if(!p||!b.contains([p.lat,p.lng])||_rip.has(p.id)||_rq.has(p.id))continue;if(isStale(p)){_rq.add(p.id);q++}}
-  if(q>0&&!_rp){_rp=true;setTimeout(processQ,50)}
+function refreshVis(){
+  if(!_tk)return;const b=map.getBounds();let q=0;
+  for(const m of mkrs){if(q>=20)break;const p=m._pd;if(!p||!b.contains([p.lat,p.lng])||_ri.has(p.id)||_rq.has(p.id))continue;
+    /* Check if URL is stale (>4h since fetch) */
+    if(lc&&tUrls.has(p.id))continue;
+    if(!p.fetchedAt||(Date.now()-new Date(p.fetchedAt).getTime())>4*3600*1000){_rq.add(p.id);q++}}
+  if(q>0&&!_rp){_rp=true;setTimeout(pQ,50)}
 }
-let _vrt;map.on('moveend',()=>{clearTimeout(_vrt);_vrt=setTimeout(refreshVisible,500)});
+let _vrt;map.on('moveend',()=>{clearTimeout(_vrt);_vrt=setTimeout(refreshVis,500)});
 
 /* ===== DELTA SYNC ===== */
-const DELTA_URL='https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
-async function deltaSync(){
-  _token=await getToken();if(!_token)return[];
-  const ex=await dbAll(),eMap=new Map(ex.map(p=>[p.id,p])),eC=ex.length;
-  let dl=await dbMeta('deltaLink'),url=dl||DELTA_URL,isFirst=!dl;
-  setScan('scanning',isFirst?'Premier scan…':'Synchro…',isFirst?'':eC+' en cache',2);
-  let sc=0,add=0,del=0,nd=null;const batch=[];
+const DURL='https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
+async function dsync(){
+  _tk=await getTk();if(!_tk)return[];
+  const ex=await dAll(),eM=new Map(ex.map(p=>[p.id,p])),eC=ex.length;
+  let dl=await dM('deltaLink'),url=dl||DURL,isF=!dl;
+  ssc('scanning',isF?'Premier scan…':'Synchro…',isF?'':eC+' en cache',2);
+  let sc=0,ad=0,de=0,nd=null;const bat=[];
   while(url){
-    const data=await gql(url,_token);
+    const data=await gql(url,_tk);
     for(const it of(data.value||[])){
-      sc++;if(sc%50===0)setScan('scanning',isFirst?`Analyse… ${sc}`:`Synchro… ${sc}`,isFirst?(eC+add)+' trouvés':(add>0?`+${add}`:'…'),Math.min(5+sc*.005,95));
-      if(it.deleted){if(eMap.has(it.id)){eMap.delete(it.id);await dbDelMedia(it.id);if(lcEnabled)dbDelThumb(it.id).catch(()=>{});del++}continue}
+      sc++;if(sc%50===0)ssc('scanning',isF?`Analyse… ${sc}`:`Synchro… ${sc}`,isF?(eC+ad)+' trouvés':(ad>0?`+${ad}`:'…'),Math.min(5+sc*.005,95));
+      if(it.deleted){if(eM.has(it.id)){eM.delete(it.id);await dDel(it.id);if(lc)tDel(it.id).catch(()=>{});de++}continue}
       if(it.folder||!isMF(it))continue;
-      if(!isFirst&&eMap.has(it.id)){const la=it.location?.latitude,lo=it.location?.longitude;if(la!=null&&lo!=null&&!(la===0&&lo===0)){const tu=await getThumb(it.id),dt=it.photo?.takenDateTime||it.createdDateTime;const u={id:it.id,name:it.name,lat:+la,lng:+lo,date:dt?new Date(dt):null,thumbnailUrl:tu,downloadUrl:it['@microsoft.graph.downloadUrl']||tu,webUrl:it.webUrl,mediaType:isVid(it.name)?'video':'image',fetchedAt:new Date().toISOString()};eMap.set(it.id,u);batch.push(u);if(lcEnabled&&tu)downloadThumb(u).catch(()=>{})}continue}
-      if(isFirst&&eMap.has(it.id))continue;
       const la=it.location?.latitude,lo=it.location?.longitude;
-      if(la==null||lo==null||(la===0&&lo===0))continue;
-      const tu=await getThumb(it.id),dt=it.photo?.takenDateTime||it.createdDateTime;
-      const mi={id:it.id,name:it.name,lat:+la,lng:+lo,date:dt?new Date(dt):null,thumbnailUrl:tu,downloadUrl:it['@microsoft.graph.downloadUrl']||tu,webUrl:it.webUrl,mediaType:isVid(it.name)?'video':'image',fetchedAt:new Date().toISOString()};
-      eMap.set(it.id,mi);batch.push(mi);add++;
-      if(lcEnabled&&tu)downloadThumb(mi).catch(()=>{});
-      if(batch.length>=((eC+add)<50?5:25)){await dbPut(batch);batch.length=0;allPhotos=[...eMap.values()];updateUI(eC===0&&add<=5)}
+      if(la==null||lo==null||(la===0&&lo===0)){if(!isF&&eM.has(it.id)){/* modified but no geo — skip */}continue}
+      const tu=await getThUrl(it.id),dt=it.photo?.takenDateTime||it.createdDateTime;
+      const mi={id:it.id,name:it.name,lat:+la,lng:+lo,date:dt?new Date(dt):null,thumbnailUrl:tu,downloadUrl:it['@microsoft.graph.downloadUrl']||tu,webUrl:it.webUrl,mediaType:isV(it.name)?'video':'image',fetchedAt:new Date().toISOString()};
+      const isNew=!eM.has(it.id);
+      eM.set(it.id,mi);bat.push(mi);if(isNew)ad++;
+      if(lc&&tu)cacheThumb(mi).catch(()=>{});
+      if(bat.length>=((eC+ad)<50?5:25)){await dPut(bat);bat.length=0;allP=[...eM.values()];updateUI(eC===0&&ad<=5)}
     }
     url=data['@odata.nextLink']||(nd=data['@odata.deltaLink']||null,null);
   }
-  if(batch.length)await dbPut(batch);
-  if(nd)await dbSetMeta('deltaLink',nd);
-  allPhotos=[...eMap.values()];updateUI(eC===0&&allPhotos.length>0);
-  await dbSetMeta('scan_state',{found:allPhotos.length,at:new Date().toISOString()});
-  if(isFirst)scanDone(allPhotos.length,allPhotos.length+' médias');
-  else if(add||del){const p=[];if(add)p.push('+'+add);if(del)p.push('-'+del);scanDone(allPhotos.length,p.join(' ')+' · '+allPhotos.length+' total')}
-  else scanDone(allPhotos.length,'à jour');
-  if(lcEnabled)setTimeout(bgCacheThumbs,2000);
-  return allPhotos;
+  if(bat.length)await dPut(bat);if(nd)await dSM('deltaLink',nd);
+  allP=[...eM.values()];updateUI(eC===0&&allP.length>0);
+  await dSM('scan_state',{found:allP.length,at:new Date().toISOString()});
+  if(isF)sDone(allP.length,allP.length+' médias');
+  else if(ad||de){const p=[];if(ad)p.push('+'+ad);if(de)p.push('-'+de);sDone(allP.length,p.join(' ')+' · '+allP.length)}
+  else sDone(allP.length,'à jour');
+  if(lc)setTimeout(bgCache,2000);
+  return allP;
 }
-async function bgSync(){if(bgSyncRunning)return;bgSyncRunning=true;try{await deltaSync()}catch(e){console.warn('Sync err',e);setScan('error','Erreur','',0);setTimeout(()=>setScan('hidden'),4000)}finally{bgSyncRunning=false}}
-function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(()=>{if(_token&&!bgSyncRunning)bgSync()},15*60*1000)}
-function stopAuto(){clearInterval(autoTimer);autoTimer=null}
+async function bgSync(){if(bgRun)return;bgRun=true;try{await dsync()}catch(e){console.warn(e);ssc('error','Erreur','',0);setTimeout(()=>ssc('hidden'),4000)}finally{bgRun=false}}
+function startAuto(){clearInterval(atm);atm=setInterval(()=>{if(_tk&&!bgRun)bgSync()},15*60*1000)}
+function stopAuto(){clearInterval(atm)}
 
-/* ===== SPATIAL INDEX ===== */
+/* ===== SPATIAL ===== */
 let si={};const CS=.0005;
-function buildSI(ph){si={};for(const p of ph){const k=Math.round(p.lat/CS)+','+Math.round(p.lng/CS);(si[k]||(si[k]=[])).push(p)}}
-function nearby(lat,lng,fs){const cl=Math.round(lat/CS),cg=Math.round(lng/CS),r=[];for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const c=si[(cl+i)+','+(cg+j)];if(!c)continue;for(const p of c){if(fs&&!fs.has(p.id))continue;if(Math.abs(p.lat-lat)<CS&&Math.abs(p.lng-lng)<CS)r.push(p)}}return r}
+function bSI(ph){si={};for(const p of ph){const k=Math.round(p.lat/CS)+','+Math.round(p.lng/CS);(si[k]||(si[k]=[])).push(p)}}
+function near(lat,lng,fs){const cl=Math.round(lat/CS),cg2=Math.round(lng/CS),r=[];for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const c=si[(cl+i)+','+(cg2+j)];if(!c)continue;for(const p of c){if(fs&&!fs.has(p.id))continue;if(Math.abs(p.lat-lat)<CS&&Math.abs(p.lng-lng)<CS)r.push(p)}}return r}
 
 /* ===== MARKERS ===== */
-function mkMarker(p,fs){
-  const src=getThumbSrc(p),pid=p.id,nb=nearby(p.lat,p.lng,fs);
-  const badge=nb.length>1?`<div class="photo-marker-count">${nb.length}</div>`:'';
-  const sz=msz();
-  const icon=L.divIcon({className:'',
-    html:`<div class="photo-marker-wrap"><div class="photo-marker"><img src="${src}" loading="lazy" data-pid="${pid}" onerror="this.src='${FALLBACK}';if(window.queueRefresh)queueRefresh('${pid}',this)"/>${badge}</div><div class="photo-marker-tail"></div></div>`,
+function mkM(p,fs){
+  const s=thumbSrc(p),pid=p.id,nb=near(p.lat,p.lng,fs),sz=msz();
+  const bd=nb.length>1?`<div class="photo-marker-count">${nb.length}</div>`:'';
+  const ic=L.divIcon({className:'',
+    html:`<div class="photo-marker-wrap"><div class="photo-marker"><img src="${s}" loading="lazy" data-pid="${pid}" onerror="this.src='${FALLBACK}';if(window.qR)qR('${pid}')"/>${bd}</div><div class="photo-marker-tail"></div></div>`,
     iconSize:[sz,sz+12],iconAnchor:[sz/2,sz+12]});
-  const m=L.marker([p.lat,p.lng],{icon});
-  m.on('click',()=>{const np=nearby(p.lat,p.lng,fs);openPanel(np.length?np:[p],p.lat,p.lng)});
+  const m=L.marker([p.lat,p.lng],{icon:ic});
+  m.on('click',()=>{const np=near(p.lat,p.lng,fs);oPanel(np.length?np:[p],p.lat,p.lng)});
   m._pd=p;return m;
 }
-function render(filtered){
-  clusterGroup.off('clusterclick');clusterGroup.clearLayers();markers=[];
-  buildSI(allPhotos);const fs=new Set(filtered.map(p=>p.id));
-  filtered.forEach(p=>markers.push(mkMarker(p,fs)));
-  clusterGroup.addLayers(markers);
-  clusterGroup.on('clusterclick',e=>openPanel(e.layer.getAllChildMarkers().map(m=>m._pd),e.latlng.lat,e.latlng.lng));
-}
+function rndr(fl){cg.off('clusterclick');cg.clearLayers();mkrs=[];bSI(allP);const fs=new Set(fl.map(p=>p.id));fl.forEach(p=>mkrs.push(mkM(p,fs)));cg.addLayers(mkrs);cg.on('clusterclick',e=>oPanel(e.layer.getAllChildMarkers().map(m=>m._pd),e.latlng.lat,e.latlng.lng))}
 
 /* ===== PANEL ===== */
-function openPanel(photos,lat,lng){
-  panelPhotos=[...photos].sort((a,b)=>(b.date||0)-(a.date||0));
-  const dates=panelPhotos.filter(p=>p.date).map(p=>p.date);
-  const dr=document.getElementById('panel-date-range');
-  if(dates.length){const mn=new Date(Math.min(...dates)),mx=new Date(Math.max(...dates)),f=d=>d.toLocaleDateString('fr-FR',{month:'short',year:'numeric'});dr.textContent=mn.getFullYear()===mx.getFullYear()&&mn.getMonth()===mx.getMonth()?f(mn):`${f(mn)} — ${f(mx)}`}else dr.textContent='';
-  document.getElementById('panel-count').textContent=panelPhotos.length+' média'+(panelPhotos.length>1?'s':'');
-  const loc=document.getElementById('panel-location-name');loc.textContent='Chargement…';
-  geocode(lat,lng).then(n=>loc.textContent=n);
-  renderPanel();document.getElementById('photo-panel').classList.add('open');
+function oPanel(ph,lat,lng){
+  panP=[...ph].sort((a,b)=>(b.date||0)-(a.date||0));
+  const dt=panP.filter(p=>p.date).map(p=>p.date),dr=document.getElementById('panel-date-range');
+  if(dt.length){const mn=new Date(Math.min(...dt)),mx=new Date(Math.max(...dt)),f=d=>d.toLocaleDateString('fr-FR',{month:'short',year:'numeric'});dr.textContent=mn.getFullYear()===mx.getFullYear()&&mn.getMonth()===mx.getMonth()?f(mn):f(mn)+' — '+f(mx)}else dr.textContent='';
+  document.getElementById('panel-count').textContent=panP.length+' média'+(panP.length>1?'s':'');
+  const loc=document.getElementById('panel-location-name');loc.textContent='…';
+  geo(lat,lng).then(n=>loc.textContent=n);
+  rPanel();document.getElementById('photo-panel').classList.add('open');
 }
-function renderPanel(){
+function rPanel(){
   const g=document.getElementById('panel-photos');g.innerHTML='';
-  panelPhotos.forEach((p,idx)=>{
-    const card=document.createElement('div');card.className='thumb-card';
-    const ds=p.date?p.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'';
-    const img=document.createElement('img');
-    img.src=getThumbSrc(p);img.loading='lazy';img.decoding='async';img.alt=p.name;
-    img.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover';
-    img.onerror=function(){this.src=FALLBACK;queueRefresh(p.id,this)};
-    const ov=document.createElement('div');ov.className='thumb-overlay';ov.innerHTML=esc(p.name)+'<br>'+ds;
-    card.appendChild(img);card.appendChild(ov);
-    card.addEventListener('click',()=>{lightboxPhotos=panelPhotos;lightboxIdx=idx;showLB()});
-    g.appendChild(card);
+  panP.forEach((p,i)=>{
+    const c=document.createElement('div');c.className='thumb-card';
+    const d=p.date?p.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'';
+    const im=document.createElement('img');im.src=thumbSrc(p);im.loading='lazy';im.alt=p.name;im.dataset.pid=p.id;
+    im.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover';
+    im.onerror=function(){this.src=FALLBACK;qR(p.id)};
+    const o=document.createElement('div');o.className='thumb-overlay';o.innerHTML=esc(p.name)+'<br>'+d;
+    c.appendChild(im);c.appendChild(o);
+    c.addEventListener('click',()=>{lbP=panP;lbI=i;showLB()});
+    g.appendChild(c);
   });
 }
 
 /* ===== LIGHTBOX ===== */
 /*
- * KEY FIX: The lightbox ALWAYS fetches fresh URLs from Graph API if the
- * current URLs are stale. It shows the local cached thumb or FALLBACK
- * immediately, then loads the fresh full-res image.
+ * CORE FIX: Always fetch fresh URLs from Graph API for the lightbox.
+ * Show cached/fallback thumb immediately, then load HD via fresh downloadUrl.
  */
 function showLB(){
-  if(!lightboxPhotos.length)return;
-  const p=lightboxPhotos[lightboxIdx];
-  const lb=document.getElementById('lightbox'),img=document.getElementById('lightbox-img'),vid=document.getElementById('lightbox-video');
-  const hdL=document.getElementById('hd-loader'),hdD=document.getElementById('hd-done'),oBtn=document.getElementById('lightbox-open-onedrive');
+  if(!lbP.length)return;
+  const p=lbP[lbI],lb=document.getElementById('lightbox'),img=document.getElementById('lightbox-img'),vid=document.getElementById('lightbox-video');
+  const hdL=document.getElementById('hd-loader'),hdD=document.getElementById('hd-done');
   img.style.display='none';vid.style.display='none';hdL.classList.remove('visible');hdD.classList.remove('visible');
   vid.onloadedmetadata=null;img.onload=null;img.onerror=null;
   vid.pause();try{vid.removeAttribute('src');vid.load()}catch{}
   const cid=p.id;
 
-  /* Step 1: Show best available thumbnail immediately */
-  const thumbSrc=getThumbSrc(p);
-
   if(p.mediaType==='video'){
     vid.style.display='block';
-    /* For video, always try to get a fresh download URL */
-    if(_token){
+    if(_tk){
       hdL.classList.add('visible');
-      refreshUrls(p).then(()=>{
-        if(lightboxPhotos[lightboxIdx]?.id!==cid)return;
-        vid.src=p.downloadUrl||p.webUrl||'';
+      fetchFullUrl(p.id).then(r=>{
+        if(lbP[lbI]?.id!==cid)return;
+        vid.src=r?.downloadUrl||p.downloadUrl||'';
         hdL.classList.remove('visible');
-      }).catch(()=>hdL.classList.remove('visible'));
-    }else{
-      vid.src=p.downloadUrl||p.webUrl||'';
-    }
+      }).catch(()=>{vid.src=p.downloadUrl||'';hdL.classList.remove('visible')});
+    }else vid.src=p.downloadUrl||'';
   }else{
-    img.src=thumbSrc;img.style.display='block';
+    /* Show thumb immediately */
+    img.src=thumbSrc(p);img.style.display='block';
     img.onerror=()=>{img.src=FALLBACK};
 
-    /* Step 2: Always fetch fresh full-res URL from Graph API */
-    if(_token){
+    if(_tk){
       hdL.classList.add('visible');
-      refreshUrls(p).then(()=>{
-        if(lightboxPhotos[lightboxIdx]?.id!==cid)return;
-        const freshThumb=getThumbSrc(p);
-        /* If we were showing fallback, update to fresh thumb first */
-        if(thumbSrc===FALLBACK&&freshThumb!==FALLBACK)img.src=freshThumb;
-        /* Now load full-res */
-        const fullUrl=p.downloadUrl||p.thumbnailUrl;
+      /* Fetch fresh thumb + full URL in parallel */
+      Promise.all([fetchThumbBlob(p.id),fetchFullUrl(p.id)]).then(([blob,urls])=>{
+        if(lbP[lbI]?.id!==cid)return;
+        /* Update thumb if we got a blob */
+        if(blob){
+          const blobUrl=URL.createObjectURL(blob);
+          img.src=blobUrl;
+          /* Also update the photo's cached thumb */
+          if(lc){tPut(p.id,blob).catch(()=>{});tUrls.set(p.id,blobUrl)}
+        }
+        /* Now load full res */
+        const fullUrl=urls?.downloadUrl;
         if(fullUrl){
           const hd=new Image();
-          hd.onload=()=>{if(lightboxPhotos[lightboxIdx]?.id!==cid)return;img.src=hd.src;hdL.classList.remove('visible');hdD.classList.add('visible');setTimeout(()=>{if(lightboxPhotos[lightboxIdx]?.id===cid)hdD.classList.remove('visible')},2000)};
+          hd.onload=()=>{if(lbP[lbI]?.id!==cid)return;img.src=hd.src;hdL.classList.remove('visible');hdD.classList.add('visible');setTimeout(()=>{if(lbP[lbI]?.id===cid)hdD.classList.remove('visible')},2000)};
           hd.onerror=()=>{hdL.classList.remove('visible')};
           hd.src=fullUrl;
         }else{hdL.classList.remove('visible')}
+        /* Update stored URLs */
+        if(urls){p.downloadUrl=urls.downloadUrl||p.downloadUrl;p.webUrl=urls.webUrl||p.webUrl;p.fetchedAt=new Date().toISOString();dPut([p]).catch(()=>{})}
       }).catch(()=>{hdL.classList.remove('visible')});
     }
   }
@@ -538,9 +491,10 @@ function showLB(){
   const ds=p.date?p.date.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
   document.getElementById('lightbox-meta').textContent=[ds,p.lat.toFixed(4)+', '+p.lng.toFixed(4)].filter(Boolean).join('  ·  ');
   const od=p.webUrl||p.downloadUrl;
-  if(od){oBtn.dataset.webUrl=od;oBtn.style.display='inline-flex'}else{delete oBtn.dataset.webUrl;oBtn.style.display='none'}
-  document.getElementById('lightbox-prev').style.display=lightboxPhotos.length>1?'flex':'none';
-  document.getElementById('lightbox-next').style.display=lightboxPhotos.length>1?'flex':'none';
+  const ob=document.getElementById('lightbox-open-onedrive');
+  if(od){ob.dataset.webUrl=od;ob.style.display='inline-flex'}else{delete ob.dataset.webUrl;ob.style.display='none'}
+  document.getElementById('lightbox-prev').style.display=lbP.length>1?'flex':'none';
+  document.getElementById('lightbox-next').style.display=lbP.length>1?'flex':'none';
   lb.classList.add('open');
 }
 
@@ -548,92 +502,66 @@ function showLB(){
 document.getElementById('panel-close').addEventListener('click',()=>document.getElementById('photo-panel').classList.remove('open'));
 map.on('click',()=>document.getElementById('photo-panel').classList.remove('open'));
 document.getElementById('lightbox-close').addEventListener('click',()=>document.getElementById('lightbox').classList.remove('open'));
-document.getElementById('lightbox-prev').addEventListener('click',e=>{e.stopPropagation();lightboxIdx=(lightboxIdx-1+lightboxPhotos.length)%lightboxPhotos.length;showLB()});
-document.getElementById('lightbox-next').addEventListener('click',e=>{e.stopPropagation();lightboxIdx=(lightboxIdx+1)%lightboxPhotos.length;showLB()});
+document.getElementById('lightbox-prev').addEventListener('click',e=>{e.stopPropagation();lbI=(lbI-1+lbP.length)%lbP.length;showLB()});
+document.getElementById('lightbox-next').addEventListener('click',e=>{e.stopPropagation();lbI=(lbI+1)%lbP.length;showLB()});
 document.getElementById('lightbox').addEventListener('click',e=>{if(e.target===document.getElementById('lightbox'))document.getElementById('lightbox').classList.remove('open')});
 document.getElementById('lightbox-open-onedrive').addEventListener('click',e=>{e.stopPropagation();const u=e.currentTarget.dataset.webUrl;if(!u)return;if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))location.href=u;else window.open(u,'_blank','noopener')});
-document.addEventListener('keydown',e=>{const lb=document.getElementById('lightbox');if(!lb.classList.contains('open'))return;if(e.key==='Escape')lb.classList.remove('open');if(e.key==='ArrowLeft'){lightboxIdx=(lightboxIdx-1+lightboxPhotos.length)%lightboxPhotos.length;showLB()}if(e.key==='ArrowRight'){lightboxIdx=(lightboxIdx+1)%lightboxPhotos.length;showLB()}});
+document.addEventListener('keydown',e=>{const lb=document.getElementById('lightbox');if(!lb.classList.contains('open'))return;if(e.key==='Escape')lb.classList.remove('open');if(e.key==='ArrowLeft'){lbI=(lbI-1+lbP.length)%lbP.length;showLB()}if(e.key==='ArrowRight'){lbI=(lbI+1)%lbP.length;showLB()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('photo-panel').classList.remove('open')});
-
-/* Touch */
 (function(){let sx=0,sy=0;const T=50,lb=document.getElementById('lightbox');
 lb.addEventListener('touchstart',e=>{sx=e.changedTouches[0].screenX;sy=e.changedTouches[0].screenY},{passive:true});
-lb.addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-sx,dy=e.changedTouches[0].screenY-sy;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>T){lightboxIdx=dx<0?(lightboxIdx+1)%lightboxPhotos.length:(lightboxIdx-1+lightboxPhotos.length)%lightboxPhotos.length;showLB()}else if(dy>T*1.5&&Math.abs(dy)>Math.abs(dx))lb.classList.remove('open')},{passive:true});
+lb.addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-sx,dy=e.changedTouches[0].screenY-sy;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>T){lbI=dx<0?(lbI+1)%lbP.length:(lbI-1+lbP.length)%lbP.length;showLB()}else if(dy>T*1.5&&Math.abs(dy)>Math.abs(dx))lb.classList.remove('open')},{passive:true});
 const ph=document.querySelector('.panel-header');let py=0;
 ph.addEventListener('touchstart',e=>{py=e.changedTouches[0].screenY},{passive:true});
 ph.addEventListener('touchend',e=>{if(e.changedTouches[0].screenY-py>60)document.getElementById('photo-panel').classList.remove('open')},{passive:true})})();
 
 /* ===== GEOCODING ===== */
 const gc={};let glt=0;
-async function geocode(lat,lng,rt=0){const k=lat.toFixed(2)+','+lng.toFixed(2);if(gc[k])return gc[k];const w=Math.max(0,1100-(Date.now()-glt));if(w>0)await new Promise(r=>setTimeout(r,w));glt=Date.now();try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`,{headers:{'User-Agent':'PhotoMap/1.0'}});if(r.status===429){if(rt<3){await new Promise(ok=>setTimeout(ok,(2**rt)*1500));return geocode(lat,lng,rt+1)}throw 0}if(!r.ok)throw 0;const d=await r.json(),a=d.address||{},n=a.city||a.town||a.village||a.county||a.state||a.country||'Lieu inconnu',c=a.country||'';const res=c&&n!==c?n+', '+c:n;gc[k]=res;return res}catch{return lat.toFixed(3)+'°, '+lng.toFixed(3)+'°'}}
+async function geo(lat,lng,rt=0){const k=lat.toFixed(2)+','+lng.toFixed(2);if(gc[k])return gc[k];const w=Math.max(0,1100-(Date.now()-glt));if(w>0)await new Promise(r=>setTimeout(r,w));glt=Date.now();try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`,{headers:{'User-Agent':'PhotoMap/1.0'}});if(r.status===429){if(rt<3){await new Promise(y=>setTimeout(y,(2**rt)*1500));return geo(lat,lng,rt+1)}throw 0}if(!r.ok)throw 0;const d=await r.json(),a=d.address||{},n=a.city||a.town||a.village||a.county||a.state||a.country||'?',c=a.country||'';const res=c&&n!==c?n+', '+c:n;gc[k]=res;return res}catch{return lat.toFixed(3)+'°, '+lng.toFixed(3)+'°'}}
 
-/* ===== YEAR FILTER ===== */
+/* ===== YEARS ===== */
 let yfi=false;
-function buildYears(ph){const yrs=[...new Set(ph.filter(p=>p.date).map(p=>p.date.getFullYear()))].sort((a,b)=>b-a);const bar=document.getElementById('filter-bar');bar.innerHTML='<span class="filter-label">Année</span><button class="year-btn'+(currentYear==='all'?' active':'')+'" data-year="all">Toutes</button>';yrs.forEach(y=>{const b=document.createElement('button');b.className='year-btn'+(currentYear==y?' active':'');b.dataset.year=y;b.textContent=y;bar.appendChild(b)});bar.classList.add('visible');if(!yfi){yfi=true;bar.addEventListener('click',e=>{const b=e.target.closest('.year-btn');if(!b)return;bar.querySelectorAll('.year-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');currentYear=b.dataset.year;applyF()})}}
-function applyF(){const f=currentYear==='all'?allPhotos:allPhotos.filter(p=>p.date&&p.date.getFullYear()==currentYear);render(f);updStats(f.length);document.getElementById('photo-panel').classList.remove('open')}
-function updStats(c){const el=document.getElementById('stats-pill');el.textContent=c+' média'+(c>1?'s':'')+' géolocalisé'+(c>1?'s':'');el.style.display='block'}
+function bldYr(ph){const yrs=[...new Set(ph.filter(p=>p.date).map(p=>p.date.getFullYear()))].sort((a,b)=>b-a);const bar=document.getElementById('filter-bar');bar.innerHTML='<span class="filter-label">Année</span><button class="year-btn'+(curY==='all'?' active':'')+'" data-year="all">Toutes</button>';yrs.forEach(y=>{const b=document.createElement('button');b.className='year-btn'+(curY==y?' active':'');b.dataset.year=y;b.textContent=y;bar.appendChild(b)});bar.classList.add('visible');if(!yfi){yfi=true;bar.addEventListener('click',e=>{const b=e.target.closest('.year-btn');if(!b)return;bar.querySelectorAll('.year-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');curY=b.dataset.year;aF()})}}
+function aF(){const f=curY==='all'?allP:allP.filter(p=>p.date&&p.date.getFullYear()==curY);rndr(f);uSt(f.length);document.getElementById('photo-panel').classList.remove('open')}
+function uSt(c){const e=document.getElementById('stats-pill');e.textContent=c+' média'+(c>1?'s':'')+' géolocalisé'+(c>1?'s':'');e.style.display='block'}
 
 /* ===== STARTUP ===== */
-async function startApp(){if(startRunning)return;startRunning=true;try{await _start()}finally{startRunning=false}}
+async function startApp(){if(startRun)return;startRun=true;try{await _start()}finally{startRun=false}}
 async function _start(){
-  const cid=localStorage.getItem('photomap_client_id')||DEFAULT_CLIENT_ID;
-  if(!cid){document.getElementById('splash').classList.add('hidden');showConfig();return}
+  const cid=localStorage.getItem('photomap_client_id')||CID_DEFAULT;
   document.getElementById('splash').classList.add('hidden');
-  try{const c=await dbAll();if(c.length){allPhotos=c;if(lcEnabled)await loadCachedThumbs();updateUI(true)}}catch{}
+  try{const c=await dAll();if(c.length){allP=c;if(lc)await loadThumbs();updateUI(true)}}catch{}
   document.getElementById('btn-config').style.display='inline-flex';document.getElementById('map-layer-toggle').classList.add('visible');
-  setScan('scanning','Connexion…','',0);
+  ssc('scanning','Connexion…','',0);
   try{
-    try{await initMsal(cid);await msal.handleRedirectPromise()}catch(e){msal=null;throw new Error('Auth init: '+e.message)}
-    setScan('scanning','Authentification…','',3);
-    const t=await getToken();if(!t)return;_token=t;
+    await initMs(cid);await ms.handleRedirectPromise();
+    ssc('scanning','Authentification…','',3);
+    const t=await getTk();if(!t)return;_tk=t;
     bgSync();startAuto();
-  }catch(e){console.error(e);setScan('error','Erreur','',0);setTimeout(()=>setScan('hidden'),6000);toast('Erreur: '+e.message,8000)}
+  }catch(e){console.error(e);ssc('error','Erreur','',0);setTimeout(()=>ssc('hidden'),6000);toast('Erreur: '+e.message,8000)}
 }
 
 /* ===== CONFIG ===== */
-function showConfig(){
-  const ha=msal&&msal.getAllAccounts().length>0;
-  document.getElementById('config-rescan-wrap').style.display=ha?'block':'none';
-  document.getElementById('config-logout-wrap').style.display=ha?'block':'none';
-  document.getElementById('toggle-local-cache').checked=lcEnabled;
-  updCacheSub();
-  if(lcEnabled)dbThumbIds().then(ids=>{setCacheStatus(ids.size,allPhotos.length)}).catch(()=>{});
-  document.getElementById('config-panel').classList.add('open');
-}
-function updCacheSub(){document.getElementById('cache-toggle-sub').textContent=lcEnabled?'Activé — vignettes hors-ligne':'Désactivé — chargement à la volée'}
-
-document.getElementById('toggle-local-cache').addEventListener('change',async e=>{
-  lcEnabled=e.target.checked;localStorage.setItem(LC_KEY,lcEnabled?'true':'false');updCacheSub();
-  if(lcEnabled){toast('Cache activé — téléchargement en cours…',4000);setCacheStatus(0,allPhotos.length);bgCacheThumbs()}
-  else{for(const[,u]of thumbUrls)try{URL.revokeObjectURL(u)}catch{}thumbUrls.clear();await dbClearThumbs().catch(()=>{});document.getElementById('cache-toggle-status').textContent='';toast('Cache désactivé')}
-});
+function showCfg(){const h=ms&&ms.getAllAccounts().length>0;document.getElementById('config-rescan-wrap').style.display=h?'block':'none';document.getElementById('config-logout-wrap').style.display=h?'block':'none';document.getElementById('toggle-local-cache').checked=lc;uCS();if(lc)tIds().then(ids=>cStat(ids.size,allP.length)).catch(()=>{});document.getElementById('config-panel').classList.add('open')}
+function uCS(){document.getElementById('cache-toggle-sub').textContent=lc?'Activé — vignettes hors-ligne':'Désactivé — chargement à la volée'}
+document.getElementById('toggle-local-cache').addEventListener('change',async e=>{lc=e.target.checked;localStorage.setItem(LC,lc?'true':'false');uCS();if(lc){toast('Cache activé — téléchargement…',4000);cStat(0,allP.length);bgCache()}else{for(const[,u]of tUrls)try{URL.revokeObjectURL(u)}catch{}tUrls.clear();await tClr().catch(()=>{});document.getElementById('cache-toggle-status').textContent='';toast('Cache désactivé')}});
 document.getElementById('btn-config-cancel').addEventListener('click',()=>document.getElementById('config-panel').classList.remove('open'));
-document.getElementById('btn-config-logout').addEventListener('click',async()=>{
-  try{if(msal){const a=msal.getAllAccounts();if(a.length){await msal.logoutRedirect({account:a[0]}).catch(()=>{});return}}}finally{
-    localStorage.removeItem('photomap_client_id');await dbClear().catch(()=>{});await dbClearThumbs().catch(()=>{});
-    await dbDelMeta('scan_state').catch(()=>{});await dbDelMeta('deltaLink').catch(()=>{});
-    for(const[,u]of thumbUrls)try{URL.revokeObjectURL(u)}catch{}thumbUrls.clear();
-    stopAuto();msal=null;allPhotos=[];markers=[];clusterGroup.clearLayers();
-    document.getElementById('config-panel').classList.remove('open');document.getElementById('filter-bar').classList.remove('visible');
-    document.getElementById('stats-pill').style.display='none';document.getElementById('btn-config').style.display='none';
-    document.getElementById('map-layer-toggle').classList.remove('visible');document.getElementById('photo-panel').classList.remove('open');
-    document.getElementById('splash').classList.remove('hidden');setScan('hidden');toast('Déconnecté')}
-});
-document.getElementById('btn-config').addEventListener('click',showConfig);
-document.getElementById('btn-login').addEventListener('click',()=>{if(!localStorage.getItem('photomap_client_id'))localStorage.setItem('photomap_client_id',DEFAULT_CLIENT_ID);startApp()});
+document.getElementById('btn-config-logout').addEventListener('click',async()=>{try{if(ms){const a=ms.getAllAccounts();if(a.length){await ms.logoutRedirect({account:a[0]}).catch(()=>{});return}}}finally{localStorage.removeItem('photomap_client_id');await dClr().catch(()=>{});await tClr().catch(()=>{});await dDM('scan_state').catch(()=>{});await dDM('deltaLink').catch(()=>{});for(const[,u]of tUrls)try{URL.revokeObjectURL(u)}catch{}tUrls.clear();stopAuto();ms=null;allP=[];mkrs=[];cg.clearLayers();document.getElementById('config-panel').classList.remove('open');document.getElementById('filter-bar').classList.remove('visible');document.getElementById('stats-pill').style.display='none';document.getElementById('btn-config').style.display='none';document.getElementById('map-layer-toggle').classList.remove('visible');document.getElementById('photo-panel').classList.remove('open');document.getElementById('splash').classList.remove('hidden');ssc('hidden');toast('Déconnecté')}});
+document.getElementById('btn-config').addEventListener('click',showCfg);
+document.getElementById('btn-login').addEventListener('click',()=>{if(!localStorage.getItem('photomap_client_id'))localStorage.setItem('photomap_client_id',CID_DEFAULT);startApp()});
 document.getElementById('btn-connect').addEventListener('click',()=>{document.getElementById('config-panel').classList.remove('open');startApp()});
-document.getElementById('btn-full-rescan').addEventListener('click',async()=>{document.getElementById('config-panel').classList.remove('open');await dbDelMeta('deltaLink').catch(()=>{});await dbDelMeta('scan_state').catch(()=>{});bgSync()});
+document.getElementById('btn-full-rescan').addEventListener('click',async()=>{document.getElementById('config-panel').classList.remove('open');await dDM('deltaLink').catch(()=>{});await dDM('scan_state').catch(()=>{});bgSync()});
 document.getElementById('config-panel').addEventListener('click',e=>{if(e.target===document.getElementById('config-panel'))document.getElementById('config-panel').classList.remove('open')});
 
 /* ===== INIT ===== */
 document.addEventListener('DOMContentLoaded',async()=>{
-  const cid=localStorage.getItem('photomap_client_id')||DEFAULT_CLIENT_ID;
+  const cid=localStorage.getItem('photomap_client_id')||CID_DEFAULT;
   const hs=location.hash+location.search;
   const isR=hs.includes('code=')||hs.includes('access_token')||hs.includes('id_token')||hs.includes('error=');
-  try{const c=await dbAll();if(c.length){allPhotos=c;if(lcEnabled)await loadCachedThumbs();updateUI(true);document.getElementById('btn-config').style.display='inline-flex';document.getElementById('map-layer-toggle').classList.add('visible');document.getElementById('splash').classList.add('hidden');if(cid&&!isR)silentSync(cid)}}catch{}
+  try{const c=await dAll();if(c.length){allP=c;if(lc)await loadThumbs();updateUI(true);document.getElementById('btn-config').style.display='inline-flex';document.getElementById('map-layer-toggle').classList.add('visible');document.getElementById('splash').classList.add('hidden');if(cid&&!isR)silSync(cid)}}catch{}
   if(cid&&isR)startApp();
 });
-async function silentSync(cid){try{if(!msal){await initMsal(cid);await msal.handleRedirectPromise()}const a=msal.getAllAccounts();if(!a.length)return;const r=await msal.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0]});_token=r.accessToken;bgSync();startAuto()}catch{}}
+async function silSync(cid){try{if(!ms){await initMs(cid);await ms.handleRedirectPromise()}const a=ms.getAllAccounts();if(!a.length)return;const r=await ms.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0]});_tk=r.accessToken;bgSync();startAuto()}catch{}}
 </script>
 </body>
 </html>
