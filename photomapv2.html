@@ -6,562 +6,1947 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>PhotoMap — Vos souvenirs sur la planète</title>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+
 <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+
 <style>
-:root{--ink:#fff;--text:#242424;--text-secondary:#616161;--accent:#0078D4;--accent-dark:#0364B8;--surface:#f5f5f5;--muted:#8a8886;--panel:rgba(255,255,255,.97);--border:rgba(0,0,0,.08);--border-accent:rgba(0,120,212,.3);--danger:#d13438;--shadow:rgba(0,0,0,.08);--font-ui:'Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;--marker-size:88px}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--font-ui);background:var(--ink);color:var(--text);height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
-#topbar{position:fixed;top:0;left:0;right:0;z-index:1000;height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));gap:16px;backdrop-filter:blur(12px);box-shadow:0 1px 4px var(--shadow)}
-.logo{font-size:1.35rem;font-weight:600;letter-spacing:-.01em;flex-shrink:0}.logo span{color:var(--accent)}
-.tagline{font-size:.75rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-left:1px solid var(--border);padding-left:16px;flex-shrink:0}
-#topbar-right{margin-left:auto;display:flex;gap:12px;align-items:center;flex-shrink:1;min-width:0;overflow:hidden}
-#stats-pill{font-size:.75rem;color:var(--accent);background:rgba(0,120,212,.08);border:1px solid var(--border-accent);padding:4px 12px;border-radius:20px;display:none;white-space:nowrap}
-#scan-status{display:none;align-items:center;gap:8px;font-size:.72rem;color:var(--text-secondary);background:var(--surface);border:1px solid var(--border);padding:4px 12px;border-radius:20px;white-space:nowrap;position:relative;overflow:hidden}
-#scan-status.visible{display:flex}
-#scan-status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:sp 1.5s ease-in-out infinite}
-#scan-status.done #scan-status-dot{background:#2ea043;animation:none}
-#scan-status.error #scan-status-dot{background:var(--danger);animation:none}
-@keyframes sp{0%,100%{opacity:1}50%{opacity:.3}}
-#scan-status-text{overflow:hidden;text-overflow:ellipsis}#scan-status-count{font-weight:600;color:var(--accent)}
-#scan-progress-bar{position:absolute;bottom:0;left:0;right:0;height:2px}
-#scan-progress-fill{height:100%;background:var(--accent);width:0%;transition:width .5s ease}
-.btn{font-family:var(--font-ui);font-size:.8rem;font-weight:600;border:none;cursor:pointer;padding:8px 20px;border-radius:6px;transition:all .15s;white-space:nowrap}
-#btn-config{width:36px;height:36px;padding:0;border-radius:50%;font-size:1.1rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-dark)}
-.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
-.btn-danger{background:transparent;color:var(--danger);border:1px solid rgba(209,52,56,.3)}.btn-danger:hover{background:rgba(209,52,56,.08)}
-#map{position:fixed;top:calc(56px + env(safe-area-inset-top,0px));left:0;right:0;bottom:0;z-index:1}
-.leaflet-tile{filter:saturate(.85) contrast(1.05)}
-#map-layer-toggle{position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));left:16px;z-index:500;width:44px;height:44px;border-radius:8px;border:2px solid #fff;background:var(--panel);cursor:pointer;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;padding:0}
-#map-layer-toggle.visible{display:block}
-#map-layer-toggle img{width:100%;height:100%;object-fit:cover;display:block}
-#map-layer-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:.55rem;text-align:center;padding:1px 0;font-weight:600}
-#splash{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#f0f4f8,#fff 50%,#e8f0fe);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:32px;transition:opacity .6s,visibility .6s}
-#splash.hidden{opacity:0;visibility:hidden;pointer-events:none}
-.splash-globe{width:120px;height:120px;border:2px solid var(--accent);border-radius:50%;position:relative;animation:sg 12s linear infinite;display:flex;align-items:center;justify-content:center}
-.splash-globe::before{content:'';position:absolute;inset:8px;border:1px solid var(--border-accent);border-radius:50%;animation:sg 8s linear infinite reverse}
-.globe-icon{font-size:3rem}@keyframes sg{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-.splash-title{font-size:2.8rem;font-weight:700;text-align:center;line-height:1.1}.splash-title span{color:var(--accent)}
-.splash-sub{color:var(--text-secondary);font-size:.95rem;text-align:center;max-width:380px;line-height:1.6}
-#btn-login{padding:15px 44px;font-size:.95rem;border-radius:32px;box-shadow:0 4px 18px rgba(0,120,212,.35)}
-.splash-note{font-size:.72rem;color:var(--muted);text-align:center;max-width:320px;line-height:1.5}
-#loading-overlay{position:fixed;inset:0;z-index:1900;background:rgba(255,255,255,.92);flex-direction:column;align-items:center;justify-content:center;gap:24px;display:none}
-#loading-overlay.visible{display:flex}
-.progress-bar-wrap{width:300px;height:3px;background:rgba(0,0,0,.08);border-radius:2px;overflow:hidden}
-.progress-bar-fill{height:100%;background:var(--accent);width:0%;transition:width .4s ease}
-#loading-count{font-size:2rem;font-weight:700;color:var(--accent)}
-#photo-panel{position:fixed;right:0;top:calc(56px + env(safe-area-inset-top,0px));bottom:0;z-index:500;width:420px;background:var(--panel);border-left:1px solid var(--border);backdrop-filter:blur(16px);box-shadow:-2px 0 12px var(--shadow);transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
-#photo-panel.open{transform:translateX(0)}
-.panel-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between}
-.panel-location{font-size:1.1rem;font-weight:600;line-height:1.3;max-width:250px}
-.panel-date{font-size:.72rem;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
-.panel-count{font-size:.7rem;color:var(--muted);margin-top:6px}
-.btn-close{background:transparent;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px 6px;line-height:1;border-radius:4px}.btn-close:hover{color:var(--text);background:var(--surface)}
-#panel-photos{flex:1;min-height:0;overflow-y:auto;padding:16px;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:min-content;gap:10px;align-content:start}
-#panel-photos::-webkit-scrollbar{width:4px}#panel-photos::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:2px}
-.thumb-card{width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:8px;cursor:pointer;position:relative;background:var(--surface);border:1px solid var(--border);transition:border-color .2s,transform .2s;box-shadow:0 1px 4px var(--shadow)}
-.thumb-card:hover{border-color:var(--accent);transform:scale(1.02)}
-.thumb-card img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block}
-.thumb-card .thumb-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.78),transparent 55%);opacity:0;transition:opacity .2s;display:flex;align-items:flex-end;padding:8px;font-size:.68rem;color:#fff;line-height:1.2}
-.thumb-card:hover .thumb-overlay{opacity:1}
-#lightbox{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:8px}
-#lightbox.open{display:flex}
-.lightbox-media-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:92vw;height:80vh;flex-shrink:1;min-height:0}
-#lightbox-img,#lightbox-video{display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;box-shadow:0 0 80px rgba(0,0,0,.85)}
-.hd-badge{position:absolute;top:16px;right:16px;display:none;align-items:center;gap:6px;background:rgba(0,0,0,.6);color:#fff;padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:600;backdrop-filter:blur(8px);z-index:10}
-.hd-badge.visible{display:flex}.hd-badge.done{background:rgba(46,160,67,.7)}
-.hd-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:hs .8s linear infinite}
-@keyframes hs{to{transform:rotate(360deg)}}
-.lightbox-info{text-align:center;color:rgba(255,255,255,.7);font-size:.82rem;flex-shrink:0}
-.lightbox-info strong{display:block;font-size:1rem;font-weight:600;color:#fff;margin-bottom:4px}
-#lightbox-actions{margin-top:10px;display:flex;justify-content:center}
-#lightbox-open-onedrive{display:inline-flex;align-items:center;gap:8px;font-size:.88rem;font-weight:600;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:28px;padding:11px 26px;backdrop-filter:blur(12px);transition:background .15s;cursor:pointer}
-#lightbox-open-onedrive:hover{background:rgba(255,255,255,.25)}
-.lightbox-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.6rem;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3001}
-#lightbox-prev{left:20px}#lightbox-next{right:20px}
-#lightbox-close{position:fixed;top:24px;right:24px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.4rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3001}
-.photo-marker-wrap{display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 4px 14px rgba(0,0,0,.35));transition:transform .15s}
-.photo-marker-wrap:hover{transform:scale(1.08)}
-.photo-marker{width:var(--marker-size);height:var(--marker-size);border-radius:16px;overflow:hidden;border:3px solid #fff;background:#e0e0e0;position:relative;flex-shrink:0}
-.photo-marker>img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;object-position:center!important}
-.photo-marker-count{position:absolute;bottom:5px;left:5px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;line-height:1;padding:3px 7px;border-radius:9px;pointer-events:none}
-.photo-marker-tail{width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:10px solid #fff;margin-top:-2px}
-.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:none!important;border:none!important;box-shadow:none!important}
-.marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:none!important}
-#filter-bar{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:500;background:var(--panel);border:1px solid var(--border);border-radius:40px;padding:8px 16px;display:none;gap:6px;align-items:center;backdrop-filter:blur(12px);box-shadow:0 2px 12px var(--shadow);max-width:90vw;overflow-x:auto}
-#filter-bar.visible{display:flex}#filter-bar::-webkit-scrollbar{display:none}#filter-bar{scrollbar-width:none}
-.filter-label{font-size:.7rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;margin-right:4px}
-.year-btn{background:transparent;border:1px solid transparent;color:var(--muted);font-family:var(--font-ui);font-size:.78rem;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .2s;white-space:nowrap}
-.year-btn:hover{color:var(--text);border-color:var(--border)}
-.year-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:500}
-#config-panel{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
-#config-panel.open{display:flex}
-.config-box{background:#fff;border:1px solid var(--border);border-radius:20px;padding:28px;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.15)}
-.config-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
-.config-box h2{font-size:1.4rem;font-weight:700;margin:0}
-.config-close-btn{width:34px;height:34px;padding:0;border-radius:50%;font-size:1rem;display:flex;align-items:center;justify-content:center}
-.config-buttons{display:flex;flex-direction:column;gap:12px}
-.config-btn{width:100%;padding:14px 24px;border-radius:28px;font-size:.95rem;font-weight:600;text-align:center}
-.config-toggle{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-radius:16px;background:var(--surface);border:1px solid var(--border)}
-.config-toggle-info{flex:1;min-width:0}
-.config-toggle-label{font-size:.88rem;font-weight:500}
-.config-toggle-sub{font-size:.72rem;color:var(--muted);margin-top:2px}
-.config-toggle-status{font-size:.68rem;color:var(--accent);margin-top:3px;font-weight:500}
-.toggle-switch{position:relative;width:46px;height:26px;flex-shrink:0;margin-left:12px}
-.toggle-switch input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:#ccc;border-radius:26px;cursor:pointer;transition:background .2s}
-.toggle-slider::before{content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s}
-.toggle-switch input:checked+.toggle-slider{background:var(--accent)}
-.toggle-switch input:checked+.toggle-slider::before{transform:translateX(20px)}
-#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:4000;background:#fff;border:1px solid var(--border);padding:10px 20px;border-radius:8px;font-size:.82rem;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.12)}
-#toast.show{opacity:1}
-@media(max-width:600px){
-:root{--marker-size:80px}
-.tagline{display:none}
-#topbar{height:calc(54px + env(safe-area-inset-top,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));gap:8px}
-.logo{font-size:1.2rem}
-.btn{padding:0;font-size:1.1rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}
-#btn-config{font-size:1.2rem}
-#stats-pill{font-size:.78rem;padding:5px 10px;max-width:140px;flex-shrink:1;overflow:hidden;text-overflow:ellipsis}
-#topbar-right:has(#scan-status.visible) #stats-pill{display:none!important}
-#scan-status{font-size:.75rem;padding:5px 10px;gap:6px;max-width:180px}
-#map{top:calc(54px + env(safe-area-inset-top,0px))}
-#map-layer-toggle{bottom:calc(70px + env(safe-area-inset-bottom,0px));left:12px}
-#photo-panel{top:auto;right:0;left:0;bottom:0;width:100%;height:72dvh;border-left:none;border-top:1px solid var(--border);border-radius:20px 20px 0 0;transform:translateY(100%);padding-bottom:env(safe-area-inset-bottom,0px)}
-#photo-panel.open{transform:translateY(0)}
-.panel-header{padding:18px 18px 14px;position:relative}
-.panel-header::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:40px;height:4px;background:var(--muted);border-radius:2px;opacity:.5}
-.panel-location{max-width:70vw}.btn-close{font-size:1.5rem;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%}
-#panel-photos{grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}.thumb-card{border-radius:10px}
-#filter-bar{bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:8px 14px;border-radius:32px;max-width:96vw}
-.year-btn{font-size:.82rem;padding:6px 14px;min-height:34px}
-#lightbox{padding:0;gap:0}.lightbox-media-wrap{width:100vw;height:70dvh}
-#lightbox-img,#lightbox-video{border-radius:0;box-shadow:none}
-.lightbox-nav{top:auto;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:none;width:56px;height:56px;font-size:2rem}
-#lightbox-close{top:max(16px,env(safe-area-inset-top,10px));right:16px;width:48px;height:48px;font-size:1.5rem}
-.lightbox-info{padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));width:100%;background:linear-gradient(to top,rgba(0,0,0,.9),transparent)}
-#lightbox-open-onedrive{min-width:190px;font-size:.82rem;padding:10px 20px}
-#splash{gap:22px;padding:28px}.splash-globe{width:90px;height:90px}.globe-icon{font-size:2.4rem}.splash-title{font-size:2rem}
-.splash-sub{font-size:.9rem;max-width:320px}#btn-login{padding:14px 36px;font-size:.95rem}.splash-note{font-size:.75rem;max-width:300px}
-.config-box{padding:24px 22px 28px;width:94%;border-radius:24px}.config-btn{font-size:.95rem;padding:15px 24px;min-height:52px}
-#toast{bottom:calc(70px + env(safe-area-inset-bottom,0px));font-size:.85rem;border-radius:24px}
-.leaflet-control-zoom{margin-bottom:calc(70px + env(safe-area-inset-bottom,0px))!important;margin-right:12px!important}
-.leaflet-control-zoom a{width:36px!important;height:36px!important;line-height:36px!important;font-size:1.2rem!important}
-.photo-marker{border-radius:14px;border-width:2.5px}
-}
-@media(max-width:375px){:root{--marker-size:68px}.logo{font-size:1.05rem}#stats-pill{display:none!important}#panel-photos{grid-template-columns:repeat(2,1fr)}.splash-title{font-size:1.7rem}.splash-globe{width:72px;height:72px}.globe-icon{font-size:1.8rem}}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15)}
+  :root {
+    --ink: #ffffff;
+    --text: #242424;
+    --text-secondary: #616161;
+    --accent: #0078D4;
+    --accent-light: #28A8EA;
+    --accent-dark: #0364B8;
+    --surface: #f5f5f5;
+    --surface-hover: #ebebeb;
+    --muted: #8a8886;
+    --panel: rgba(255,255,255,0.97);
+    --border: rgba(0,0,0,0.08);
+    --border-accent: rgba(0,120,212,0.3);
+    --danger: #d13438;
+    --shadow: rgba(0,0,0,0.08);
+    --font-ui: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    /* NEW: uniform marker size */
+    --marker-size: 88px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-ui);
+    background: var(--ink);
+    color: var(--text);
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    height: calc(56px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); gap: 16px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+
+  .logo {
+    font-family: var(--font-ui);
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .logo span { color: var(--accent); }
+
+  .tagline {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-left: 1px solid var(--border);
+    padding-left: 16px;
+    flex-shrink: 0;
+  }
+
+  #topbar-right {
+    margin-left: auto;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  #stats-pill {
+    font-size: 0.75rem;
+    color: var(--accent);
+    background: rgba(0,120,212,0.08);
+    border: 1px solid var(--border-accent);
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+    display: none;
+    white-space: nowrap;
+  }
+
+  #scan-status {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  #scan-status.visible { display: flex; }
+
+  #scan-status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+    animation: scan-pulse 1.5s ease-in-out infinite;
+  }
+  #scan-status.paused #scan-status-dot { background: #f0a030; animation: none; }
+  #scan-status.done #scan-status-dot { background: #2ea043; animation: none; }
+  #scan-status.error #scan-status-dot { background: var(--danger); animation: none; }
+
+  @keyframes scan-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  #scan-status-text { overflow: hidden; text-overflow: ellipsis; }
+  #scan-status-count { font-weight: 600; color: var(--accent); }
+
+  #scan-progress-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: transparent;
+  }
+  #scan-progress-fill {
+    height: 100%; background: var(--accent); width: 0%; transition: width 0.5s ease;
+    border-radius: 0 0 20px 20px;
+  }
+
+  .btn {
+    font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600;
+    letter-spacing: 0.02em; border: none; cursor: pointer;
+    padding: 8px 20px; border-radius: 6px; transition: all 0.15s; white-space: nowrap;
+  }
+  #btn-config {
+    width: 36px; height: 36px; padding: 0; border-radius: 50%;
+    font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(209,52,56,0.3); }
+  .btn-danger:hover { background: rgba(209,52,56,0.08); border-color: var(--danger); }
+
+  #map {
+    position: fixed;
+    top: calc(56px + env(safe-area-inset-top, 0px)); left: 0; right: 0; bottom: 0;
+    z-index: 1;
+  }
+
+  .leaflet-tile { filter: saturate(0.85) contrast(1.05); }
+
+  /* NEW: Map layer toggle */
+  #map-layer-toggle {
+    position: fixed;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    left: 16px; z-index: 500;
+    width: 44px; height: 44px; border-radius: 8px;
+    border: 2px solid #fff; background: var(--panel);
+    cursor: pointer; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: none; padding: 0;
+  }
+  #map-layer-toggle.visible { display: block; }
+  #map-layer-toggle img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #map-layer-label {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.6); color: #fff;
+    font-size: 0.55rem; text-align: center; padding: 1px 0; font-weight: 600;
+  }
+
+  #splash {
+    position: fixed; inset: 0; z-index: 2000;
+    background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 50%, #e8f0fe 100%);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 32px;
+    transition: opacity 0.6s, visibility 0.6s;
+  }
+  #splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .splash-globe {
+    width: 120px; height: 120px; border: 2px solid var(--accent); border-radius: 50%;
+    position: relative; animation: spinGlobe 12s linear infinite;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .splash-globe::before {
+    content: ''; position: absolute; inset: 8px;
+    border: 1px solid var(--border-accent); border-radius: 50%;
+    animation: spinGlobe 8s linear infinite reverse;
+  }
+  .globe-icon { font-size: 3rem; }
+  @keyframes spinGlobe { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .splash-title { font-size: 2.8rem; font-weight: 700; text-align: center; line-height: 1.1; color: var(--text); }
+  .splash-title span { color: var(--accent); }
+  .splash-sub { color: var(--text-secondary); font-size: 0.95rem; text-align: center; max-width: 380px; line-height: 1.6; }
+
+  #btn-login {
+    padding: 15px 44px; font-size: 0.95rem; border-radius: 32px;
+    letter-spacing: 0.01em; box-shadow: 0 4px 18px rgba(0,120,212,0.35);
+  }
+  #btn-login:hover { box-shadow: 0 6px 24px rgba(0,120,212,0.45); transform: translateY(-1px); }
+  .splash-note { font-size: 0.72rem; color: var(--muted); text-align: center; max-width: 320px; line-height: 1.5; }
+
+  #loading-overlay {
+    position: fixed; inset: 0; z-index: 1900;
+    background: rgba(255,255,255,0.92); flex-direction: column;
+    align-items: center; justify-content: center; gap: 24px; display: none;
+  }
+  #loading-overlay.visible { display: flex; }
+  .loading-msg { font-size: 0.9rem; color: var(--text-secondary); text-align: center; max-width: 80vw; }
+  .progress-bar-wrap { width: 300px; height: 3px; background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.4s ease; }
+  #loading-count { font-size: 2rem; font-weight: 700; color: var(--accent); }
+
+  /* PANEL */
+  #photo-panel {
+    position: fixed; right: 0;
+    top: calc(56px + env(safe-area-inset-top, 0px)); bottom: 0;
+    z-index: 500; width: 420px;
+    background: var(--panel); border-left: 1px solid var(--border);
+    backdrop-filter: blur(16px); box-shadow: -2px 0 12px var(--shadow);
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  #photo-panel.open { transform: translateX(0); }
+
+  .panel-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; }
+  .panel-location { font-size: 1.1rem; font-weight: 600; line-height: 1.3; max-width: 250px; color: var(--text); }
+  .panel-date { font-size: 0.72rem; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
+  .panel-count { font-size: 0.7rem; color: var(--muted); margin-top: 6px; }
+  .btn-close { background: transparent; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; padding: 4px 6px; line-height: 1; transition: color 0.2s; border-radius: 4px; }
+  .btn-close:hover { color: var(--text); background: var(--surface); }
+
+  #panel-photos {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 16px;
+    display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: min-content; gap: 10px; align-content: start;
+  }
+  #panel-photos::-webkit-scrollbar { width: 4px; }
+  #panel-photos::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+  .thumb-card {
+    width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 8px;
+    cursor: pointer; position: relative; background: var(--surface);
+    border: 1px solid var(--border); transition: border-color 0.2s, transform 0.2s;
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+  .thumb-card:hover { border-color: var(--accent); transform: scale(1.02); }
+  .thumb-card img, .thumb-card video {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block; transform: none !important; filter: none !important; border-radius: 0;
+  }
+  .thumb-card .thumb-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, transparent 55%);
+    opacity: 0; transition: opacity 0.2s; display: flex; align-items: flex-end;
+    padding: 8px; font-size: 0.68rem; color: #fff; line-height: 1.2;
+  }
+  .thumb-card:hover .thumb-overlay { opacity: 1; }
+
+  /* LIGHTBOX */
+  #lightbox {
+    position: fixed; inset: 0; z-index: 3000;
+    background: rgba(0,0,0,0.95); display: none;
+    align-items: center; justify-content: center; flex-direction: column; gap: 10px; padding: 8px;
+  }
+  #lightbox.open { display: flex; }
+
+  .lightbox-media-wrap {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    width: 92vw; height: 80vh; flex-shrink: 1; min-height: 0;
+  }
+
+  #lightbox-img, #lightbox-video {
+    display: none; max-width: 100%; max-height: 100%;
+    object-fit: contain; border-radius: 8px; box-shadow: 0 0 80px rgba(0,0,0,0.85);
+  }
+
+  /* NEW: HD loading badge */
+  .hd-badge {
+    position: absolute; top: 16px; right: 16px;
+    display: none; align-items: center; gap: 6px;
+    background: rgba(0,0,0,0.6); color: #fff;
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 600;
+    backdrop-filter: blur(8px); z-index: 10;
+  }
+  .hd-badge.visible { display: flex; }
+  .hd-badge.done { background: rgba(46,160,67,0.7); }
+  .hd-spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+    border-radius: 50%; animation: hd-spin 0.8s linear infinite;
+  }
+  @keyframes hd-spin { to { transform: rotate(360deg); } }
+
+  .lightbox-info { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.82rem; flex-shrink: 0; }
+  .lightbox-info strong { display: block; font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
+
+  #lightbox-actions { margin-top: 10px; display: flex; justify-content: center; gap: 10px; }
+  #lightbox-open-onedrive {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 0.88rem; font-weight: 600;
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.3); border-radius: 28px;
+    padding: 11px 26px; backdrop-filter: blur(12px);
+    letter-spacing: 0.01em; transition: background 0.15s, border-color 0.15s; min-width: 0;
+    cursor: pointer;
+  }
+  #lightbox-open-onedrive:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
+
+  .lightbox-nav {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; font-size: 1.6rem; width: 44px; height: 44px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s; z-index: 3001;
+  }
+  .lightbox-nav:hover { background: rgba(255,255,255,0.3); }
+  #lightbox-prev { left: 20px; }
+  #lightbox-next { right: 20px; }
+
+  #lightbox-close {
+    position: fixed; top: 24px; right: 24px;
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; font-size: 1.4rem; width: 40px; height: 40px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s; z-index: 3001;
+  }
+  #lightbox-close:hover { background: rgba(255,255,255,0.2); }
+
+  /* MARKERS — CHANGED: uniform size via CSS var, forced object-fit cover */
+  .photo-marker-wrap {
+    display: flex; flex-direction: column; align-items: center; cursor: pointer;
+    filter: drop-shadow(0 4px 14px rgba(0,0,0,0.35)); transition: transform 0.15s;
+  }
+  .photo-marker-wrap:hover { transform: scale(1.08); }
+
+  .photo-marker {
+    width: var(--marker-size); height: var(--marker-size);
+    border-radius: 16px; overflow: hidden;
+    border: 3px solid #fff; background: #e0e0e0;
+    position: relative; flex-shrink: 0;
+  }
+
+  .photo-marker > img, .photo-marker > video {
+    width: 100% !important; height: 100% !important;
+    object-fit: cover !important; object-position: center !important;
+    display: block !important;
+  }
+
+  .photo-marker-count {
+    position: absolute; bottom: 6px; left: 6px;
+    background: rgba(0,0,0,0.55); color: #fff; font-size: 13px; font-weight: 700;
+    line-height: 1; padding: 3px 7px; border-radius: 10px; pointer-events: none;
+  }
+  .photo-marker-tail {
+    width: 0; height: 0;
+    border-left: 8px solid transparent; border-right: 8px solid transparent;
+    border-top: 10px solid #fff; margin-top: -2px;
+  }
+
+  .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background: none !important; border: none !important; box-shadow: none !important; }
+  .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background: none !important; }
+
+  #filter-bar {
+    position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    left: 50%; transform: translateX(-50%); z-index: 500;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 40px;
+    padding: 8px 16px; display: none; gap: 6px; align-items: center;
+    backdrop-filter: blur(12px); box-shadow: 0 2px 12px var(--shadow);
+    max-width: 90vw; overflow-x: auto;
+  }
+  #filter-bar.visible { display: flex; }
+  #filter-bar::-webkit-scrollbar { display: none; }
+  #filter-bar { -ms-overflow-style: none; scrollbar-width: none; }
+  .filter-label { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; margin-right: 4px; }
+  .year-btn {
+    background: transparent; border: 1px solid transparent; color: var(--muted);
+    font-family: var(--font-ui); font-size: 0.78rem; padding: 4px 12px;
+    border-radius: 20px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .year-btn:hover { color: var(--text); border-color: var(--border); }
+  .year-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
+
+  #config-panel {
+    position: fixed; inset: 0; z-index: 1500;
+    background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center;
+  }
+  #config-panel.open { display: flex; }
+
+  .config-box {
+    background: #fff; border: 1px solid var(--border); border-radius: 20px;
+    padding: 28px 28px 32px; max-width: 420px; width: 90%;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+  }
+  .config-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .config-box h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin: 0; }
+  .config-close-btn { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .config-buttons { display: flex; flex-direction: column; gap: 12px; }
+  .config-btn { width: 100%; padding: 14px 24px; border-radius: 28px; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; text-align: center; }
+
+  /* NEW: cache toggle in config */
+  .config-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border);
+  }
+  .config-toggle-info { flex: 1; min-width: 0; }
+  .config-toggle-label { font-size: 0.88rem; font-weight: 500; color: var(--text); }
+  .config-toggle-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .config-toggle-status { font-size: 0.68rem; color: var(--accent); margin-top: 3px; font-weight: 500; }
+  .toggle-switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; margin-left: 12px; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 26px; cursor: pointer; transition: background 0.2s; }
+  .toggle-slider::before { content: ''; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+  .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+  #toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 4000;
+    background: #fff; border: 1px solid var(--border); color: var(--text);
+    padding: 10px 20px; border-radius: 8px; font-size: 0.82rem;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    max-width: 90vw; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+  #toast.show { opacity: 1; }
+
+  /* ==========================================
+     MOBILE / IPHONE OPTIMIZATION
+     ========================================== */
+  @media (max-width: 600px) {
+    :root { --marker-size: 80px; }
+    .tagline { display: none; }
+    #topbar { height: calc(54px + env(safe-area-inset-top, 0px)); padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px)); gap: 8px; }
+    .logo { font-size: 1.2rem; }
+    #topbar-right { gap: 8px; flex-shrink: 1; min-width: 0; overflow: hidden; }
+    #stats-pill { font-size: 0.78rem; padding: 5px 10px; max-width: 140px; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #topbar-right:has(#scan-status.visible) #stats-pill { display: none !important; }
+    .btn { padding: 0; font-size: 1.1rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
+    #btn-config { font-size: 1.2rem; }
+    #scan-status { font-size: 0.75rem; padding: 5px 10px; gap: 6px; max-width: 180px; flex-shrink: 1; min-width: 0; }
+    #scan-status-text { max-width: 100px; }
+    #scan-status-count { font-size: 0.75rem; flex-shrink: 0; }
+    #lightbox-open-onedrive { font-size: 0.85rem; padding: 10px 22px; }
+    #map { top: calc(54px + env(safe-area-inset-top, 0px)); }
+    #map-layer-toggle { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: 12px; }
+    #photo-panel { top: auto; right: 0; left: 0; bottom: 0; width: 100%; height: 72dvh; border-left: none; border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; transform: translateY(100%); padding-bottom: env(safe-area-inset-bottom, 0px); }
+    #photo-panel.open { transform: translateY(0); }
+    .panel-header { padding: 18px 18px 14px; position: relative; }
+    .panel-header::before { content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: var(--muted); border-radius: 2px; opacity: 0.5; }
+    .panel-location { font-size: 1.1rem; max-width: 70vw; }
+    .panel-date { font-size: 0.82rem; }
+    .panel-count { font-size: 0.8rem; }
+    .btn-close { font-size: 1.5rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    #panel-photos { grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
+    .thumb-card { border-radius: 10px; }
+    .thumb-overlay { font-size: 0.72rem; padding: 8px; }
+    #filter-bar { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding: 8px 14px; gap: 6px; border-radius: 32px; max-width: 96vw; }
+    .filter-label { font-size: 0.78rem; margin-right: 4px; }
+    .year-btn { font-size: 0.82rem; padding: 6px 14px; min-height: 34px; }
+    #lightbox { padding: 0; gap: 0; }
+    .lightbox-media-wrap { width: 100vw; height: 70dvh; }
+    #lightbox-img, #lightbox-video { border-radius: 0; box-shadow: none; }
+    .lightbox-nav { top: auto; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: none; width: 56px; height: 56px; font-size: 2rem; }
+    #lightbox-prev { left: 20px; }
+    #lightbox-next { right: 20px; }
+    #lightbox-close { top: max(16px, env(safe-area-inset-top, 10px)); right: 16px; width: 48px; height: 48px; font-size: 1.5rem; }
+    .lightbox-info { padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px)); width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); }
+    .lightbox-info strong { font-size: 0.95rem; }
+    #lightbox-meta { font-size: 0.82rem; gap: 8px; }
+    #lightbox-actions { margin-top: 10px; }
+    #lightbox-open-onedrive { min-width: 190px; font-size: 0.82rem; padding: 10px 20px; }
+    #splash { gap: 22px; padding: 28px; }
+    .splash-globe { width: 90px; height: 90px; }
+    .globe-icon { font-size: 2.4rem; }
+    .splash-title { font-size: 2rem; }
+    .splash-sub { font-size: 0.9rem; padding: 0 12px; max-width: 320px; }
+    #btn-login { padding: 14px 36px; font-size: 0.95rem; }
+    .splash-note { font-size: 0.75rem; max-width: 300px; }
+    .config-box { padding: 24px 22px 28px; max-width: 100%; width: 94%; border-radius: 24px; }
+    .config-box h2 { font-size: 1.35rem; }
+    .config-btn { font-size: 0.95rem; padding: 15px 24px; min-height: 52px; }
+    .progress-bar-wrap { width: 240px; }
+    .loading-msg { font-size: 0.9rem; }
+    #loading-count { font-size: 1.8rem; }
+    #toast { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); font-size: 0.85rem; padding: 10px 20px; border-radius: 24px; }
+    .leaflet-control-zoom { margin-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important; margin-right: 12px !important; }
+    .leaflet-control-zoom a { width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 1.2rem !important; }
+    .photo-marker { border-radius: 14px; border-width: 2.5px; }
+  }
+
+  @media (max-width: 375px) {
+    :root { --marker-size: 68px; }
+    .logo { font-size: 1.05rem; }
+    #stats-pill { display: none !important; }
+    #panel-photos { grid-template-columns: repeat(2, 1fr); }
+    .splash-title { font-size: 1.7rem; }
+    .splash-globe { width: 72px; height: 72px; }
+    .globe-icon { font-size: 1.8rem; }
+    .year-btn { font-size: 0.78rem; padding: 5px 11px; }
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
 </style>
 </head>
 <body>
-<div id="topbar"><div class="logo">Photo<span>Map</span></div><div class="tagline">Vos souvenirs sur la planète</div><div id="topbar-right"><div id="stats-pill"></div><div id="scan-status" style="display:none"><div id="scan-status-dot"></div><span id="scan-status-text"></span><span id="scan-status-count"></span><div id="scan-progress-bar"><div id="scan-progress-fill"></div></div></div><button class="btn btn-ghost" id="btn-config" style="display:none" title="Configuration">⚙</button></div></div>
+
+<div id="topbar">
+  <div class="logo">Photo<span>Map</span></div>
+  <div class="tagline">Vos souvenirs sur la planète</div>
+  <div id="topbar-right">
+    <div id="stats-pill"></div>
+    <div id="scan-status" style="display:none">
+      <div id="scan-status-dot"></div>
+      <span id="scan-status-text">Scan…</span>
+      <span id="scan-status-count"></span>
+      <div id="scan-progress-bar"><div id="scan-progress-fill"></div></div>
+    </div>
+    <button class="btn btn-ghost" id="btn-config" style="display:none" title="Configuration">⚙</button>
+  </div>
+</div>
+
 <div id="map"></div>
-<button id="map-layer-toggle" title="Fond de carte"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/><div id="map-layer-label">Satellite</div></button>
-<div id="filter-bar"><span class="filter-label">Année</span><button class="year-btn active" data-year="all">Toutes</button></div>
-<div id="photo-panel"><div class="panel-header"><div><div class="panel-location" id="panel-location-name">Lieu</div><div class="panel-date" id="panel-date-range"></div><div class="panel-count" id="panel-count"></div></div><button class="btn-close" id="panel-close">✕</button></div><div id="panel-photos"></div></div>
-<div id="lightbox"><button id="lightbox-close">✕</button><button class="lightbox-nav" id="lightbox-prev">‹</button><button class="lightbox-nav" id="lightbox-next">›</button><div class="lightbox-media-wrap"><img id="lightbox-img" src="" alt=""/><video id="lightbox-video" controls playsinline></video><div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div><span>HD</span></div><div class="hd-badge done" id="hd-done"><span>✓ HD</span></div></div><div class="lightbox-info"><strong id="lightbox-name"></strong><span id="lightbox-meta"></span><div id="lightbox-actions"><button id="lightbox-open-onedrive">↗ Ouvrir dans OneDrive</button></div></div></div>
-<div id="splash"><div class="splash-globe"><div class="globe-icon">🌍</div></div><div class="splash-title">Vos photos,<br><span>sur la planète</span></div><div class="splash-sub">Connectez votre OneDrive pour visualiser vos photos géolocalisées sur une carte interactive.</div><button class="btn btn-primary" id="btn-login">Connecter OneDrive</button><div class="splash-note">Tout est traité localement — aucune donnée envoyée à un tiers.</div></div>
-<div id="loading-overlay"><div id="loading-count">0</div><div class="loading-msg" id="loading-msg">Connexion…</div><div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill"></div></div></div>
-<div id="config-panel"><div class="config-box"><div class="config-header"><h2>PhotoMap</h2><button class="btn btn-ghost config-close-btn" id="btn-config-cancel">✕</button></div><div class="config-buttons"><div id="config-connect-wrap"><button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button></div><div class="config-toggle"><div class="config-toggle-info"><div class="config-toggle-label">Cache local des vignettes</div><div class="config-toggle-sub" id="cache-toggle-sub"></div><div class="config-toggle-status" id="cache-toggle-status"></div></div><label class="toggle-switch"><input type="checkbox" id="toggle-local-cache"><span class="toggle-slider"></span></label></div><div id="config-rescan-wrap" style="display:none"><button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button></div><div id="config-logout-wrap" style="display:none"><button class="btn btn-danger config-btn" id="btn-config-logout">Disconnect &amp; Delete</button></div></div></div></div>
+
+<!-- NEW: satellite toggle -->
+<button id="map-layer-toggle" title="Fond de carte">
+  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/>
+  <div id="map-layer-label">Satellite</div>
+</button>
+
+<div id="filter-bar">
+  <span class="filter-label">Année</span>
+  <button class="year-btn active" data-year="all">Toutes</button>
+</div>
+
+<div id="photo-panel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-location" id="panel-location-name">Lieu</div>
+      <div class="panel-date" id="panel-date-range"></div>
+      <div class="panel-count" id="panel-count"></div>
+    </div>
+    <button class="btn-close" id="panel-close" title="Fermer">✕</button>
+  </div>
+  <div id="panel-photos"></div>
+</div>
+
+<div id="lightbox">
+  <button id="lightbox-close" title="Fermer">✕</button>
+  <button class="lightbox-nav" id="lightbox-prev" title="Précédent">‹</button>
+  <button class="lightbox-nav" id="lightbox-next" title="Suivant">›</button>
+
+  <!-- NEW: wrap media + HD badge -->
+  <div class="lightbox-media-wrap">
+    <img id="lightbox-img" src="" alt="Média"/>
+    <video id="lightbox-video" controls playsinline></video>
+    <div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div><span>HD</span></div>
+    <div class="hd-badge done" id="hd-done"><span>✓ HD</span></div>
+  </div>
+
+  <div class="lightbox-info">
+    <strong id="lightbox-name"></strong>
+    <span id="lightbox-meta"></span>
+    <div id="lightbox-actions">
+      <button id="lightbox-open-onedrive" type="button">↗ Ouvrir dans OneDrive</button>
+    </div>
+  </div>
+</div>
+
+<div id="splash">
+  <div class="splash-globe"><div class="globe-icon">🌍</div></div>
+  <div class="splash-title">Vos photos,<br><span>sur la planète</span></div>
+  <div class="splash-sub">Connectez votre OneDrive pour visualiser toutes vos photos et vidéos géolocalisées sur une mappemonde interactive.</div>
+  <button class="btn btn-primary btn-lg" id="btn-login">Connecter OneDrive</button>
+  <div class="splash-note">Vos données restent privées — tout est traité localement dans votre navigateur. Aucune photo n'est envoyée à un serveur tiers.</div>
+</div>
+
+<div id="loading-overlay">
+  <div id="loading-count">0</div>
+  <div class="loading-msg" id="loading-msg">Connexion à OneDrive…</div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill"></div></div>
+</div>
+
+<div id="config-panel">
+  <div class="config-box">
+    <div class="config-header">
+      <h2>PhotoMap</h2>
+      <button class="btn btn-ghost config-close-btn" id="btn-config-cancel">✕</button>
+    </div>
+    <div class="config-buttons">
+      <div id="config-connect-wrap">
+        <button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button>
+      </div>
+      <!-- NEW: cache toggle -->
+      <div class="config-toggle">
+        <div class="config-toggle-info">
+          <div class="config-toggle-label">Cache local des vignettes</div>
+          <div class="config-toggle-sub" id="cache-toggle-sub">Chargement instantané hors-ligne</div>
+          <div class="config-toggle-status" id="cache-toggle-status"></div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-local-cache">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="config-rescan-wrap" style="display:none">
+        <button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button>
+      </div>
+      <div id="config-logout-wrap" style="display:none">
+        <button class="btn btn-danger config-btn" id="btn-config-logout">Disconnect &amp; Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-/* PhotoMap v2.3 — Graph API authenticated downloads for thumbnails & HD */
-const DB='photomap_db',DBV=2,SM='media',SMT='meta',STH='thumbs';
-const CID_DEFAULT='74655b12-46c1-4cdb-be1a-27655fa47677';
-const IMG_EXT=new Set('jpg jpeg png heic heif webp gif bmp tiff'.split(' '));
-const VID_EXT=new Set('mp4 mov m4v hevc avi webm 3gp mkv'.split(' '));
-const FALLBACK="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
-
-let ms=null,allP=[],mkrs=[],cg,curY='all',bgRun=false,startRun=false;
-let lbP=[],lbI=0,panP=[];
-let _db=null,_tk=null,atm=null;
-const LC='photomap_local_thumb_cache';
-let lc=localStorage.getItem(LC)==='true';
-const tUrls=new Map();
-let cLayer='standard',stdL,satL;
-
-/* ===== DB ===== */
-function odb(){if(_db)return Promise.resolve(_db);return new Promise((y,n)=>{const r=indexedDB.open(DB,DBV);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(SM)){d.createObjectStore(SM,{keyPath:'id'}).createIndex('by_date','date',{unique:false})}if(!d.objectStoreNames.contains(SMT))d.createObjectStore(SMT,{keyPath:'key'});if(!d.objectStoreNames.contains(STH))d.createObjectStore(STH,{keyPath:'id'})};r.onsuccess=()=>{_db=r.result;_db.onclose=()=>{_db=null};_db.onversionchange=()=>{_db.close();_db=null};y(_db)};r.onerror=()=>n(r.error)})}
-async function dPut(items){if(!items?.length)return;const d=await odb();await new Promise((y,n)=>{const t=d.transaction(SM,'readwrite'),s=t.objectStore(SM);for(const i of items)s.put({...i,date:i.date?i.date.toISOString():null,fetchedAt:i.fetchedAt||new Date().toISOString()});t.oncomplete=y;t.onerror=()=>n(t.error)})}
-async function dAll(){const d=await odb();return new Promise((y,n)=>{const r=d.transaction(SM,'readonly').objectStore(SM).getAll();r.onsuccess=()=>y((r.result||[]).map(i=>({...i,date:i.date?new Date(i.date):null})));r.onerror=()=>n(r.error)})}
-async function dClr(){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(SM,'readwrite');t.objectStore(SM).clear();t.oncomplete=y;t.onerror=()=>n(t.error)})}
-async function dM(k){const d=await odb();return new Promise((y,n)=>{const r=d.transaction(SMT,'readonly').objectStore(SMT).get(k);r.onsuccess=()=>y(r.result?.value??null);r.onerror=()=>n(r.error)})}
-async function dSM(k,v){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(SMT,'readwrite');t.objectStore(SMT).put({key:k,value:v});t.oncomplete=y;t.onerror=()=>n(t.error)})}
-async function dDM(k){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(SMT,'readwrite');t.objectStore(SMT).delete(k);t.oncomplete=y;t.onerror=()=>n(t.error)})}
-async function dDel(id){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(SM,'readwrite');t.objectStore(SM).delete(id);t.oncomplete=y;t.onerror=()=>n(t.error)})}
-async function tPut(id,blob){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(STH,'readwrite');t.objectStore(STH).put({id,blob,at:Date.now()});t.oncomplete=y;t.onerror=()=>n(t.error)})}
-async function tIds(){const d=await odb();return new Promise((y,n)=>{const r=d.transaction(STH,'readonly').objectStore(STH).getAllKeys();r.onsuccess=()=>y(new Set(r.result||[]));r.onerror=()=>n(r.error)})}
-async function tClr(){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(STH,'readwrite');t.objectStore(STH).clear();t.oncomplete=y;t.onerror=()=>n(t.error)})}
-async function tDel(id){const d=await odb();await new Promise((y,n)=>{const t=d.transaction(STH,'readwrite');t.objectStore(STH).delete(id);t.oncomplete=y;t.onerror=()=>n(t.error)})}
-
-/* Load all cached thumb blobs as objectURLs */
-async function loadThumbs(){if(!lc)return;const d=await odb();return new Promise((y,n)=>{const r=d.transaction(STH,'readonly').objectStore(STH).openCursor();r.onsuccess=e=>{const c=e.target.result;if(c){const{id,blob}=c.value;if(blob&&!tUrls.has(id))try{tUrls.set(id,URL.createObjectURL(blob))}catch{}c.continue()}else y()};r.onerror=()=>n(r.error)})}
-
-function thumbSrc(p){if(lc&&tUrls.has(p.id))return tUrls.get(p.id);return p.thumbnailUrl||FALLBACK}
-
 /*
- * ===== KEY FIX: fetchThumbBlob =====
- * Downloads thumbnail bytes using Graph API WITH auth token.
- * This endpoint follows redirects to the actual image and includes
- * the auth header, so it works regardless of URL expiry.
+ * PhotoMap v3.0
  *
- * GET /me/drive/items/{id}/thumbnails/0/medium/content
- * Returns: 302 → image bytes
+ * Based on the ORIGINAL working code with these additions:
+ * 1. Uniform marker size (CSS var --marker-size, no dynamic getMarkerSize)
+ * 2. worldCopyJump: true (globe wrapping)
+ * 3. Satellite layer toggle
+ * 4. Optional local thumbnail cache (IndexedDB blobs)
+ * 5. HD lightbox (thumbnail first, then full-res)
+ * 6. DB_VERSION 2 for new 'thumbs' store
  *
- * We use the thumbnails metadata endpoint to get a fresh signed URL,
- * then fetch that URL (which is freshly signed, not expired).
+ * The ORIGINAL thumbnail display logic is preserved:
+ * - thumbnailUrl from Graph API used directly in <img src>
+ * - onerror → queueThumbnailRefresh → refreshMediaUrls (Graph API call) → update src
+ * - This works because onerror triggers a fresh Graph API call with valid token
  */
-async function fetchThumbBlob(photoId){
-  if(!_tk)return null;
-  try{
-    /* Get a FRESH thumbnail URL from Graph API (with auth) */
-    const meta=await gql('https://graph.microsoft.com/v1.0/me/drive/items/'+photoId+'/thumbnails',_tk);
-    const url=meta.value?.[0]?.medium?.url||meta.value?.[0]?.large?.url||meta.value?.[0]?.small?.url;
-    if(!url)return null;
-    /* This URL is freshly signed — fetch it immediately */
-    const res=await fetch(url);
-    if(!res.ok)return null;
-    return await res.blob();
-  }catch{return null}
-}
 
-/*
- * ===== KEY FIX: fetchFullUrl =====
- * Gets a fresh downloadUrl for the full-res image.
- */
-async function fetchFullUrl(photoId){
-  if(!_tk)return null;
-  try{
-    const d=await gql('https://graph.microsoft.com/v1.0/me/drive/items/'+photoId+'?$select=id,@microsoft.graph.downloadUrl,webUrl',_tk);
-    return{downloadUrl:d['@microsoft.graph.downloadUrl']||null,webUrl:d.webUrl||null};
-  }catch{return null}
-}
+const STORAGE_KEY_CLIENT_ID = 'photomap_client_id';
+const DB_NAME = 'photomap_db';
+const DB_VERSION = 2; /* bumped for thumbs store */
+const STORE_MEDIA = 'media';
+const STORE_META = 'meta';
+const STORE_THUMBS = 'thumbs'; /* NEW */
 
-/* Download and cache a thumb */
-async function cacheThumb(photo){
-  const blob=await fetchThumbBlob(photo.id);
-  if(!blob)return false;
-  await tPut(photo.id,blob);
-  tUrls.set(photo.id,URL.createObjectURL(blob));
-  return true;
-}
+const DEFAULT_CLIENT_ID = '74655b12-46c1-4cdb-be1a-27655fa47677';
 
-let _tcRun=false;
-async function bgCache(){
-  if(!lc||_tcRun)return;_tcRun=true;
-  try{
-    const have=await tIds();
-    const need=allP.filter(p=>!have.has(p.id));
-    const total=allP.length;let done=have.size;
-    cStat(done,total);
-    for(let i=0;i<need.length;i++){
-      if(!lc)break;
-      if(await cacheThumb(need[i]))done++;
-      if(i%5===0)cStat(done,total);
-      if(i%10===9)await new Promise(r=>setTimeout(r,50));
-    }
-    cStat(done,total);
-  }catch(e){console.warn('bgCache err',e)}
-  finally{_tcRun=false}
-}
-function cStat(done,total){const el=document.getElementById('cache-toggle-status');if(!el||!lc){if(el)el.textContent='';return}if(!total)return;el.textContent=done>=total?`✓ ${done} vignettes en cache`:`⟳ ${done} / ${total} en cours…`}
+const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'gif', 'bmp', 'tiff']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'm4v', 'hevc', 'avi', 'webm', '3gp', 'mkv']);
 
-/* ===== MAP ===== */
-const map=L.map('map',{center:[20,0],zoom:2,zoomControl:false,minZoom:2,worldCopyJump:true});
-stdL=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19,noWrap:false});
-satL=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19,noWrap:false});
-stdL.addTo(map);L.control.zoom({position:'bottomright'}).addTo(map);
-document.getElementById('map-layer-toggle').addEventListener('click',()=>{const l=document.getElementById('map-layer-label');if(cLayer==='standard'){map.removeLayer(stdL);satL.addTo(map);cLayer='satellite';l.textContent='Plan'}else{map.removeLayer(satL);stdL.addTo(map);cLayer='standard';l.textContent='Satellite'}});
-function msz(){return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--marker-size'))||88}
+const THUMBNAIL_TTL_MS = 4 * 60 * 60 * 1000;
 
-cg=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:50,spiderfyOnMaxZoom:true,disableClusteringAtZoom:18,
-  iconCreateFunction(c){const n=c.getChildCount(),f=c.getAllChildMarkers()[0]?._pd,s=f?thumbSrc(f):FALLBACK,sz=msz();
-    return L.divIcon({className:'',html:`<div class="photo-marker-wrap"><div class="photo-marker"><img src="${s}" loading="lazy" onerror="this.src='${FALLBACK}'"/><div class="photo-marker-count">${n}</div></div><div class="photo-marker-tail"></div></div>`,iconSize:[sz,sz+12],iconAnchor:[sz/2,sz+12]})}
-});map.addLayer(cg);
+let msalInstance = null;
+let allPhotos = [];
+let markers = [];
+let clusterGroup = null;
+let currentYear = 'all';
+let isLoading = false;
+let backgroundSyncRunning = false;
+let autoSyncTimer = null;
+const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
-/* ===== UI ===== */
-let tt;function toast(m,d=3000){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),d)}
-function ssc(st,tx,ct,pc){const e=document.getElementById('scan-status'),t=document.getElementById('scan-status-text'),c=document.getElementById('scan-status-count'),f=document.getElementById('scan-progress-fill');if(st==='hidden'){e.style.display='none';e.classList.remove('visible','done','error');return}e.style.display='flex';e.classList.add('visible');e.classList.remove('done','error');if(st==='done')e.classList.add('done');if(st==='error')e.classList.add('error');if(tx)t.textContent=tx;if(ct!=null)c.textContent=ct;if(pc!=null)f.style.width=Math.min(pc,100)+'%'}
-let _sdt;function sDone(c,d){ssc('done','Terminé',d||c+' médias',100);clearTimeout(_sdt);_sdt=setTimeout(()=>ssc('hidden'),5000)}
-function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
-function isV(n=''){return VID_EXT.has(n.split('.').pop()?.toLowerCase())}
+let startAppRunning = false;
+let lightboxPhotos = [];
+let lightboxIndex = 0;
+let panelAllPhotos = [];
+let _dbInstance = null;
 
-function updateUI(fit){
-  if(!allP?.length)return;bldYr(allP);
-  const f=curY==='all'?allP:allP.filter(p=>p.date&&p.date.getFullYear()==curY);
-  rndr(f);uSt(f.length);
-  if(fit&&mkrs.length)map.fitBounds(L.featureGroup(mkrs).getBounds().pad(.15),{maxZoom:14});
-  document.getElementById('btn-config').style.display='inline-flex';
-  document.getElementById('map-layer-toggle').classList.add('visible');
-  setTimeout(refreshVis,800);
-}
+/* NEW: local cache state */
+const LC_KEY = 'photomap_local_thumb_cache';
+let lcEnabled = localStorage.getItem(LC_KEY) === 'true';
+const thumbBlobUrls = new Map(); /* photoId → objectURL from cached blob */
 
-/* ===== AUTH ===== */
-async function initMs(cid){ms=new window.msal.PublicClientApplication({auth:{clientId:cid,authority:'https://login.microsoftonline.com/common',redirectUri:location.origin+location.pathname},cache:{cacheLocation:'localStorage'}});await ms.initialize()}
-async function getTk(){const a=ms.getAllAccounts();try{return(await ms.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0]})).accessToken}catch{await ms.acquireTokenRedirect({scopes:['Files.Read','User.Read'],account:a[0]});return null}}
-async function freshTk(){const a=ms.getAllAccounts();try{return(await ms.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0],forceRefresh:true})).accessToken}catch{await ms.acquireTokenRedirect({scopes:['Files.Read','User.Read'],account:a[0]});return null}}
+/* NEW: map layers */
+let currentLayerType = 'standard';
+let standardLayer, satelliteLayer;
 
-async function gql(url,tk,re=false){
-  const r=await fetch(url,{headers:{Authorization:'Bearer '+tk}});
-  if(r.status===401&&!re){const f=await freshTk();if(f){_tk=f;return gql(url,f,true)}return null}
-  if(r.status===401)throw new Error('Session expirée');
-  if(r.status===429){await new Promise(y=>setTimeout(y,parseInt(r.headers.get('Retry-After')||'5')*1000));return gql(url,tk)}
-  if(!r.ok)throw new Error('Graph '+r.status);
-  return r.json();
-}
-function isMF(i){if(!i.file||!i.name)return false;const e=i.name.split('.').pop()?.toLowerCase();return IMG_EXT.has(e)||VID_EXT.has(e)}
-async function getThUrl(id){try{const d=await gql('https://graph.microsoft.com/v1.0/me/drive/items/'+id+'/thumbnails',_tk);return d.value?.[0]?.medium?.url||d.value?.[0]?.large?.url||d.value?.[0]?.small?.url||null}catch{return null}}
+/* ==========================================
+   IndexedDB — ORIGINAL + thumbs store
+   ========================================== */
 
-/* Refresh + update on visible markers that have stale thumbnails */
-const _rq=new Set(),_ri=new Set();let _rp=false;
-function qR(pid,imgEl){if(!_tk||_ri.has(pid))return;_rq.add(pid);if(!_rp){_rp=true;setTimeout(pQ,50)}}
-async function pQ(){
-  if(!_rq.size){_rp=false;return}
-  const batch=[..._rq].slice(0,4);
-  await Promise.allSettled(batch.map(async id=>{
-    _rq.delete(id);_ri.add(id);
-    const p=allP.find(x=>x.id===id);if(!p){_ri.delete(id);return}
-    try{
-      /* Get fresh thumbnail URL */
-      const tu=await getThUrl(id);
-      if(tu){p.thumbnailUrl=tu;p.fetchedAt=new Date().toISOString();await dPut([p])}
-      if(lc){await cacheThumb(p)}
-      /* Update all visible img elements with this photo id */
-      const newSrc=thumbSrc(p);
-      document.querySelectorAll(`img[data-pid="${id}"]`).forEach(img=>{img.onerror=null;img.src=newSrc;img.onerror=function(){this.src=FALLBACK}});
-      /* Update marker on map */
-      for(const m of mkrs){if(m._pd?.id===id){const el=m.getElement?.();if(el){const img=el.querySelector('img');if(img){img.onerror=null;img.src=newSrc;img.onerror=function(){this.src=FALLBACK}}}break}}
-    }catch{}finally{_ri.delete(id)}
-  }));
-  if(_rq.size)setTimeout(pQ,200);else _rp=false;
-}
-function refreshVis(){
-  if(!_tk)return;const b=map.getBounds();let q=0;
-  for(const m of mkrs){if(q>=20)break;const p=m._pd;if(!p||!b.contains([p.lat,p.lng])||_ri.has(p.id)||_rq.has(p.id))continue;
-    /* Check if URL is stale (>4h since fetch) */
-    if(lc&&tUrls.has(p.id))continue;
-    if(!p.fetchedAt||(Date.now()-new Date(p.fetchedAt).getTime())>4*3600*1000){_rq.add(p.id);q++}}
-  if(q>0&&!_rp){_rp=true;setTimeout(pQ,50)}
-}
-let _vrt;map.on('moveend',()=>{clearTimeout(_vrt);_vrt=setTimeout(refreshVis,500)});
-
-/* ===== DELTA SYNC ===== */
-const DURL='https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
-async function dsync(){
-  _tk=await getTk();if(!_tk)return[];
-  const ex=await dAll(),eM=new Map(ex.map(p=>[p.id,p])),eC=ex.length;
-  let dl=await dM('deltaLink'),url=dl||DURL,isF=!dl;
-  ssc('scanning',isF?'Premier scan…':'Synchro…',isF?'':eC+' en cache',2);
-  let sc=0,ad=0,de=0,nd=null;const bat=[];
-  while(url){
-    const data=await gql(url,_tk);
-    for(const it of(data.value||[])){
-      sc++;if(sc%50===0)ssc('scanning',isF?`Analyse… ${sc}`:`Synchro… ${sc}`,isF?(eC+ad)+' trouvés':(ad>0?`+${ad}`:'…'),Math.min(5+sc*.005,95));
-      if(it.deleted){if(eM.has(it.id)){eM.delete(it.id);await dDel(it.id);if(lc)tDel(it.id).catch(()=>{});de++}continue}
-      if(it.folder||!isMF(it))continue;
-      const la=it.location?.latitude,lo=it.location?.longitude;
-      if(la==null||lo==null||(la===0&&lo===0)){if(!isF&&eM.has(it.id)){/* modified but no geo — skip */}continue}
-      const tu=await getThUrl(it.id),dt=it.photo?.takenDateTime||it.createdDateTime;
-      const mi={id:it.id,name:it.name,lat:+la,lng:+lo,date:dt?new Date(dt):null,thumbnailUrl:tu,downloadUrl:it['@microsoft.graph.downloadUrl']||tu,webUrl:it.webUrl,mediaType:isV(it.name)?'video':'image',fetchedAt:new Date().toISOString()};
-      const isNew=!eM.has(it.id);
-      eM.set(it.id,mi);bat.push(mi);if(isNew)ad++;
-      if(lc&&tu)cacheThumb(mi).catch(()=>{});
-      if(bat.length>=((eC+ad)<50?5:25)){await dPut(bat);bat.length=0;allP=[...eM.values()];updateUI(eC===0&&ad<=5)}
-    }
-    url=data['@odata.nextLink']||(nd=data['@odata.deltaLink']||null,null);
-  }
-  if(bat.length)await dPut(bat);if(nd)await dSM('deltaLink',nd);
-  allP=[...eM.values()];updateUI(eC===0&&allP.length>0);
-  await dSM('scan_state',{found:allP.length,at:new Date().toISOString()});
-  if(isF)sDone(allP.length,allP.length+' médias');
-  else if(ad||de){const p=[];if(ad)p.push('+'+ad);if(de)p.push('-'+de);sDone(allP.length,p.join(' ')+' · '+allP.length)}
-  else sDone(allP.length,'à jour');
-  if(lc)setTimeout(bgCache,2000);
-  return allP;
-}
-async function bgSync(){if(bgRun)return;bgRun=true;try{await dsync()}catch(e){console.warn(e);ssc('error','Erreur','',0);setTimeout(()=>ssc('hidden'),4000)}finally{bgRun=false}}
-function startAuto(){clearInterval(atm);atm=setInterval(()=>{if(_tk&&!bgRun)bgSync()},15*60*1000)}
-function stopAuto(){clearInterval(atm)}
-
-/* ===== SPATIAL ===== */
-let si={};const CS=.0005;
-function bSI(ph){si={};for(const p of ph){const k=Math.round(p.lat/CS)+','+Math.round(p.lng/CS);(si[k]||(si[k]=[])).push(p)}}
-function near(lat,lng,fs){const cl=Math.round(lat/CS),cg2=Math.round(lng/CS),r=[];for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const c=si[(cl+i)+','+(cg2+j)];if(!c)continue;for(const p of c){if(fs&&!fs.has(p.id))continue;if(Math.abs(p.lat-lat)<CS&&Math.abs(p.lng-lng)<CS)r.push(p)}}return r}
-
-/* ===== MARKERS ===== */
-function mkM(p,fs){
-  const s=thumbSrc(p),pid=p.id,nb=near(p.lat,p.lng,fs),sz=msz();
-  const bd=nb.length>1?`<div class="photo-marker-count">${nb.length}</div>`:'';
-  const ic=L.divIcon({className:'',
-    html:`<div class="photo-marker-wrap"><div class="photo-marker"><img src="${s}" loading="lazy" data-pid="${pid}" onerror="this.src='${FALLBACK}';if(window.qR)qR('${pid}')"/>${bd}</div><div class="photo-marker-tail"></div></div>`,
-    iconSize:[sz,sz+12],iconAnchor:[sz/2,sz+12]});
-  const m=L.marker([p.lat,p.lng],{icon:ic});
-  m.on('click',()=>{const np=near(p.lat,p.lng,fs);oPanel(np.length?np:[p],p.lat,p.lng)});
-  m._pd=p;return m;
-}
-function rndr(fl){cg.off('clusterclick');cg.clearLayers();mkrs=[];bSI(allP);const fs=new Set(fl.map(p=>p.id));fl.forEach(p=>mkrs.push(mkM(p,fs)));cg.addLayers(mkrs);cg.on('clusterclick',e=>oPanel(e.layer.getAllChildMarkers().map(m=>m._pd),e.latlng.lat,e.latlng.lng))}
-
-/* ===== PANEL ===== */
-function oPanel(ph,lat,lng){
-  panP=[...ph].sort((a,b)=>(b.date||0)-(a.date||0));
-  const dt=panP.filter(p=>p.date).map(p=>p.date),dr=document.getElementById('panel-date-range');
-  if(dt.length){const mn=new Date(Math.min(...dt)),mx=new Date(Math.max(...dt)),f=d=>d.toLocaleDateString('fr-FR',{month:'short',year:'numeric'});dr.textContent=mn.getFullYear()===mx.getFullYear()&&mn.getMonth()===mx.getMonth()?f(mn):f(mn)+' — '+f(mx)}else dr.textContent='';
-  document.getElementById('panel-count').textContent=panP.length+' média'+(panP.length>1?'s':'');
-  const loc=document.getElementById('panel-location-name');loc.textContent='…';
-  geo(lat,lng).then(n=>loc.textContent=n);
-  rPanel();document.getElementById('photo-panel').classList.add('open');
-}
-function rPanel(){
-  const g=document.getElementById('panel-photos');g.innerHTML='';
-  panP.forEach((p,i)=>{
-    const c=document.createElement('div');c.className='thumb-card';
-    const d=p.date?p.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'';
-    const im=document.createElement('img');im.src=thumbSrc(p);im.loading='lazy';im.alt=p.name;im.dataset.pid=p.id;
-    im.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover';
-    im.onerror=function(){this.src=FALLBACK;qR(p.id)};
-    const o=document.createElement('div');o.className='thumb-overlay';o.innerHTML=esc(p.name)+'<br>'+d;
-    c.appendChild(im);c.appendChild(o);
-    c.addEventListener('click',()=>{lbP=panP;lbI=i;showLB()});
-    g.appendChild(c);
+function openDb() {
+  if (_dbInstance) return Promise.resolve(_dbInstance);
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_MEDIA)) {
+        const mediaStore = db.createObjectStore(STORE_MEDIA, { keyPath: 'id' });
+        mediaStore.createIndex('by_date', 'date', { unique: false });
+      }
+      if (!db.objectStoreNames.contains(STORE_META)) {
+        db.createObjectStore(STORE_META, { keyPath: 'key' });
+      }
+      /* NEW */
+      if (!db.objectStoreNames.contains(STORE_THUMBS)) {
+        db.createObjectStore(STORE_THUMBS, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = () => {
+      _dbInstance = request.result;
+      _dbInstance.onclose = () => { _dbInstance = null; };
+      _dbInstance.onversionchange = () => { _dbInstance.close(); _dbInstance = null; };
+      resolve(_dbInstance);
+    };
+    request.onerror = () => reject(request.error);
   });
 }
 
-/* ===== LIGHTBOX ===== */
-/*
- * CORE FIX: Always fetch fresh URLs from Graph API for the lightbox.
- * Show cached/fallback thumb immediately, then load HD via fresh downloadUrl.
- */
-function showLB(){
-  if(!lbP.length)return;
-  const p=lbP[lbI],lb=document.getElementById('lightbox'),img=document.getElementById('lightbox-img'),vid=document.getElementById('lightbox-video');
-  const hdL=document.getElementById('hd-loader'),hdD=document.getElementById('hd-done');
-  img.style.display='none';vid.style.display='none';hdL.classList.remove('visible');hdD.classList.remove('visible');
-  vid.onloadedmetadata=null;img.onload=null;img.onerror=null;
-  vid.pause();try{vid.removeAttribute('src');vid.load()}catch{}
-  const cid=p.id;
+/* --- ORIGINAL media/meta DB functions (unchanged) --- */
 
-  if(p.mediaType==='video'){
-    vid.style.display='block';
-    if(_tk){
-      hdL.classList.add('visible');
-      fetchFullUrl(p.id).then(r=>{
-        if(lbP[lbI]?.id!==cid)return;
-        vid.src=r?.downloadUrl||p.downloadUrl||'';
-        hdL.classList.remove('visible');
-      }).catch(()=>{vid.src=p.downloadUrl||'';hdL.classList.remove('visible')});
-    }else vid.src=p.downloadUrl||'';
-  }else{
-    /* Show thumb immediately */
-    img.src=thumbSrc(p);img.style.display='block';
-    img.onerror=()=>{img.src=FALLBACK};
+async function dbPutMediaBatch(items) {
+  if (!items || items.length === 0) return;
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_MEDIA, 'readwrite');
+    const store = tx.objectStore(STORE_MEDIA);
+    for (const item of items) {
+      store.put({
+        ...item,
+        date: item.date ? item.date.toISOString() : null,
+        fetchedAt: item.fetchedAt || new Date().toISOString()
+      });
+    }
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
 
-    if(_tk){
-      hdL.classList.add('visible');
-      /* Fetch fresh thumb + full URL in parallel */
-      Promise.all([fetchThumbBlob(p.id),fetchFullUrl(p.id)]).then(([blob,urls])=>{
-        if(lbP[lbI]?.id!==cid)return;
-        /* Update thumb if we got a blob */
-        if(blob){
-          const blobUrl=URL.createObjectURL(blob);
-          img.src=blobUrl;
-          /* Also update the photo's cached thumb */
-          if(lc){tPut(p.id,blob).catch(()=>{});tUrls.set(p.id,blobUrl)}
+async function dbGetAllMedia() {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_MEDIA, 'readonly');
+    const request = tx.objectStore(STORE_MEDIA).getAll();
+    request.onsuccess = () => {
+      resolve((request.result || []).map(item => ({
+        ...item, date: item.date ? new Date(item.date) : null
+      })));
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function dbClearMedia() {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_MEDIA, 'readwrite');
+    tx.objectStore(STORE_MEDIA).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function dbSetMeta(key, value) {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_META, 'readwrite');
+    tx.objectStore(STORE_META).put({ key, value });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function dbGetMeta(key) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_META, 'readonly');
+    const request = tx.objectStore(STORE_META).get(key);
+    request.onsuccess = () => resolve(request.result?.value ?? null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function dbDeleteMeta(key) {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_META, 'readwrite');
+    tx.objectStore(STORE_META).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function dbDeleteMediaItem(id) {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_MEDIA, 'readwrite');
+    tx.objectStore(STORE_MEDIA).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/* --- NEW: thumb blob store --- */
+
+async function dbPutThumb(id, blob) {
+  const db = await openDb();
+  await new Promise((y, n) => {
+    const tx = db.transaction(STORE_THUMBS, 'readwrite');
+    tx.objectStore(STORE_THUMBS).put({ id, blob, savedAt: Date.now() });
+    tx.oncomplete = () => y(); tx.onerror = () => n(tx.error);
+  });
+}
+
+async function dbGetThumbIds() {
+  const db = await openDb();
+  return new Promise((y, n) => {
+    const r = db.transaction(STORE_THUMBS, 'readonly').objectStore(STORE_THUMBS).getAllKeys();
+    r.onsuccess = () => y(new Set(r.result || [])); r.onerror = () => n(r.error);
+  });
+}
+
+async function dbClearThumbs() {
+  const db = await openDb();
+  await new Promise((y, n) => {
+    const tx = db.transaction(STORE_THUMBS, 'readwrite');
+    tx.objectStore(STORE_THUMBS).clear(); tx.oncomplete = () => y(); tx.onerror = () => n(tx.error);
+  });
+}
+
+async function dbDeleteThumb(id) {
+  const db = await openDb();
+  await new Promise((y, n) => {
+    const tx = db.transaction(STORE_THUMBS, 'readwrite');
+    tx.objectStore(STORE_THUMBS).delete(id); tx.oncomplete = () => y(); tx.onerror = () => n(tx.error);
+  });
+}
+
+/* Load all cached thumb blobs into objectURL map */
+async function loadCachedThumbs() {
+  if (!lcEnabled) return;
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const r = db.transaction(STORE_THUMBS, 'readonly').objectStore(STORE_THUMBS).openCursor();
+    r.onsuccess = (e) => {
+      const c = e.target.result;
+      if (c) {
+        const { id, blob } = c.value;
+        if (blob && !thumbBlobUrls.has(id)) {
+          try { thumbBlobUrls.set(id, URL.createObjectURL(blob)); } catch {}
         }
-        /* Now load full res */
-        const fullUrl=urls?.downloadUrl;
-        if(fullUrl){
-          const hd=new Image();
-          hd.onload=()=>{if(lbP[lbI]?.id!==cid)return;img.src=hd.src;hdL.classList.remove('visible');hdD.classList.add('visible');setTimeout(()=>{if(lbP[lbI]?.id===cid)hdD.classList.remove('visible')},2000)};
-          hd.onerror=()=>{hdL.classList.remove('visible')};
-          hd.src=fullUrl;
-        }else{hdL.classList.remove('visible')}
-        /* Update stored URLs */
-        if(urls){p.downloadUrl=urls.downloadUrl||p.downloadUrl;p.webUrl=urls.webUrl||p.webUrl;p.fetchedAt=new Date().toISOString();dPut([p]).catch(()=>{})}
-      }).catch(()=>{hdL.classList.remove('visible')});
+        c.continue();
+      } else { resolve(); }
+    };
+    r.onerror = () => reject(r.error);
+  });
+}
+
+/*
+ * Get the best available thumbnail src for display.
+ * If local cache is enabled and we have a blob, use that.
+ * Otherwise use the remote URL (which may be stale — onerror handles refresh).
+ */
+function getThumbSrc(photo) {
+  if (lcEnabled && thumbBlobUrls.has(photo.id)) return thumbBlobUrls.get(photo.id);
+  return photo.thumbnailUrl || FALLBACK_ICON;
+}
+
+/*
+ * Download a thumb blob using Graph API (authenticated).
+ * 1. Call /thumbnails to get a FRESH signed URL
+ * 2. Fetch that fresh URL immediately
+ * 3. Store the blob in IndexedDB
+ */
+async function downloadAndCacheThumb(photo) {
+  if (!_currentToken) return false;
+  try {
+    const freshUrl = await getThumbnail(photo.id);
+    if (!freshUrl) return false;
+    const res = await fetch(freshUrl);
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    await dbPutThumb(photo.id, blob);
+    thumbBlobUrls.set(photo.id, URL.createObjectURL(blob));
+    return true;
+  } catch { return false; }
+}
+
+/* Background cache job */
+let _thumbCacheRunning = false;
+async function backgroundCacheThumbs() {
+  if (!lcEnabled || _thumbCacheRunning || !_currentToken) return;
+  _thumbCacheRunning = true;
+  try {
+    const haveIds = await dbGetThumbIds();
+    const need = allPhotos.filter(p => !haveIds.has(p.id));
+    const total = allPhotos.length;
+    let done = haveIds.size;
+    updateCacheStatus(done, total);
+    for (let i = 0; i < need.length; i++) {
+      if (!lcEnabled) break;
+      if (await downloadAndCacheThumb(need[i])) done++;
+      if (i % 5 === 0) updateCacheStatus(done, total);
+      if (i % 10 === 9) await new Promise(r => setTimeout(r, 50));
+    }
+    updateCacheStatus(done, total);
+  } catch (e) { console.warn('Cache error:', e); }
+  finally { _thumbCacheRunning = false; }
+}
+
+function updateCacheStatus(done, total) {
+  const el = document.getElementById('cache-toggle-status');
+  if (!el) return;
+  if (!lcEnabled || !total) { el.textContent = ''; return; }
+  el.textContent = done >= total
+    ? `✓ ${done} vignettes en cache`
+    : `⟳ ${done} / ${total} en cours…`;
+}
+
+/* ==========================================
+   MAP SETUP — CHANGED: worldCopyJump + satellite
+   ========================================== */
+
+const map = L.map('map', {
+  center: [20, 0],
+  zoom: 2,
+  zoomControl: false,
+  minZoom: 2,
+  maxBoundsViscosity: 0,
+  worldCopyJump: true  /* NEW: globe wrapping */
+});
+
+standardLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap', maxZoom: 19, noWrap: false
+});
+
+/* NEW: satellite layer */
+satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: '© Esri', maxZoom: 19, noWrap: false
+});
+
+standardLayer.addTo(map);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+/* NEW: layer toggle */
+document.getElementById('map-layer-toggle').addEventListener('click', () => {
+  const label = document.getElementById('map-layer-label');
+  if (currentLayerType === 'standard') {
+    map.removeLayer(standardLayer); satelliteLayer.addTo(map);
+    currentLayerType = 'satellite'; label.textContent = 'Plan';
+  } else {
+    map.removeLayer(satelliteLayer); standardLayer.addTo(map);
+    currentLayerType = 'standard'; label.textContent = 'Satellite';
+  }
+});
+
+/* CHANGED: marker size from CSS var instead of dynamic */
+function getMarkerSize() {
+  return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--marker-size')) || 88;
+}
+
+clusterGroup = L.markerClusterGroup({
+  showCoverageOnHover: false,
+  maxClusterRadius: 50,
+  spiderfyOnMaxZoom: true,
+  disableClusteringAtZoom: 18,
+  iconCreateFunction(cluster) {
+    const count = cluster.getChildCount();
+    const children = cluster.getAllChildMarkers();
+    const firstPhoto = children[0]?._photoData;
+    const thumbSrc = firstPhoto ? getThumbSrc(firstPhoto) : FALLBACK_ICON;
+    const photoId = firstPhoto?.id || '';
+    const sz = getMarkerSize();
+    return L.divIcon({
+      className: '',
+      html: `
+        <div class="photo-marker-wrap">
+          <div class="photo-marker">
+            <img src="${thumbSrc}" loading="lazy"
+              data-photo-id="${photoId}"
+              onerror="this.src='${FALLBACK_ICON}'"/>
+            <div class="photo-marker-count">${count}</div>
+          </div>
+          <div class="photo-marker-tail"></div>
+        </div>
+      `,
+      iconSize: [sz, sz + 12],
+      iconAnchor: [sz / 2, sz + 12]
+    });
+  }
+});
+map.addLayer(clusterGroup);
+
+/* ==========================================
+   UI HELPERS — ORIGINAL (unchanged)
+   ========================================== */
+
+let toastTimer = null;
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function setLoading(visible, msg = '', progress = 0) {
+  const el = document.getElementById('loading-overlay');
+  el.classList.toggle('visible', visible);
+  if (msg) document.getElementById('loading-msg').textContent = msg;
+  document.getElementById('progress-fill').style.width = progress + '%';
+  isLoading = visible;
+}
+
+function setLoadingCount(n) {
+  document.getElementById('loading-count').textContent = n;
+}
+
+function setScanStatus(state, text, count, progress) {
+  const el = document.getElementById('scan-status');
+  const textEl = document.getElementById('scan-status-text');
+  const countEl = document.getElementById('scan-status-count');
+  const fillEl = document.getElementById('scan-progress-fill');
+  if (state === 'hidden') { el.style.display = 'none'; el.classList.remove('visible', 'paused', 'done', 'error'); return; }
+  el.style.display = 'flex'; el.classList.add('visible'); el.classList.remove('paused', 'done', 'error');
+  if (state === 'paused') el.classList.add('paused');
+  if (state === 'done') el.classList.add('done');
+  if (state === 'error') el.classList.add('error');
+  if (text) textEl.textContent = text;
+  if (count !== undefined && count !== null) countEl.textContent = count;
+  if (progress !== undefined) fillEl.style.width = Math.min(progress, 100) + '%';
+}
+
+let _scanDoneTimer = null;
+function setScanDone(count, detail) {
+  setScanStatus('done', 'Terminé', detail || (count + ' médias'), 100);
+  if (_scanDoneTimer) clearTimeout(_scanDoneTimer);
+  _scanDoneTimer = setTimeout(() => setScanStatus('hidden'), 5000);
+}
+
+function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+function isVideoByName(name = '') { const ext = name.split('.').pop()?.toLowerCase(); return VIDEO_EXTENSIONS.has(ext); }
+
+function updateUiWithCurrentPhotos(fit = false) {
+  if (!allPhotos || allPhotos.length === 0) return;
+  buildYearFilter(allPhotos);
+  renderMarkers(currentYear === 'all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear));
+  updateStats(currentYear === 'all' ? allPhotos.length : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear).length);
+  if (fit && markers.length > 0) {
+    const group = L.featureGroup(markers);
+    map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 14 });
+  }
+  document.getElementById('btn-config').style.display = 'inline-flex';
+  document.getElementById('map-layer-toggle').classList.add('visible'); /* NEW */
+  setTimeout(refreshVisibleStaleThumbnails, 800);
+}
+
+/* ==========================================
+   AUTH — ORIGINAL (unchanged)
+   ========================================== */
+
+async function initMsal(clientId) {
+  msalInstance = new msal.PublicClientApplication({
+    auth: { clientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + window.location.pathname },
+    cache: { cacheLocation: 'localStorage' }
+  });
+  await msalInstance.initialize();
+}
+
+async function getToken() {
+  const accounts = msalInstance.getAllAccounts();
+  const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined };
+  try { return (await msalInstance.acquireTokenSilent(request)).accessToken; }
+  catch { await msalInstance.acquireTokenRedirect(request); return null; }
+}
+
+async function getTokenFresh() {
+  const accounts = msalInstance.getAllAccounts();
+  const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined, forceRefresh: true };
+  try { return (await msalInstance.acquireTokenSilent(request)).accessToken; }
+  catch { await msalInstance.acquireTokenRedirect(request); return null; }
+}
+
+let _currentToken = null;
+
+async function graphGet(url, token, _retried = false) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (res.status === 401 && !_retried) {
+    const freshToken = await getTokenFresh();
+    if (freshToken) { _currentToken = freshToken; return graphGet(url, freshToken, true); }
+    return null;
+  }
+  if (res.status === 401) throw new Error('Session expirée. Veuillez vous reconnecter.');
+  if (res.status === 429) {
+    const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10);
+    await new Promise(r => setTimeout(r, retryAfter * 1000));
+    return graphGet(url, token);
+  }
+  if (!res.ok) { const text = await res.text(); throw new Error(`Erreur API Graph (${res.status}) : ${text.substring(0, 200)}`); }
+  return res.json();
+}
+
+function isMediaFile(item) {
+  if (!item.file || !item.name) return false;
+  const ext = item.name.split('.').pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext);
+}
+
+async function getThumbnail(itemId) {
+  try {
+    const data = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/thumbnails`, _currentToken);
+    return data.value?.[0]?.medium?.url || data.value?.[0]?.large?.url || data.value?.[0]?.small?.url || null;
+  } catch { return null; }
+}
+
+/* ORIGINAL: refresh stale URLs via Graph API */
+async function refreshMediaUrls(item) {
+  try {
+    const data = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${item.id}?$select=id,@microsoft.graph.downloadUrl,webUrl`, _currentToken);
+    const thumbnailUrl = await getThumbnail(item.id);
+    item.downloadUrl = data['@microsoft.graph.downloadUrl'] || thumbnailUrl || item.downloadUrl;
+    item.thumbnailUrl = thumbnailUrl || item.thumbnailUrl;
+    item.fetchedAt = new Date().toISOString();
+    await dbPutMediaBatch([item]);
+    /* NEW: also update local cache if enabled */
+    if (lcEnabled && thumbnailUrl) downloadAndCacheThumb(item).catch(() => {});
+  } catch (err) { console.warn('Failed to refresh URLs for', item.id, err); }
+}
+
+function isUrlStale(item) {
+  if (lcEnabled && thumbBlobUrls.has(item.id)) return false; /* local cache = not stale */
+  if (!item.fetchedAt) return true;
+  return (Date.now() - new Date(item.fetchedAt).getTime()) > THUMBNAIL_TTL_MS;
+}
+
+/* ==========================================
+   THUMBNAIL REFRESH QUEUE — ORIGINAL (unchanged)
+   ========================================== */
+const _refreshQueue = new Set();
+const _refreshInProgress = new Set();
+const _failedImgElements = new Map();
+let _refreshProcessing = false;
+const REFRESH_CONCURRENCY = 4;
+const REFRESH_DELAY_MS = 200;
+
+function queueThumbnailRefresh(photoId, imgElement) {
+  if (!_currentToken) return;
+  if (_refreshInProgress.has(photoId)) return;
+  _refreshQueue.add(photoId);
+  if (imgElement) {
+    if (!_failedImgElements.has(photoId)) _failedImgElements.set(photoId, new Set());
+    _failedImgElements.get(photoId).add(imgElement);
+  }
+  scheduleRefreshProcessing();
+}
+
+function scheduleRefreshProcessing() {
+  if (_refreshProcessing) return;
+  _refreshProcessing = true;
+  setTimeout(processRefreshQueue, 50);
+}
+
+async function processRefreshQueue() {
+  if (_refreshQueue.size === 0) { _refreshProcessing = false; return; }
+  const bounds = map.getBounds();
+  const priorityIds = [], normalIds = [];
+  for (const id of _refreshQueue) {
+    const photo = allPhotos.find(p => p.id === id);
+    if (photo && bounds.contains([photo.lat, photo.lng])) priorityIds.push(id);
+    else normalIds.push(id);
+  }
+  const batch = [...priorityIds, ...normalIds].slice(0, REFRESH_CONCURRENCY);
+  const promises = batch.map(async (id) => {
+    _refreshQueue.delete(id); _refreshInProgress.add(id);
+    const photo = allPhotos.find(p => p.id === id);
+    if (!photo) { _refreshInProgress.delete(id); return; }
+    try {
+      await refreshMediaUrls(photo);
+      const newSrc = getThumbSrc(photo);
+      const imgSet = _failedImgElements.get(id);
+      if (imgSet) {
+        for (const img of imgSet) {
+          if (img.isConnected) { img.onerror = null; img.src = newSrc; img.onerror = function() { this.src = FALLBACK_ICON; }; }
+        }
+        _failedImgElements.delete(id);
+      }
+      updateMarkerThumb(id, newSrc);
+    } catch (err) { console.warn('Thumbnail refresh failed for', id, err); }
+    finally { _refreshInProgress.delete(id); }
+  });
+  await Promise.allSettled(promises);
+  if (_refreshQueue.size > 0) setTimeout(processRefreshQueue, REFRESH_DELAY_MS);
+  else _refreshProcessing = false;
+}
+
+function updateMarkerThumb(photoId, newSrc) {
+  for (const m of markers) {
+    if (m._photoData && m._photoData.id === photoId) {
+      const el = m.getElement?.();
+      if (el) {
+        const img = el.querySelector('img');
+        if (img) { img.onerror = null; img.src = newSrc; img.onerror = function() { this.src = FALLBACK_ICON; }; }
+      }
+      break;
+    }
+  }
+}
+
+function refreshVisibleStaleThumbnails() {
+  if (!_currentToken) return;
+  const bounds = map.getBounds();
+  let queued = 0;
+  for (const m of markers) {
+    if (queued >= 20) break;
+    const photo = m._photoData;
+    if (!photo) continue;
+    if (!bounds.contains([photo.lat, photo.lng])) continue;
+    if (_refreshInProgress.has(photo.id) || _refreshQueue.has(photo.id)) continue;
+    if (isUrlStale(photo)) { _refreshQueue.add(photo.id); queued++; }
+  }
+  if (queued > 0) scheduleRefreshProcessing();
+}
+
+let _visibleRefreshTimer = null;
+map.on('moveend', () => {
+  if (_visibleRefreshTimer) clearTimeout(_visibleRefreshTimer);
+  _visibleRefreshTimer = setTimeout(refreshVisibleStaleThumbnails, 500);
+});
+
+const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
+
+/* ==========================================
+   SPATIAL INDEX — ORIGINAL (unchanged)
+   ========================================== */
+let spatialIndex = {};
+const SPATIAL_CELL_SIZE = 0.0005;
+
+function buildSpatialIndex(photos) {
+  spatialIndex = {};
+  for (const p of photos) {
+    const cellKey = Math.round(p.lat / SPATIAL_CELL_SIZE) + ',' + Math.round(p.lng / SPATIAL_CELL_SIZE);
+    if (!spatialIndex[cellKey]) spatialIndex[cellKey] = [];
+    spatialIndex[cellKey].push(p);
+  }
+}
+
+function getNearbyPhotos(lat, lng, filteredSet) {
+  const cellLat = Math.round(lat / SPATIAL_CELL_SIZE);
+  const cellLng = Math.round(lng / SPATIAL_CELL_SIZE);
+  const result = [];
+  for (let di = -1; di <= 1; di++) {
+    for (let dj = -1; dj <= 1; dj++) {
+      const key = (cellLat + di) + ',' + (cellLng + dj);
+      const cell = spatialIndex[key];
+      if (!cell) continue;
+      for (const p of cell) {
+        if (filteredSet && !filteredSet.has(p.id)) continue;
+        if (Math.abs(p.lat - lat) < SPATIAL_CELL_SIZE && Math.abs(p.lng - lng) < SPATIAL_CELL_SIZE) result.push(p);
+      }
+    }
+  }
+  return result;
+}
+
+/* ==========================================
+   MARKERS — CHANGED: uniform size, use getThumbSrc
+   ========================================== */
+
+function createMarker(photo, filteredIdSet) {
+  const thumbSrc = getThumbSrc(photo); /* CHANGED: uses local cache if available */
+  const size = getMarkerSize(); /* CHANGED: uniform */
+  const photoId = photo.id;
+
+  const isolatedCount = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet).length;
+  const countBadge = isolatedCount > 1 ? `<div class="photo-marker-count">${isolatedCount}</div>` : '';
+
+  const icon = L.divIcon({
+    className: '',
+    html: `
+      <div class="photo-marker-wrap">
+        <div class="photo-marker">
+          <img src="${thumbSrc}" loading="lazy"
+            data-photo-id="${photoId}"
+            onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${photoId}', this);"/>
+          ${countBadge}
+        </div>
+        <div class="photo-marker-tail"></div>
+      </div>
+    `,
+    iconSize: [size, size + 12],
+    iconAnchor: [size / 2, size + 12]
+  });
+
+  const marker = L.marker([photo.lat, photo.lng], { icon });
+  marker.on('click', () => {
+    const nearby = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet);
+    openPanel(nearby.length > 0 ? nearby : [photo], photo.lat, photo.lng);
+  });
+  marker._photoData = photo;
+  return marker;
+}
+
+function renderMarkers(filtered) {
+  clusterGroup.off('clusterclick');
+  clusterGroup.clearLayers();
+  markers = [];
+  buildSpatialIndex(allPhotos);
+  const filteredIdSet = new Set(filtered.map(p => p.id));
+  filtered.forEach(photo => { markers.push(createMarker(photo, filteredIdSet)); });
+  clusterGroup.addLayers(markers);
+  clusterGroup.on('clusterclick', e => {
+    const photos = e.layer.getAllChildMarkers().map(m => m._photoData);
+    openPanel(photos, e.latlng.lat, e.latlng.lng);
+  });
+}
+
+/* ==========================================
+   PANEL — CHANGED: uses getThumbSrc
+   ========================================== */
+
+function openPanel(photos, lat, lng) {
+  const panel = document.getElementById('photo-panel');
+  panelAllPhotos = [...photos].sort((a, b) => (b.date || 0) - (a.date || 0));
+  const dates = panelAllPhotos.filter(p => p.date).map(p => p.date);
+  const dateRange = document.getElementById('panel-date-range');
+  if (dates.length) {
+    const min = new Date(Math.min(...dates)), max = new Date(Math.max(...dates));
+    const fmt = d => d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+    dateRange.textContent = min.getFullYear() === max.getFullYear() && min.getMonth() === max.getMonth() ? fmt(min) : `${fmt(min)} — ${fmt(max)}`;
+  } else dateRange.textContent = '';
+  document.getElementById('panel-count').textContent = `${panelAllPhotos.length} média${panelAllPhotos.length > 1 ? 's' : ''}`;
+  const locName = document.getElementById('panel-location-name');
+  locName.textContent = 'Chargement…';
+  reverseGeocode(lat, lng).then(name => { locName.textContent = name; });
+  renderPanelPhotos();
+  panel.classList.add('open');
+}
+
+function renderPanelPhotos() {
+  const grid = document.getElementById('panel-photos');
+  grid.innerHTML = '';
+  panelAllPhotos.forEach((photo, idx) => {
+    const card = document.createElement('div');
+    card.className = 'thumb-card';
+    const dateStr = photo.date ? photo.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    const mediaEl = document.createElement('img');
+    mediaEl.src = getThumbSrc(photo); /* CHANGED */
+    mediaEl.loading = 'lazy'; mediaEl.decoding = 'async'; mediaEl.alt = photo.name;
+    mediaEl.dataset.photoId = photo.id;
+    mediaEl.onerror = function() { this.src = FALLBACK_ICON; queueThumbnailRefresh(photo.id, this); };
+    const overlay = document.createElement('div');
+    overlay.className = 'thumb-overlay';
+    overlay.innerHTML = `${escapeHtml(photo.name)}<br>${dateStr}`;
+    card.appendChild(mediaEl); card.appendChild(overlay);
+    card.addEventListener('click', () => { lightboxPhotos = panelAllPhotos; lightboxIndex = idx; showLightboxPhoto(); });
+    grid.appendChild(card);
+  });
+}
+
+/* ==========================================
+   LIGHTBOX — CHANGED: shows thumb first, then loads HD
+   ========================================== */
+
+function showLightboxPhoto() {
+  if (lightboxPhotos.length === 0) return;
+
+  const photo = lightboxPhotos[lightboxIndex];
+  const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  const video = document.getElementById('lightbox-video');
+  const openBtn = document.getElementById('lightbox-open-onedrive');
+  const hdLoader = document.getElementById('hd-loader');
+  const hdDone = document.getElementById('hd-done');
+
+  img.style.display = 'none';
+  video.style.display = 'none';
+  hdLoader.classList.remove('visible');
+  hdDone.classList.remove('visible');
+
+  video.onloadedmetadata = null;
+  img.onload = null;
+  img.onerror = null;
+  video.pause();
+  try { video.removeAttribute('src'); video.load(); } catch {}
+
+  const currentId = photo.id;
+
+  /* Step 1: show the thumbnail immediately (from local cache or remote URL) */
+  const thumbSrc = getThumbSrc(photo);
+
+  /* The full-res URL — ORIGINAL logic */
+  const fullSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
+
+  if (photo.mediaType === 'video') {
+    video.src = fullSrc;
+    video.style.display = 'block';
+    /* If stale, refresh in background and update video src */
+    if (isUrlStale(photo) && _currentToken) {
+      refreshMediaUrls(photo).then(() => {
+        if (lightboxPhotos[lightboxIndex]?.id === currentId) {
+          video.src = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || '';
+        }
+      }).catch(() => {});
+    }
+  } else {
+    /* Show thumbnail first */
+    img.src = thumbSrc;
+    img.style.display = 'block';
+    img.onerror = () => { img.src = FALLBACK_ICON; };
+
+    /* Step 2: Load full-res in background */
+    if (fullSrc && fullSrc !== thumbSrc && fullSrc !== FALLBACK_ICON) {
+      hdLoader.classList.add('visible');
+      const hdImg = new Image();
+      hdImg.onload = () => {
+        if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
+        img.src = hdImg.src;
+        hdLoader.classList.remove('visible');
+        hdDone.classList.add('visible');
+        setTimeout(() => { if (lightboxPhotos[lightboxIndex]?.id === currentId) hdDone.classList.remove('visible'); }, 2000);
+      };
+      hdImg.onerror = () => {
+        if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
+        hdLoader.classList.remove('visible');
+        /* Full URL failed — probably stale. Refresh and retry. */
+        if (_currentToken) {
+          refreshMediaUrls(photo).then(() => {
+            if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
+            /* Update thumb with fresh URL */
+            img.src = getThumbSrc(photo);
+            /* Try HD again with fresh downloadUrl */
+            const freshFull = photo.downloadUrl || photo.thumbnailUrl;
+            if (freshFull) {
+              hdLoader.classList.add('visible');
+              const retry = new Image();
+              retry.onload = () => {
+                if (lightboxPhotos[lightboxIndex]?.id === currentId) {
+                  img.src = retry.src;
+                  hdLoader.classList.remove('visible');
+                  hdDone.classList.add('visible');
+                  setTimeout(() => hdDone.classList.remove('visible'), 2000);
+                }
+              };
+              retry.onerror = () => { hdLoader.classList.remove('visible'); };
+              retry.src = freshFull;
+            }
+          }).catch(() => {});
+        }
+      };
+      hdImg.src = fullSrc;
+    } else if (isUrlStale(photo) && _currentToken) {
+      /* thumbSrc === fullSrc or fallback — try refreshing */
+      hdLoader.classList.add('visible');
+      refreshMediaUrls(photo).then(() => {
+        if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
+        img.src = getThumbSrc(photo);
+        const freshFull = photo.downloadUrl || photo.thumbnailUrl;
+        if (freshFull) {
+          const hd = new Image();
+          hd.onload = () => {
+            if (lightboxPhotos[lightboxIndex]?.id === currentId) {
+              img.src = hd.src;
+              hdLoader.classList.remove('visible');
+              hdDone.classList.add('visible');
+              setTimeout(() => hdDone.classList.remove('visible'), 2000);
+            }
+          };
+          hd.onerror = () => { hdLoader.classList.remove('visible'); };
+          hd.src = freshFull;
+        } else { hdLoader.classList.remove('visible'); }
+      }).catch(() => { hdLoader.classList.remove('visible'); });
     }
   }
 
-  document.getElementById('lightbox-name').textContent=p.name;
-  const ds=p.date?p.date.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
-  document.getElementById('lightbox-meta').textContent=[ds,p.lat.toFixed(4)+', '+p.lng.toFixed(4)].filter(Boolean).join('  ·  ');
-  const od=p.webUrl||p.downloadUrl;
-  const ob=document.getElementById('lightbox-open-onedrive');
-  if(od){ob.dataset.webUrl=od;ob.style.display='inline-flex'}else{delete ob.dataset.webUrl;ob.style.display='none'}
-  document.getElementById('lightbox-prev').style.display=lbP.length>1?'flex':'none';
-  document.getElementById('lightbox-next').style.display=lbP.length>1?'flex':'none';
+  document.getElementById('lightbox-name').textContent = photo.name;
+  const dateStr = photo.date ? photo.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const coords = `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`;
+  document.getElementById('lightbox-meta').textContent = [dateStr, coords].filter(Boolean).join('  ·  ');
+
+  const oneDriveUrl = photo.webUrl || photo.downloadUrl;
+  if (oneDriveUrl) { openBtn.dataset.webUrl = oneDriveUrl; openBtn.style.display = 'inline-flex'; }
+  else { delete openBtn.dataset.webUrl; openBtn.style.display = 'none'; }
+
+  document.getElementById('lightbox-prev').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
+  document.getElementById('lightbox-next').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
+
   lb.classList.add('open');
 }
 
-/* ===== EVENTS ===== */
-document.getElementById('panel-close').addEventListener('click',()=>document.getElementById('photo-panel').classList.remove('open'));
-map.on('click',()=>document.getElementById('photo-panel').classList.remove('open'));
-document.getElementById('lightbox-close').addEventListener('click',()=>document.getElementById('lightbox').classList.remove('open'));
-document.getElementById('lightbox-prev').addEventListener('click',e=>{e.stopPropagation();lbI=(lbI-1+lbP.length)%lbP.length;showLB()});
-document.getElementById('lightbox-next').addEventListener('click',e=>{e.stopPropagation();lbI=(lbI+1)%lbP.length;showLB()});
-document.getElementById('lightbox').addEventListener('click',e=>{if(e.target===document.getElementById('lightbox'))document.getElementById('lightbox').classList.remove('open')});
-document.getElementById('lightbox-open-onedrive').addEventListener('click',e=>{e.stopPropagation();const u=e.currentTarget.dataset.webUrl;if(!u)return;if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))location.href=u;else window.open(u,'_blank','noopener')});
-document.addEventListener('keydown',e=>{const lb=document.getElementById('lightbox');if(!lb.classList.contains('open'))return;if(e.key==='Escape')lb.classList.remove('open');if(e.key==='ArrowLeft'){lbI=(lbI-1+lbP.length)%lbP.length;showLB()}if(e.key==='ArrowRight'){lbI=(lbI+1)%lbP.length;showLB()}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('photo-panel').classList.remove('open')});
-(function(){let sx=0,sy=0;const T=50,lb=document.getElementById('lightbox');
-lb.addEventListener('touchstart',e=>{sx=e.changedTouches[0].screenX;sy=e.changedTouches[0].screenY},{passive:true});
-lb.addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-sx,dy=e.changedTouches[0].screenY-sy;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>T){lbI=dx<0?(lbI+1)%lbP.length:(lbI-1+lbP.length)%lbP.length;showLB()}else if(dy>T*1.5&&Math.abs(dy)>Math.abs(dx))lb.classList.remove('open')},{passive:true});
-const ph=document.querySelector('.panel-header');let py=0;
-ph.addEventListener('touchstart',e=>{py=e.changedTouches[0].screenY},{passive:true});
-ph.addEventListener('touchend',e=>{if(e.changedTouches[0].screenY-py>60)document.getElementById('photo-panel').classList.remove('open')},{passive:true})})();
+/* ==========================================
+   EVENT LISTENERS — ORIGINAL (unchanged)
+   ========================================== */
 
-/* ===== GEOCODING ===== */
-const gc={};let glt=0;
-async function geo(lat,lng,rt=0){const k=lat.toFixed(2)+','+lng.toFixed(2);if(gc[k])return gc[k];const w=Math.max(0,1100-(Date.now()-glt));if(w>0)await new Promise(r=>setTimeout(r,w));glt=Date.now();try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`,{headers:{'User-Agent':'PhotoMap/1.0'}});if(r.status===429){if(rt<3){await new Promise(y=>setTimeout(y,(2**rt)*1500));return geo(lat,lng,rt+1)}throw 0}if(!r.ok)throw 0;const d=await r.json(),a=d.address||{},n=a.city||a.town||a.village||a.county||a.state||a.country||'?',c=a.country||'';const res=c&&n!==c?n+', '+c:n;gc[k]=res;return res}catch{return lat.toFixed(3)+'°, '+lng.toFixed(3)+'°'}}
+document.getElementById('panel-close').addEventListener('click', () => { document.getElementById('photo-panel').classList.remove('open'); });
+map.on('click', () => { document.getElementById('photo-panel').classList.remove('open'); });
+document.getElementById('lightbox-close').addEventListener('click', () => { document.getElementById('lightbox').classList.remove('open'); });
+document.getElementById('lightbox-prev').addEventListener('click', (e) => { e.stopPropagation(); lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; showLightboxPhoto(); });
+document.getElementById('lightbox-next').addEventListener('click', (e) => { e.stopPropagation(); lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; showLightboxPhoto(); });
+document.getElementById('lightbox').addEventListener('click', e => { if (e.target === document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('open'); });
 
-/* ===== YEARS ===== */
-let yfi=false;
-function bldYr(ph){const yrs=[...new Set(ph.filter(p=>p.date).map(p=>p.date.getFullYear()))].sort((a,b)=>b-a);const bar=document.getElementById('filter-bar');bar.innerHTML='<span class="filter-label">Année</span><button class="year-btn'+(curY==='all'?' active':'')+'" data-year="all">Toutes</button>';yrs.forEach(y=>{const b=document.createElement('button');b.className='year-btn'+(curY==y?' active':'');b.dataset.year=y;b.textContent=y;bar.appendChild(b)});bar.classList.add('visible');if(!yfi){yfi=true;bar.addEventListener('click',e=>{const b=e.target.closest('.year-btn');if(!b)return;bar.querySelectorAll('.year-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');curY=b.dataset.year;aF()})}}
-function aF(){const f=curY==='all'?allP:allP.filter(p=>p.date&&p.date.getFullYear()==curY);rndr(f);uSt(f.length);document.getElementById('photo-panel').classList.remove('open')}
-function uSt(c){const e=document.getElementById('stats-pill');e.textContent=c+' média'+(c>1?'s':'')+' géolocalisé'+(c>1?'s':'');e.style.display='block'}
+document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const webUrl = e.currentTarget.dataset.webUrl;
+  if (!webUrl) return;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobile) window.location.href = webUrl;
+  else window.open(webUrl, '_blank', 'noopener');
+});
 
-/* ===== STARTUP ===== */
-async function startApp(){if(startRun)return;startRun=true;try{await _start()}finally{startRun=false}}
-async function _start(){
-  const cid=localStorage.getItem('photomap_client_id')||CID_DEFAULT;
-  document.getElementById('splash').classList.add('hidden');
-  try{const c=await dAll();if(c.length){allP=c;if(lc)await loadThumbs();updateUI(true)}}catch{}
-  document.getElementById('btn-config').style.display='inline-flex';document.getElementById('map-layer-toggle').classList.add('visible');
-  ssc('scanning','Connexion…','',0);
-  try{
-    await initMs(cid);await ms.handleRedirectPromise();
-    ssc('scanning','Authentification…','',3);
-    const t=await getTk();if(!t)return;_tk=t;
-    bgSync();startAuto();
-  }catch(e){console.error(e);ssc('error','Erreur','',0);setTimeout(()=>ssc('hidden'),6000);toast('Erreur: '+e.message,8000)}
+document.addEventListener('keydown', e => {
+  const lb = document.getElementById('lightbox');
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape') lb.classList.remove('open');
+  if (e.key === 'ArrowLeft') { lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; showLightboxPhoto(); }
+  if (e.key === 'ArrowRight') { lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; showLightboxPhoto(); }
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('photo-panel').classList.remove('open'); });
+
+/* ==========================================
+   TOUCH SWIPE — ORIGINAL (unchanged)
+   ========================================== */
+(function() {
+  let touchStartX = 0, touchStartY = 0;
+  const SWIPE_THRESHOLD = 50;
+  const lb = document.getElementById('lightbox');
+  lb.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX, dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
+      if (dx < 0) { lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; }
+      else { lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; }
+      showLightboxPhoto();
+    } else if (dy > SWIPE_THRESHOLD * 1.5 && Math.abs(dy) > Math.abs(dx)) { lb.classList.remove('open'); }
+  }, { passive: true });
+  const panelHeader = document.querySelector('.panel-header');
+  let panelTouchStartY = 0;
+  panelHeader.addEventListener('touchstart', e => { panelTouchStartY = e.changedTouches[0].screenY; }, { passive: true });
+  panelHeader.addEventListener('touchend', e => { if (e.changedTouches[0].screenY - panelTouchStartY > 60) document.getElementById('photo-panel').classList.remove('open'); }, { passive: true });
+})();
+
+/* ==========================================
+   GEOCODING — ORIGINAL (unchanged)
+   ========================================== */
+const geocodeCache = {};
+let lastGeocodeTime = 0;
+
+async function reverseGeocode(lat, lng, _retries = 0) {
+  const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
+  if (geocodeCache[key]) return geocodeCache[key];
+  const now = Date.now();
+  const wait = Math.max(0, 1100 - (now - lastGeocodeTime));
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastGeocodeTime = Date.now();
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`, { headers: { 'User-Agent': 'PhotoMap/1.0' } });
+    if (res.status === 429) { if (_retries < 3) { await new Promise(r => setTimeout(r, (2 ** _retries) * 1500)); return reverseGeocode(lat, lng, _retries + 1); } throw new Error('Rate limit'); }
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    const addr = data.address || {};
+    const name = addr.city || addr.town || addr.village || addr.county || addr.state || addr.country || 'Lieu inconnu';
+    const country = addr.country || '';
+    const result = country && name !== country ? `${name}, ${country}` : name;
+    geocodeCache[key] = result;
+    return result;
+  } catch { return `${lat.toFixed(3)}°, ${lng.toFixed(3)}°`; }
 }
 
-/* ===== CONFIG ===== */
-function showCfg(){const h=ms&&ms.getAllAccounts().length>0;document.getElementById('config-rescan-wrap').style.display=h?'block':'none';document.getElementById('config-logout-wrap').style.display=h?'block':'none';document.getElementById('toggle-local-cache').checked=lc;uCS();if(lc)tIds().then(ids=>cStat(ids.size,allP.length)).catch(()=>{});document.getElementById('config-panel').classList.add('open')}
-function uCS(){document.getElementById('cache-toggle-sub').textContent=lc?'Activé — vignettes hors-ligne':'Désactivé — chargement à la volée'}
-document.getElementById('toggle-local-cache').addEventListener('change',async e=>{lc=e.target.checked;localStorage.setItem(LC,lc?'true':'false');uCS();if(lc){toast('Cache activé — téléchargement…',4000);cStat(0,allP.length);bgCache()}else{for(const[,u]of tUrls)try{URL.revokeObjectURL(u)}catch{}tUrls.clear();await tClr().catch(()=>{});document.getElementById('cache-toggle-status').textContent='';toast('Cache désactivé')}});
-document.getElementById('btn-config-cancel').addEventListener('click',()=>document.getElementById('config-panel').classList.remove('open'));
-document.getElementById('btn-config-logout').addEventListener('click',async()=>{try{if(ms){const a=ms.getAllAccounts();if(a.length){await ms.logoutRedirect({account:a[0]}).catch(()=>{});return}}}finally{localStorage.removeItem('photomap_client_id');await dClr().catch(()=>{});await tClr().catch(()=>{});await dDM('scan_state').catch(()=>{});await dDM('deltaLink').catch(()=>{});for(const[,u]of tUrls)try{URL.revokeObjectURL(u)}catch{}tUrls.clear();stopAuto();ms=null;allP=[];mkrs=[];cg.clearLayers();document.getElementById('config-panel').classList.remove('open');document.getElementById('filter-bar').classList.remove('visible');document.getElementById('stats-pill').style.display='none';document.getElementById('btn-config').style.display='none';document.getElementById('map-layer-toggle').classList.remove('visible');document.getElementById('photo-panel').classList.remove('open');document.getElementById('splash').classList.remove('hidden');ssc('hidden');toast('Déconnecté')}});
-document.getElementById('btn-config').addEventListener('click',showCfg);
-document.getElementById('btn-login').addEventListener('click',()=>{if(!localStorage.getItem('photomap_client_id'))localStorage.setItem('photomap_client_id',CID_DEFAULT);startApp()});
-document.getElementById('btn-connect').addEventListener('click',()=>{document.getElementById('config-panel').classList.remove('open');startApp()});
-document.getElementById('btn-full-rescan').addEventListener('click',async()=>{document.getElementById('config-panel').classList.remove('open');await dDM('deltaLink').catch(()=>{});await dDM('scan_state').catch(()=>{});bgSync()});
-document.getElementById('config-panel').addEventListener('click',e=>{if(e.target===document.getElementById('config-panel'))document.getElementById('config-panel').classList.remove('open')});
+/* ==========================================
+   YEAR FILTER — ORIGINAL (unchanged)
+   ========================================== */
+let yearFilterInitialized = false;
 
-/* ===== INIT ===== */
-document.addEventListener('DOMContentLoaded',async()=>{
-  const cid=localStorage.getItem('photomap_client_id')||CID_DEFAULT;
-  const hs=location.hash+location.search;
-  const isR=hs.includes('code=')||hs.includes('access_token')||hs.includes('id_token')||hs.includes('error=');
-  try{const c=await dAll();if(c.length){allP=c;if(lc)await loadThumbs();updateUI(true);document.getElementById('btn-config').style.display='inline-flex';document.getElementById('map-layer-toggle').classList.add('visible');document.getElementById('splash').classList.add('hidden');if(cid&&!isR)silSync(cid)}}catch{}
-  if(cid&&isR)startApp();
+function buildYearFilter(photos) {
+  const years = [...new Set(photos.filter(p => p.date).map(p => p.date.getFullYear()))].sort((a, b) => b - a);
+  const bar = document.getElementById('filter-bar');
+  bar.innerHTML = `<span class="filter-label">Année</span><button class="year-btn${currentYear === 'all' ? ' active' : ''}" data-year="all">Toutes</button>`;
+  years.forEach(y => {
+    const btn = document.createElement('button');
+    btn.className = 'year-btn' + (currentYear == y ? ' active' : '');
+    btn.dataset.year = y; btn.textContent = y;
+    bar.appendChild(btn);
+  });
+  bar.classList.add('visible');
+  if (!yearFilterInitialized) {
+    yearFilterInitialized = true;
+    bar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.year-btn');
+      if (!btn) return;
+      bar.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentYear = btn.dataset.year;
+      applyFilter();
+    });
+  }
+}
+
+function applyFilter() {
+  const filtered = currentYear === 'all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
+  renderMarkers(filtered);
+  updateStats(filtered.length);
+  document.getElementById('photo-panel').classList.remove('open');
+}
+
+function updateStats(count) {
+  const el = document.getElementById('stats-pill');
+  el.textContent = `${count} média${count > 1 ? 's' : ''} géolocalisé${count > 1 ? 's' : ''}`;
+  el.style.display = 'block';
+}
+
+/* ==========================================
+   DELTA SYNC — ORIGINAL + cache thumb on new items
+   ========================================== */
+const DELTA_BASE_URL = 'https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
+
+async function runDeltaSync() {
+  _currentToken = await getToken();
+  if (!_currentToken) return [];
+
+  const existing = await dbGetAllMedia();
+  const existingMap = new Map(existing.map(p => [p.id, p]));
+  const existingCount = existing.length;
+
+  let deltaLink = await dbGetMeta('deltaLink');
+  let url = deltaLink || DELTA_BASE_URL;
+  const isFirstScan = !deltaLink;
+
+  if (isFirstScan) setScanStatus('scanning', 'Premier scan…', '', 2);
+  else setScanStatus('scanning', 'Synchronisation…', existingCount + ' en cache', 2);
+
+  let scanned = 0, added = 0, deleted = 0, newDeltaLink = null;
+  const batch = [];
+
+  while (url) {
+    const data = await graphGet(url, _currentToken);
+    const items = data.value || [];
+
+    for (const item of items) {
+      scanned++;
+      if (scanned % 50 === 0) {
+        setScanStatus('scanning',
+          isFirstScan ? `Analyse… ${scanned} fichiers` : `Synchro… ${scanned} changements`,
+          isFirstScan ? (existingCount + added) + ' trouvés' : (added > 0 ? `+${added} nouveaux` : 'vérification…'),
+          Math.min(5 + scanned * 0.005, 95)
+        );
+      }
+
+      if (item.deleted) {
+        if (existingMap.has(item.id)) {
+          existingMap.delete(item.id);
+          await dbDeleteMediaItem(item.id);
+          if (lcEnabled) dbDeleteThumb(item.id).catch(() => {}); /* NEW */
+          deleted++;
+        }
+        continue;
+      }
+
+      if (item.folder) continue;
+      if (!isMediaFile(item)) continue;
+
+      if (!isFirstScan && existingMap.has(item.id)) {
+        const lat = item.location?.latitude, lng = item.location?.longitude;
+        if (lat != null && lng != null && !(lat === 0 && lng === 0)) {
+          const thumbnailUrl = await getThumbnail(item.id);
+          const date = item.photo?.takenDateTime || item.createdDateTime;
+          const updated = {
+            id: item.id, name: item.name, lat: Number(lat), lng: Number(lng),
+            date: date ? new Date(date) : null, thumbnailUrl,
+            downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
+            webUrl: item.webUrl || null, mediaType: isVideoByName(item.name) ? 'video' : 'image',
+            fetchedAt: new Date().toISOString()
+          };
+          existingMap.set(item.id, updated);
+          batch.push(updated);
+          if (lcEnabled && thumbnailUrl) downloadAndCacheThumb(updated).catch(() => {}); /* NEW */
+        }
+        continue;
+      }
+
+      if (isFirstScan && existingMap.has(item.id)) continue;
+
+      const lat = item.location?.latitude, lng = item.location?.longitude;
+      if (lat == null || lng == null) continue;
+      if (lat === 0 && lng === 0) continue;
+
+      const thumbnailUrl = await getThumbnail(item.id);
+      const date = item.photo?.takenDateTime || item.createdDateTime;
+
+      const mediaItem = {
+        id: item.id, name: item.name, lat: Number(lat), lng: Number(lng),
+        date: date ? new Date(date) : null, thumbnailUrl,
+        downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
+        webUrl: item.webUrl || null, mediaType: isVideoByName(item.name) ? 'video' : 'image',
+        fetchedAt: new Date().toISOString()
+      };
+
+      existingMap.set(item.id, mediaItem);
+      batch.push(mediaItem);
+      added++;
+
+      if (lcEnabled && thumbnailUrl) downloadAndCacheThumb(mediaItem).catch(() => {}); /* NEW */
+
+      const flushThreshold = (existingCount + added) < 50 ? 5 : 25;
+      if (batch.length >= flushThreshold) {
+        await dbPutMediaBatch(batch);
+        batch.length = 0;
+        allPhotos = [...existingMap.values()];
+        updateUiWithCurrentPhotos(existingCount === 0 && added <= flushThreshold);
+      }
+    }
+
+    if (data['@odata.nextLink']) url = data['@odata.nextLink'];
+    else { newDeltaLink = data['@odata.deltaLink'] || null; url = null; }
+  }
+
+  if (batch.length > 0) await dbPutMediaBatch(batch);
+  if (newDeltaLink) await dbSetMeta('deltaLink', newDeltaLink);
+
+  allPhotos = [...existingMap.values()];
+  updateUiWithCurrentPhotos(existingCount === 0 && allPhotos.length > 0);
+
+  await dbSetMeta('scan_state', { scanned, found: allPhotos.length, updatedAt: new Date().toISOString(), completed: true });
+
+  if (isFirstScan) setScanDone(allPhotos.length, allPhotos.length + ' médias');
+  else if (added > 0 || deleted > 0) {
+    const parts = [];
+    if (added > 0) parts.push(`+${added}`);
+    if (deleted > 0) parts.push(`-${deleted}`);
+    setScanDone(allPhotos.length, parts.join(' ') + ' · ' + allPhotos.length + ' total');
+  } else setScanDone(allPhotos.length, 'à jour');
+
+  /* NEW: background cache remaining thumbs */
+  if (lcEnabled) setTimeout(backgroundCacheThumbs, 2000);
+
+  return allPhotos;
+}
+
+async function runBackgroundSync() {
+  if (backgroundSyncRunning) return;
+  backgroundSyncRunning = true;
+  try { await runDeltaSync(); }
+  catch (err) {
+    console.warn('Erreur sync:', err);
+    setScanStatus('error', 'Sync interrompue', '', 0);
+    setTimeout(() => setScanStatus('hidden'), 4000);
+  } finally { backgroundSyncRunning = false; }
+}
+
+function startAutoSync() {
+  if (autoSyncTimer) clearInterval(autoSyncTimer);
+  autoSyncTimer = setInterval(() => { if (_currentToken && !backgroundSyncRunning) runBackgroundSync(); }, AUTO_SYNC_INTERVAL_MS);
+}
+
+function stopAutoSync() { if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; } }
+
+/* ==========================================
+   APP STARTUP — ORIGINAL + load cached thumbs
+   ========================================== */
+
+async function startApp() {
+  if (startAppRunning) return;
+  startAppRunning = true;
+  try { await _startAppInner(); } finally { startAppRunning = false; }
+}
+
+async function _startAppInner() {
+  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
+  if (!clientId) { document.getElementById('splash').classList.add('hidden'); showConfigPanel(); return; }
+
+  document.getElementById('splash').classList.add('hidden');
+
+  let cached = [];
+  try {
+    cached = await dbGetAllMedia();
+    if (cached.length > 0) {
+      allPhotos = cached;
+      if (lcEnabled) await loadCachedThumbs(); /* NEW */
+      updateUiWithCurrentPhotos(true);
+    }
+  } catch (err) { console.warn('IndexedDB read error:', err); }
+
+  document.getElementById('btn-config').style.display = 'inline-flex';
+  document.getElementById('map-layer-toggle').classList.add('visible'); /* NEW */
+
+  setScanStatus('scanning', 'Connexion à Microsoft…', '', 0);
+  try {
+    try {
+      await initMsal(clientId);
+      const redirectResult = await msalInstance.handleRedirectPromise();
+      if (redirectResult) setScanStatus('scanning', 'Authentification réussie', '', 3);
+    } catch (msalErr) {
+      msalInstance = null;
+      throw new Error('Auth init failed: ' + (msalErr.message || String(msalErr)));
+    }
+
+    setScanStatus('scanning', 'Authentification…', '', 3);
+    const token = await getToken();
+    if (!token) return;
+    _currentToken = token;
+    runBackgroundSync();
+    startAutoSync();
+  } catch (err) {
+    console.error('PhotoMap error:', err);
+    setScanStatus('error', 'Erreur de connexion', '', 0);
+    setTimeout(() => setScanStatus('hidden'), 6000);
+    showToast('Erreur : ' + (err.message || String(err)), 8000);
+  }
+}
+
+/* ==========================================
+   CONFIG PANEL — ORIGINAL + cache toggle
+   ========================================== */
+
+function showConfigPanel() {
+  const hasAuth = msalInstance && msalInstance.getAllAccounts().length > 0;
+  document.getElementById('config-rescan-wrap').style.display = hasAuth ? 'block' : 'none';
+  document.getElementById('config-logout-wrap').style.display = hasAuth ? 'block' : 'none';
+  document.getElementById('toggle-local-cache').checked = lcEnabled;
+  updateCacheToggleSub();
+  /* NEW: show cache count */
+  if (lcEnabled) {
+    dbGetThumbIds().then(ids => updateCacheStatus(ids.size, allPhotos.length)).catch(() => {});
+  }
+  document.getElementById('config-panel').classList.add('open');
+}
+
+function updateCacheToggleSub() {
+  document.getElementById('cache-toggle-sub').textContent = lcEnabled
+    ? 'Activé — vignettes stockées hors-ligne'
+    : 'Désactivé — vignettes chargées à la volée';
+}
+
+/* NEW: cache toggle handler */
+document.getElementById('toggle-local-cache').addEventListener('change', async (e) => {
+  lcEnabled = e.target.checked;
+  localStorage.setItem(LC_KEY, lcEnabled ? 'true' : 'false');
+  updateCacheToggleSub();
+  if (lcEnabled) {
+    showToast('Cache local activé — téléchargement en cours…', 4000);
+    updateCacheStatus(0, allPhotos.length);
+    backgroundCacheThumbs();
+  } else {
+    for (const [, url] of thumbBlobUrls) { try { URL.revokeObjectURL(url); } catch {} }
+    thumbBlobUrls.clear();
+    await dbClearThumbs().catch(() => {});
+    document.getElementById('cache-toggle-status').textContent = '';
+    showToast('Cache local désactivé');
+  }
 });
-async function silSync(cid){try{if(!ms){await initMs(cid);await ms.handleRedirectPromise()}const a=ms.getAllAccounts();if(!a.length)return;const r=await ms.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0]});_tk=r.accessToken;bgSync();startAuto()}catch{}}
+
+document.getElementById('btn-config-cancel').addEventListener('click', () => { document.getElementById('config-panel').classList.remove('open'); });
+
+document.getElementById('btn-config-logout').addEventListener('click', async () => {
+  try {
+    if (msalInstance) {
+      const accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0) { await msalInstance.logoutRedirect({ account: accounts[0] }).catch(() => {}); return; }
+    }
+  } finally {
+    localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
+    await dbClearMedia().catch(() => {});
+    await dbClearThumbs().catch(() => {}); /* NEW */
+    await dbDeleteMeta('scan_state').catch(() => {});
+    await dbDeleteMeta('deltaLink').catch(() => {});
+    for (const [, url] of thumbBlobUrls) { try { URL.revokeObjectURL(url); } catch {} }
+    thumbBlobUrls.clear();
+    stopAutoSync();
+    msalInstance = null; allPhotos = []; markers = [];
+    clusterGroup.clearLayers();
+    document.getElementById('config-panel').classList.remove('open');
+    document.getElementById('filter-bar').classList.remove('visible');
+    document.getElementById('stats-pill').style.display = 'none';
+    document.getElementById('btn-config').style.display = 'none';
+    document.getElementById('map-layer-toggle').classList.remove('visible'); /* NEW */
+    document.getElementById('photo-panel').classList.remove('open');
+    document.getElementById('splash').classList.remove('hidden');
+    setScanStatus('hidden');
+    showToast('Déconnecté avec succès');
+  }
+});
+
+document.getElementById('btn-config').addEventListener('click', showConfigPanel);
+
+document.getElementById('btn-login').addEventListener('click', () => {
+  if (!localStorage.getItem(STORAGE_KEY_CLIENT_ID)) localStorage.setItem(STORAGE_KEY_CLIENT_ID, DEFAULT_CLIENT_ID);
+  startApp();
+});
+
+document.getElementById('btn-connect').addEventListener('click', () => {
+  document.getElementById('config-panel').classList.remove('open');
+  startApp();
+});
+
+document.getElementById('btn-full-rescan').addEventListener('click', async () => {
+  document.getElementById('config-panel').classList.remove('open');
+  await dbDeleteMeta('deltaLink').catch(() => {});
+  await dbDeleteMeta('scan_state').catch(() => {});
+  runBackgroundSync();
+});
+
+document.getElementById('config-panel').addEventListener('click', e => {
+  if (e.target === document.getElementById('config-panel')) document.getElementById('config-panel').classList.remove('open');
+});
+
+/* ==========================================
+   INIT — ORIGINAL + load cached thumbs
+   ========================================== */
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
+  const hashOrSearch = window.location.hash + window.location.search;
+  const isAuthRedirectReturn = hashOrSearch.includes('code=') || hashOrSearch.includes('access_token') || hashOrSearch.includes('id_token') || hashOrSearch.includes('error=');
+
+  try {
+    const cached = await dbGetAllMedia();
+    if (cached.length > 0) {
+      allPhotos = cached;
+      if (lcEnabled) await loadCachedThumbs(); /* NEW */
+      updateUiWithCurrentPhotos(true);
+      document.getElementById('btn-config').style.display = 'inline-flex';
+      document.getElementById('map-layer-toggle').classList.add('visible'); /* NEW */
+      document.getElementById('splash').classList.add('hidden');
+      if (clientId && !isAuthRedirectReturn) trySilentBackgroundSync(clientId);
+    }
+  } catch (err) { console.warn('IndexedDB preload error:', err); }
+
+  if (clientId && isAuthRedirectReturn) startApp();
+});
+
+async function trySilentBackgroundSync(clientId) {
+  try {
+    if (!msalInstance) { await initMsal(clientId); await msalInstance.handleRedirectPromise(); }
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length === 0) return;
+    const result = await msalInstance.acquireTokenSilent({ scopes: ['Files.Read', 'User.Read'], account: accounts[0] });
+    _currentToken = result.accessToken;
+    runBackgroundSync();
+    startAutoSync(); /* NEW: also start auto sync on silent reconnect */
+  } catch {
+    console.log('Synchronisation silencieuse ignorée — reconnexion nécessaire.');
+  }
+}
 </script>
 </body>
 </html>
