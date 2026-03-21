@@ -9,64 +9,32 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
-
 <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 
 <style>
   :root {
-    --ink: #ffffff;
-    --text: #242424;
-    --text-secondary: #616161;
-    --accent: #0078D4;
-    --accent-light: #28A8EA;
-    --accent-dark: #0364B8;
-    --surface: #f5f5f5;
-    --surface-hover: #ebebeb;
-    --muted: #8a8886;
-    --panel: rgba(255,255,255,0.97);
-    --border: rgba(0,0,0,0.08);
-    --border-accent: rgba(0,120,212,0.3);
-    --danger: #d13438;
+    --ink: #ffffff; --text: #242424; --text-secondary: #616161;
+    --accent: #0078D4; --accent-light: #28A8EA; --accent-dark: #0364B8;
+    --surface: #f5f5f5; --surface-hover: #ebebeb; --muted: #8a8886;
+    --panel: rgba(255,255,255,0.97); --border: rgba(0,0,0,0.08);
+    --border-accent: rgba(0,120,212,0.3); --danger: #d13438;
     --shadow: rgba(0,0,0,0.08);
     --font-ui: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    --marker-size: 88px;
   }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: var(--font-ui);
-    background: var(--ink);
-    color: var(--text);
-    height: 100vh; height: 100dvh;
-    overflow: hidden;
-    overscroll-behavior: none;
-    -webkit-tap-highlight-color: transparent;
-  }
+  body { font-family: var(--font-ui); background: var(--ink); color: var(--text); height: 100vh; height: 100dvh; overflow: hidden; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 
   /* ===== TOPBAR ===== */
-  #topbar {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-    height: calc(56px + env(safe-area-inset-top, 0px));
-    padding-top: env(safe-area-inset-top, 0px);
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center;
-    padding-left: max(24px, env(safe-area-inset-left, 0px));
-    padding-right: max(24px, env(safe-area-inset-right, 0px));
-    gap: 16px;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 1px 4px var(--shadow);
-  }
+  #topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: calc(56px + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px); background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); gap: 16px; backdrop-filter: blur(12px); box-shadow: 0 1px 4px var(--shadow); }
   .logo { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.01em; color: var(--text); flex-shrink: 0; }
   .logo span { color: var(--accent); }
   .tagline { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; border-left: 1px solid var(--border); padding-left: 16px; flex-shrink: 0; }
   #topbar-right { margin-left: auto; display: flex; gap: 12px; align-items: center; flex-shrink: 1; min-width: 0; overflow: hidden; }
   #stats-pill { font-size: 0.75rem; color: var(--accent); background: rgba(0,120,212,0.08); border: 1px solid var(--border-accent); padding: 4px 12px; border-radius: 20px; display: none; white-space: nowrap; }
-
   #scan-status { display: none; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; white-space: nowrap; position: relative; overflow: hidden; min-width: 0; }
   #scan-status.visible { display: flex; }
   #scan-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: scan-pulse 1.5s ease-in-out infinite; }
@@ -91,14 +59,7 @@
   /* ===== MAP ===== */
   #map { position: fixed; top: calc(56px + env(safe-area-inset-top, 0px)); left: 0; right: 0; bottom: 0; z-index: 1; }
   .leaflet-tile { filter: saturate(0.85) contrast(1.05); }
-
-  /* Map layer toggle */
-  #map-layer-toggle {
-    position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; z-index: 500;
-    width: 44px; height: 44px; border-radius: 8px; border: 2px solid #fff;
-    background: var(--panel); cursor: pointer; overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none; padding: 0;
-  }
+  #map-layer-toggle { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; z-index: 500; width: 44px; height: 44px; border-radius: 8px; border: 2px solid #fff; background: var(--panel); cursor: pointer; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none; padding: 0; }
   #map-layer-toggle.visible { display: block; }
   #map-layer-toggle img { width: 100%; height: 100%; object-fit: cover; display: block; }
   #map-layer-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: #fff; font-size: 0.55rem; text-align: center; padding: 1px 0; font-weight: 600; }
@@ -134,11 +95,9 @@
   .panel-count { font-size: 0.7rem; color: var(--muted); margin-top: 6px; }
   .btn-close { background: transparent; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; padding: 4px 6px; line-height: 1; border-radius: 4px; }
   .btn-close:hover { color: var(--text); background: var(--surface); }
-
   #panel-photos { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: min-content; gap: 10px; align-content: start; }
   #panel-photos::-webkit-scrollbar { width: 4px; }
   #panel-photos::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
-
   .thumb-card { width: 100%; aspect-ratio: 1/1; overflow: hidden; border-radius: 8px; cursor: pointer; position: relative; background: var(--surface); border: 1px solid var(--border); transition: border-color 0.2s, transform 0.2s; box-shadow: 0 1px 4px var(--shadow); }
   .thumb-card:hover { border-color: var(--accent); transform: scale(1.02); }
   .thumb-card img, .thumb-card video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -148,23 +107,18 @@
   /* ===== LIGHTBOX ===== */
   #lightbox { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; flex-direction: column; gap: 10px; padding: 8px; }
   #lightbox.open { display: flex; }
-
   .lightbox-media-wrap { position: relative; display: flex; align-items: center; justify-content: center; width: 92vw; height: 80vh; flex-shrink: 1; min-height: 0; }
   #lightbox-img, #lightbox-video { display: none; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 0 80px rgba(0,0,0,0.85); }
-
-  /* HD loading indicator */
   .hd-badge { position: absolute; top: 16px; right: 16px; display: none; align-items: center; gap: 6px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; backdrop-filter: blur(8px); z-index: 10; }
   .hd-badge.visible { display: flex; }
   .hd-badge.done { background: rgba(46,160,67,0.7); }
   .hd-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: hd-spin 0.8s linear infinite; }
   @keyframes hd-spin { to{transform:rotate(360deg)} }
-
   .lightbox-info { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.82rem; flex-shrink: 0; }
   .lightbox-info strong { display: block; font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
   #lightbox-actions { margin-top: 10px; display: flex; justify-content: center; gap: 10px; }
   #lightbox-open-onedrive { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; font-weight: 600; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 28px; padding: 11px 26px; backdrop-filter: blur(12px); transition: background 0.15s, border-color 0.15s; }
   #lightbox-open-onedrive:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
-
   .lightbox-nav { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.6rem; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 3001; }
   .lightbox-nav:hover { background: rgba(255,255,255,0.3); }
   #lightbox-prev { left: 20px; }
@@ -172,14 +126,13 @@
   #lightbox-close { position: fixed; top: 24px; right: 24px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.4rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 3001; }
   #lightbox-close:hover { background: rgba(255,255,255,0.2); }
 
-  /* ===== MARKERS — uniform size ===== */
+  /* ===== MARKERS — uniform, SQUARE, forced cover ===== */
   .photo-marker-wrap { display: flex; flex-direction: column; align-items: center; cursor: pointer; filter: drop-shadow(0 4px 14px rgba(0,0,0,0.35)); transition: transform 0.15s; }
   .photo-marker-wrap:hover { transform: scale(1.08); }
-  .photo-marker { width: 72px; height: 72px; border-radius: 14px; overflow: hidden; border: 3px solid #fff; background: #e0e0e0; position: relative; flex-shrink: 0; }
-  .photo-marker > img, .photo-marker > video { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .photo-marker-count { position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.55); color: #fff; font-size: 11px; font-weight: 700; line-height: 1; padding: 2px 6px; border-radius: 8px; pointer-events: none; }
-  .photo-marker-tail { width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid #fff; margin-top: -2px; }
-
+  .photo-marker { width: var(--marker-size); height: var(--marker-size); border-radius: 16px; overflow: hidden; border: 3px solid #fff; background: #e0e0e0; position: relative; flex-shrink: 0; }
+  .photo-marker > img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; object-position: center !important; }
+  .photo-marker-count { position: absolute; bottom: 5px; left: 5px; background: rgba(0,0,0,0.55); color: #fff; font-size: 12px; font-weight: 700; line-height: 1; padding: 3px 7px; border-radius: 9px; pointer-events: none; }
+  .photo-marker-tail { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 10px solid #fff; margin-top: -2px; }
   .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background: none !important; border: none !important; box-shadow: none !important; }
   .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background: none !important; }
 
@@ -193,7 +146,7 @@
   .year-btn:hover { color: var(--text); border-color: var(--border); }
   .year-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
 
-  /* ===== CONFIG PANEL ===== */
+  /* ===== CONFIG ===== */
   #config-panel { position: fixed; inset: 0; z-index: 1500; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; }
   #config-panel.open { display: flex; }
   .config-box { background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 28px 28px 32px; max-width: 420px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.15); }
@@ -202,22 +155,23 @@
   .config-close-btn { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .config-buttons { display: flex; flex-direction: column; gap: 12px; }
   .config-btn { width: 100%; padding: 14px 24px; border-radius: 28px; font-size: 0.95rem; font-weight: 600; text-align: center; }
-
   .config-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); }
+  .config-toggle-info { flex: 1; min-width: 0; }
   .config-toggle-label { font-size: 0.88rem; font-weight: 500; color: var(--text); }
   .config-toggle-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .config-toggle-status { font-size: 0.68rem; color: var(--accent); margin-top: 3px; font-weight: 500; }
   .toggle-switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; margin-left: 12px; }
   .toggle-switch input { opacity: 0; width: 0; height: 0; }
   .toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 26px; cursor: pointer; transition: background 0.2s; }
   .toggle-slider::before { content:''; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
   .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
   .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
-
   #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 4000; background: #fff; border: 1px solid var(--border); color: var(--text); padding: 10px 20px; border-radius: 8px; font-size: 0.82rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 90vw; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
   #toast.show { opacity: 1; }
 
   /* ===== MOBILE ===== */
   @media (max-width: 600px) {
+    :root { --marker-size: 80px; }
     .tagline { display: none; }
     #topbar { height: calc(54px + env(safe-area-inset-top, 0px)); padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px)); gap: 8px; }
     .logo { font-size: 1.2rem; }
@@ -228,7 +182,6 @@
     #btn-config { font-size: 1.2rem; }
     #scan-status { font-size: 0.75rem; padding: 5px 10px; gap: 6px; max-width: 180px; }
     #scan-status-text { max-width: 100px; }
-    #lightbox-open-onedrive { font-size: 0.85rem; padding: 10px 22px; }
     #map { top: calc(54px + env(safe-area-inset-top, 0px)); }
     #map-layer-toggle { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: 12px; }
     #photo-panel { top: auto; right: 0; left: 0; bottom: 0; width: 100%; height: 72dvh; border-left: none; border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; transform: translateY(100%); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -263,10 +216,11 @@
     #toast { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); font-size: 0.85rem; border-radius: 24px; }
     .leaflet-control-zoom { margin-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important; margin-right: 12px !important; }
     .leaflet-control-zoom a { width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 1.2rem !important; }
-    .photo-marker { width: 62px; height: 62px; border-radius: 12px; border-width: 2.5px; }
-    .photo-marker-count { font-size: 10px; padding: 2px 5px; }
+    .photo-marker { border-radius: 14px; border-width: 2.5px; }
+    .photo-marker-count { font-size: 11px; }
   }
   @media (max-width: 375px) {
+    :root { --marker-size: 68px; }
     .logo { font-size: 1.05rem; }
     #stats-pill { display: none !important; }
     #panel-photos { grid-template-columns: repeat(2, 1fr); }
@@ -274,7 +228,6 @@
     .splash-globe { width: 72px; height: 72px; }
     .globe-icon { font-size: 1.8rem; }
     .year-btn { font-size: 0.78rem; padding: 5px 11px; }
-    .photo-marker { width: 54px; height: 54px; }
   }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -299,9 +252,8 @@
 </div>
 
 <div id="map"></div>
-
 <button id="map-layer-toggle" title="Changer le fond de carte">
-  <img id="map-layer-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10' font-family='sans-serif'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/>
+  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10' font-family='sans-serif'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/>
   <div id="map-layer-label">Satellite</div>
 </button>
 
@@ -366,9 +318,10 @@
         <button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button>
       </div>
       <div class="config-toggle" id="config-cache-toggle">
-        <div>
+        <div class="config-toggle-info">
           <div class="config-toggle-label">Cache local des vignettes</div>
           <div class="config-toggle-sub" id="cache-toggle-sub">Chargement instantané hors-ligne</div>
+          <div class="config-toggle-status" id="cache-toggle-status"></div>
         </div>
         <label class="toggle-switch">
           <input type="checkbox" id="toggle-local-cache">
@@ -389,7 +342,8 @@
 
 <script>
 /* ================================================================
-   PhotoMap v2.0 — Upgraded
+   PhotoMap v2.1 — Fixed: marker sizes, grey band, lightbox loading,
+   cache status, stale URL handling
    ================================================================ */
 const STORAGE_KEY_CLIENT_ID = 'photomap_client_id';
 const DB_NAME = 'photomap_db';
@@ -401,7 +355,6 @@ const DEFAULT_CLIENT_ID = '74655b12-46c1-4cdb-be1a-27655fa47677';
 const IMAGE_EXTENSIONS = new Set(['jpg','jpeg','png','heic','heif','webp','gif','bmp','tiff']);
 const VIDEO_EXTENSIONS = new Set(['mp4','mov','m4v','hevc','avi','webm','3gp','mkv']);
 const THUMBNAIL_TTL_MS = 4 * 60 * 60 * 1000;
-const MARKER_SIZE = 72;
 const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
 
 let msalInstance = null, allPhotos = [], markers = [], clusterGroup = null;
@@ -411,12 +364,17 @@ let lightboxPhotos = [], lightboxIndex = 0, panelAllPhotos = [];
 let _dbInstance = null, _currentToken = null;
 const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
-/* === LOCAL CACHE SETTING === */
+/* Marker size from CSS variable */
+function getMarkerSizePx() {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--marker-size').trim();
+  return parseInt(v) || 88;
+}
+
+/* === LOCAL CACHE === */
 const STORAGE_KEY_LOCAL_CACHE = 'photomap_local_thumb_cache';
 let localCacheEnabled = localStorage.getItem(STORAGE_KEY_LOCAL_CACHE) === 'true';
 const thumbObjectUrls = new Map();
 
-/* === MAP LAYERS === */
 let currentLayerType = 'standard';
 let standardLayer, satelliteLayer;
 
@@ -435,19 +393,8 @@ function openDb() {
     req.onerror = () => fail(req.error);
   });
 }
-async function dbPutMediaBatch(items) {
-  if (!items?.length) return;
-  const db = await openDb();
-  await new Promise((ok, fail) => {
-    const tx = db.transaction(STORE_MEDIA, 'readwrite'); const s = tx.objectStore(STORE_MEDIA);
-    for (const it of items) s.put({...it, date: it.date ? it.date.toISOString() : null, fetchedAt: it.fetchedAt || new Date().toISOString()});
-    tx.oncomplete = ok; tx.onerror = () => fail(tx.error); tx.onabort = () => fail(tx.error);
-  });
-}
-async function dbGetAllMedia() {
-  const db = await openDb();
-  return new Promise((ok, fail) => { const req = db.transaction(STORE_MEDIA,'readonly').objectStore(STORE_MEDIA).getAll(); req.onsuccess = () => ok((req.result||[]).map(i => ({...i, date: i.date ? new Date(i.date) : null}))); req.onerror = () => fail(req.error); });
-}
+async function dbPutMediaBatch(items) { if (!items?.length) return; const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_MEDIA,'readwrite'); const s = tx.objectStore(STORE_MEDIA); for (const it of items) s.put({...it, date: it.date ? it.date.toISOString() : null, fetchedAt: it.fetchedAt || new Date().toISOString()}); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
+async function dbGetAllMedia() { const db = await openDb(); return new Promise((ok, fail) => { const req = db.transaction(STORE_MEDIA,'readonly').objectStore(STORE_MEDIA).getAll(); req.onsuccess = () => ok((req.result||[]).map(i => ({...i, date: i.date ? new Date(i.date) : null}))); req.onerror = () => fail(req.error); }); }
 async function dbClearMedia() { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_MEDIA,'readwrite'); tx.objectStore(STORE_MEDIA).clear(); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
 async function dbSetMeta(k, v) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_META,'readwrite'); tx.objectStore(STORE_META).put({key:k,value:v}); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
 async function dbGetMeta(k) { const db = await openDb(); return new Promise((ok, fail) => { const req = db.transaction(STORE_META,'readonly').objectStore(STORE_META).get(k); req.onsuccess = () => ok(req.result?.value ?? null); req.onerror = () => fail(req.error); }); }
@@ -488,28 +435,45 @@ async function downloadAndCacheThumb(photo) {
 }
 
 let _thumbCacheRunning = false;
+let _thumbCacheCached = 0;
+let _thumbCacheTotal = 0;
+
 async function backgroundCacheThumbs() {
   if (!localCacheEnabled || _thumbCacheRunning) return;
   _thumbCacheRunning = true;
   try {
     const cachedIds = await dbGetAllThumbIds();
     const missing = allPhotos.filter(p => !cachedIds.has(p.id) && p.thumbnailUrl);
+    _thumbCacheTotal = allPhotos.length;
+    _thumbCacheCached = cachedIds.size;
+    updateCacheStatus();
+
     for (let i = 0; i < missing.length; i++) {
       if (!localCacheEnabled) break;
       await downloadAndCacheThumb(missing[i]);
+      _thumbCacheCached++;
+      if (i % 5 === 0) updateCacheStatus();
       if (i % 10 === 9) await new Promise(r => setTimeout(r, 100));
     }
+    updateCacheStatus();
   } catch (err) { console.warn('Thumb cache error:', err); }
   finally { _thumbCacheRunning = false; }
 }
 
-/* ==================== MAP ==================== */
-const map = L.map('map', {
-  center: [20, 0], zoom: 2, zoomControl: false, minZoom: 2,
-  maxBoundsViscosity: 0,
-  worldCopyJump: true
-});
+function updateCacheStatus() {
+  const el = document.getElementById('cache-toggle-status');
+  if (!el) return;
+  if (!localCacheEnabled) { el.textContent = ''; return; }
+  if (_thumbCacheTotal === 0) { el.textContent = ''; return; }
+  if (_thumbCacheCached >= _thumbCacheTotal) {
+    el.textContent = `✓ ${_thumbCacheCached} vignettes en cache`;
+  } else {
+    el.textContent = `⟳ ${_thumbCacheCached} / ${_thumbCacheTotal} vignettes téléchargées…`;
+  }
+}
 
+/* ==================== MAP ==================== */
+const map = L.map('map', { center: [20, 0], zoom: 2, zoomControl: false, minZoom: 2, maxBoundsViscosity: 0, worldCopyJump: true });
 standardLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19, noWrap: false });
 satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri', maxZoom: 19, noWrap: false });
 standardLayer.addTo(map);
@@ -528,10 +492,11 @@ clusterGroup = L.markerClusterGroup({
     const first = cluster.getAllChildMarkers()[0]?._photoData;
     const src = first ? getThumbSrc(first) : FALLBACK_ICON;
     const pid = first?.id || '';
+    const sz = getMarkerSizePx();
     return L.divIcon({
       className: '',
       html: `<div class="photo-marker-wrap"><div class="photo-marker"><img src="${src}" loading="lazy" data-photo-id="${pid}" onerror="this.src='${FALLBACK_ICON}'"/><div class="photo-marker-count">${count}</div></div><div class="photo-marker-tail"></div></div>`,
-      iconSize: [MARKER_SIZE, MARKER_SIZE+10], iconAnchor: [MARKER_SIZE/2, MARKER_SIZE+10]
+      iconSize: [sz, sz+12], iconAnchor: [sz/2, sz+12]
     });
   }
 });
@@ -542,7 +507,6 @@ let toastTimer = null;
 function showToast(msg, dur=3000) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); if (toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), dur); }
 function setLoading(v, msg='', p=0) { const el = document.getElementById('loading-overlay'); el.classList.toggle('visible',v); if (msg) document.getElementById('loading-msg').textContent = msg; document.getElementById('progress-fill').style.width = p+'%'; isLoading = v; }
 function setLoadingCount(n) { document.getElementById('loading-count').textContent = n; }
-
 function setScanStatus(state, text, count, progress) {
   const el = document.getElementById('scan-status'), te = document.getElementById('scan-status-text'), ce = document.getElementById('scan-status-count'), fe = document.getElementById('scan-progress-fill');
   if (state === 'hidden') { el.style.display = 'none'; el.classList.remove('visible','paused','done','error'); return; }
@@ -644,7 +608,6 @@ async function runDeltaSync() {
   let url = deltaLink || DELTA_BASE_URL;
   const isFirst = !deltaLink;
   setScanStatus('scanning', isFirst ? 'Premier scan…' : 'Synchronisation…', isFirst ? '' : eCount+' en cache', 2);
-
   let scanned=0, added=0, deleted=0, newDelta=null;
   const batch = [];
 
@@ -653,7 +616,6 @@ async function runDeltaSync() {
     for (const item of (data.value||[])) {
       scanned++;
       if (scanned%50===0) setScanStatus('scanning', isFirst?`Analyse… ${scanned} fichiers`:`Synchro… ${scanned} changements`, isFirst?(eCount+added)+' trouvés':(added>0?`+${added} nouveaux`:'vérification…'), Math.min(5+scanned*0.005,95));
-
       if (item.deleted) { if (eMap.has(item.id)) { eMap.delete(item.id); await dbDeleteMediaItem(item.id); if (localCacheEnabled) dbDeleteThumb(item.id).catch(()=>{}); deleted++; } continue; }
       if (item.folder || !isMediaFile(item)) continue;
 
@@ -669,21 +631,17 @@ async function runDeltaSync() {
         continue;
       }
       if (isFirst && eMap.has(item.id)) continue;
-
       const lat=item.location?.latitude, lng=item.location?.longitude;
-      if (lat==null||lng==null||lat===0&&lng===0) continue;
+      if (lat==null||lng==null||(lat===0&&lng===0)) continue;
       const tu = await getThumbnail(item.id);
       const dt = item.photo?.takenDateTime || item.createdDateTime;
       const mi = { id:item.id, name:item.name, lat:Number(lat), lng:Number(lng), date:dt?new Date(dt):null, thumbnailUrl:tu, downloadUrl:item['@microsoft.graph.downloadUrl']||tu, webUrl:item.webUrl||null, mediaType:isVideoByName(item.name)?'video':'image', fetchedAt:new Date().toISOString() };
       eMap.set(item.id, mi); batch.push(mi); added++;
       if (localCacheEnabled && tu) downloadAndCacheThumb(mi).catch(()=>{});
-
       const ft = (eCount+added)<50 ? 5 : 25;
       if (batch.length>=ft) {
         await dbPutMediaBatch(batch); batch.length=0;
-        allPhotos=[...eMap.values()];
-        updateUiWithCurrentPhotos(eCount===0 && added<=ft);
-        setScanStatus('scanning', isFirst?`Analyse… ${scanned} fichiers`:`Synchro… ${scanned} changements`, isFirst?(eCount+added)+' trouvés':`+${added} nouveaux`, Math.min(5+scanned*0.005,95));
+        allPhotos=[...eMap.values()]; updateUiWithCurrentPhotos(eCount===0 && added<=ft);
       }
     }
     url = data['@odata.nextLink'] || (newDelta=data['@odata.deltaLink']||null, null);
@@ -700,7 +658,6 @@ async function runDeltaSync() {
   if (localCacheEnabled) setTimeout(backgroundCacheThumbs, 2000);
   return allPhotos;
 }
-
 async function runBackgroundSync() { if (backgroundSyncRunning) return; backgroundSyncRunning=true; try { await runDeltaSync(); } catch(e) { console.warn('Sync error',e); setScanStatus('error','Sync interrompue','',0); setTimeout(()=>setScanStatus('hidden'),4000); } finally { backgroundSyncRunning=false; } }
 function startAutoSync() { if(autoSyncTimer) clearInterval(autoSyncTimer); autoSyncTimer = setInterval(()=>{ if(_currentToken&&!backgroundSyncRunning) runBackgroundSync(); }, AUTO_SYNC_INTERVAL_MS); }
 function stopAutoSync() { if(autoSyncTimer){clearInterval(autoSyncTimer);autoSyncTimer=null;} }
@@ -720,10 +677,11 @@ function createMarker(photo, fIdSet) {
   const src = getThumbSrc(photo), pid = photo.id;
   const nearby = getNearbyPhotos(photo.lat, photo.lng, fIdSet);
   const badge = nearby.length>1 ? `<div class="photo-marker-count">${nearby.length}</div>` : '';
+  const sz = getMarkerSizePx();
   const icon = L.divIcon({
     className: '',
     html: `<div class="photo-marker-wrap"><div class="photo-marker"><img src="${src}" loading="lazy" data-photo-id="${pid}" onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${pid}', this);"/>${badge}</div><div class="photo-marker-tail"></div></div>`,
-    iconSize: [MARKER_SIZE, MARKER_SIZE+10], iconAnchor: [MARKER_SIZE/2, MARKER_SIZE+10]
+    iconSize: [sz, sz+12], iconAnchor: [sz/2, sz+12]
   });
   const m = L.marker([photo.lat, photo.lng], {icon});
   m.on('click', () => { const np = getNearbyPhotos(photo.lat,photo.lng,fIdSet); openPanel(np.length?np:[photo], photo.lat, photo.lng); });
@@ -756,7 +714,11 @@ function renderPanelPhotos() {
   panelAllPhotos.forEach((photo,idx) => {
     const card=document.createElement('div'); card.className='thumb-card';
     const ds = photo.date ? photo.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : '';
-    const img=document.createElement('img'); img.src=getThumbSrc(photo); img.loading='lazy'; img.decoding='async'; img.alt=photo.name; img.dataset.photoId=photo.id;
+    const img=document.createElement('img');
+    img.src=getThumbSrc(photo);
+    img.loading='lazy'; img.decoding='async'; img.alt=photo.name; img.dataset.photoId=photo.id;
+    /* Force cover style inline as extra safety */
+    img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;';
     img.onerror = function() { this.src=FALLBACK_ICON; queueThumbnailRefresh(photo.id,this); };
     const ov=document.createElement('div'); ov.className='thumb-overlay'; ov.innerHTML=`${escapeHtml(photo.name)}<br>${ds}`;
     card.appendChild(img); card.appendChild(ov);
@@ -766,10 +728,14 @@ function renderPanelPhotos() {
 }
 
 /* ==================== LIGHTBOX WITH HD ==================== */
-let _hdAbort = null;
+/*
+ * FIX: The core issue was that without local cache, thumbnailUrl can be expired.
+ * The lightbox showed thumbSrc (expired URL) → broken image.
+ * Now: if the URL looks stale, we FIRST refresh URLs before trying to display,
+ * and we always show FALLBACK_ICON as initial placeholder if URL is stale.
+ */
 function showLightboxPhoto() {
   if (!lightboxPhotos.length) return;
-  if (_hdAbort) { _hdAbort.abort(); _hdAbort=null; }
   const photo = lightboxPhotos[lightboxIndex];
   const lb=document.getElementById('lightbox'), img=document.getElementById('lightbox-img'), video=document.getElementById('lightbox-video');
   const hdLoad=document.getElementById('hd-loader'), hdDone=document.getElementById('hd-done'), openBtn=document.getElementById('lightbox-open-onedrive');
@@ -778,33 +744,68 @@ function showLightboxPhoto() {
   video.onloadedmetadata=null; img.onload=null; img.onerror=null;
   video.pause(); try{video.removeAttribute('src');video.load();}catch{}
 
-  const thumbSrc = getThumbSrc(photo);
-  const fullSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
   const currentId = photo.id;
+  const stale = isUrlStale(photo) && !localCacheEnabled;
 
-  if (photo.mediaType==='video') {
-    video.src=fullSrc; video.style.display='block';
+  /* Get best available thumb src (local blob or remote URL) */
+  const thumbSrc = stale ? FALLBACK_ICON : getThumbSrc(photo);
+  const fullSrc = stale ? null : (photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || null);
+
+  if (photo.mediaType === 'video') {
+    video.style.display = 'block';
+    if (stale && _currentToken) {
+      hdLoad.classList.add('visible');
+      refreshMediaUrls(photo).then(() => {
+        if (lightboxPhotos[lightboxIndex]?.id!==currentId) return;
+        video.src = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || '';
+        hdLoad.classList.remove('visible');
+      }).catch(() => hdLoad.classList.remove('visible'));
+    } else {
+      video.src = fullSrc || '';
+    }
   } else {
-    img.src=thumbSrc; img.style.display='block';
-    /* Load HD */
-    if (fullSrc && fullSrc!==thumbSrc && fullSrc!==FALLBACK_ICON) {
+    img.src = thumbSrc;
+    img.style.display = 'block';
+    img.onerror = () => { img.src = FALLBACK_ICON; };
+
+    if (stale && _currentToken) {
+      /* URLs are expired: refresh first, then load thumb + HD */
+      hdLoad.classList.add('visible');
+      refreshMediaUrls(photo).then(() => {
+        if (lightboxPhotos[lightboxIndex]?.id!==currentId) return;
+        /* Now URLs are fresh — show thumb first */
+        const freshThumb = getThumbSrc(photo);
+        img.src = freshThumb;
+        /* Then load HD */
+        const freshFull = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl;
+        if (freshFull && freshFull !== freshThumb) {
+          const hd = new Image();
+          hd.onload = () => { if(lightboxPhotos[lightboxIndex]?.id===currentId){img.src=hd.src; hdLoad.classList.remove('visible'); hdDone.classList.add('visible'); setTimeout(()=>{if(lightboxPhotos[lightboxIndex]?.id===currentId)hdDone.classList.remove('visible');},2000);} };
+          hd.onerror = () => { hdLoad.classList.remove('visible'); };
+          hd.src = freshFull;
+        } else {
+          hdLoad.classList.remove('visible');
+        }
+      }).catch(() => { hdLoad.classList.remove('visible'); });
+    } else if (fullSrc && fullSrc !== thumbSrc && fullSrc !== FALLBACK_ICON) {
+      /* URLs are fresh: show thumb immediately, load HD in background */
       hdLoad.classList.add('visible');
       const hd = new Image();
-      hd.onload = () => { if (lightboxPhotos[lightboxIndex]?.id!==currentId) return; img.src=hd.src; hdLoad.classList.remove('visible'); hdDone.classList.add('visible'); setTimeout(()=>{ if(lightboxPhotos[lightboxIndex]?.id===currentId) hdDone.classList.remove('visible'); },2000); };
+      hd.onload = () => { if(lightboxPhotos[lightboxIndex]?.id!==currentId) return; img.src=hd.src; hdLoad.classList.remove('visible'); hdDone.classList.add('visible'); setTimeout(()=>{if(lightboxPhotos[lightboxIndex]?.id===currentId)hdDone.classList.remove('visible');},2000); };
       hd.onerror = () => {
-        if (lightboxPhotos[lightboxIndex]?.id!==currentId) return;
+        if(lightboxPhotos[lightboxIndex]?.id!==currentId) return;
         hdLoad.classList.remove('visible');
-        if (isUrlStale(photo) && _currentToken) {
+        /* Try refreshing if the full URL failed */
+        if (_currentToken) {
           refreshMediaUrls(photo).then(() => {
-            if (lightboxPhotos[lightboxIndex]?.id!==currentId) return;
+            if(lightboxPhotos[lightboxIndex]?.id!==currentId) return;
             const ns = photo.downloadUrl||photo.thumbnailUrl;
-            if (ns) { hdLoad.classList.add('visible'); const r=new Image(); r.onload=()=>{ if(lightboxPhotos[lightboxIndex]?.id===currentId){img.src=r.src;hdLoad.classList.remove('visible');hdDone.classList.add('visible');setTimeout(()=>hdDone.classList.remove('visible'),2000);} }; r.onerror=()=>hdLoad.classList.remove('visible'); r.src=ns; }
+            if (ns) { const r=new Image(); r.onload=()=>{if(lightboxPhotos[lightboxIndex]?.id===currentId){img.src=r.src;hdDone.classList.add('visible');setTimeout(()=>hdDone.classList.remove('visible'),2000);}}; r.src=ns; }
           }).catch(()=>{});
         }
       };
       hd.src = fullSrc;
     }
-    img.onerror = () => { img.src = photo.thumbnailUrl || FALLBACK_ICON; };
   }
 
   document.getElementById('lightbox-name').textContent = photo.name;
@@ -828,7 +829,7 @@ document.getElementById('lightbox-open-onedrive').addEventListener('click', e =>
 document.addEventListener('keydown', e => { const lb=document.getElementById('lightbox'); if(!lb.classList.contains('open'))return; if(e.key==='Escape')lb.classList.remove('open'); if(e.key==='ArrowLeft'){lightboxIndex=(lightboxIndex-1+lightboxPhotos.length)%lightboxPhotos.length;showLightboxPhoto();} if(e.key==='ArrowRight'){lightboxIndex=(lightboxIndex+1)%lightboxPhotos.length;showLightboxPhoto();} });
 document.addEventListener('keydown', e => { if(e.key==='Escape') document.getElementById('photo-panel').classList.remove('open'); });
 
-/* Touch swipe */
+/* Touch */
 (function() {
   let sx=0,sy=0; const T=50, lb=document.getElementById('lightbox');
   lb.addEventListener('touchstart', e=>{sx=e.changedTouches[0].screenX;sy=e.changedTouches[0].screenY;},{passive:true});
@@ -889,6 +890,14 @@ function showConfigPanel() {
   document.getElementById('config-logout-wrap').style.display=hasAuth?'block':'none';
   document.getElementById('toggle-local-cache').checked=localCacheEnabled;
   updateCacheSub();
+  /* Update cache status count when opening config */
+  if (localCacheEnabled) {
+    dbGetAllThumbIds().then(ids => {
+      _thumbCacheCached = ids.size;
+      _thumbCacheTotal = allPhotos.length;
+      updateCacheStatus();
+    }).catch(()=>{});
+  }
   document.getElementById('config-panel').classList.add('open');
 }
 function updateCacheSub() { document.getElementById('cache-toggle-sub').textContent = localCacheEnabled ? 'Activé — vignettes stockées hors-ligne' : 'Désactivé — vignettes chargées à la volée'; }
@@ -896,8 +905,17 @@ function updateCacheSub() { document.getElementById('cache-toggle-sub').textCont
 document.getElementById('toggle-local-cache').addEventListener('change', async e => {
   localCacheEnabled=e.target.checked; localStorage.setItem(STORAGE_KEY_LOCAL_CACHE, localCacheEnabled?'true':'false');
   updateCacheSub();
-  if(localCacheEnabled){showToast('Cache local activé — téléchargement en cours…',4000);backgroundCacheThumbs();}
-  else{for(const[,u]of thumbObjectUrls)try{URL.revokeObjectURL(u);}catch{}thumbObjectUrls.clear();await dbClearThumbs().catch(()=>{});showToast('Cache local désactivé');}
+  if(localCacheEnabled){
+    showToast('Cache local activé — téléchargement en cours…',4000);
+    _thumbCacheTotal = allPhotos.length; _thumbCacheCached = 0;
+    updateCacheStatus();
+    backgroundCacheThumbs();
+  } else {
+    for(const[,u]of thumbObjectUrls)try{URL.revokeObjectURL(u);}catch{}thumbObjectUrls.clear();
+    await dbClearThumbs().catch(()=>{});
+    document.getElementById('cache-toggle-status').textContent = '';
+    showToast('Cache local désactivé');
+  }
 });
 
 document.getElementById('btn-config-cancel').addEventListener('click', ()=>document.getElementById('config-panel').classList.remove('open'));
@@ -918,7 +936,6 @@ document.getElementById('btn-config-logout').addEventListener('click', async()=>
     setScanStatus('hidden'); showToast('Déconnecté avec succès');
   }
 });
-
 document.getElementById('btn-config').addEventListener('click', showConfigPanel);
 document.getElementById('btn-login').addEventListener('click', ()=>{if(!localStorage.getItem(STORAGE_KEY_CLIENT_ID))localStorage.setItem(STORAGE_KEY_CLIENT_ID,DEFAULT_CLIENT_ID);startApp();});
 document.getElementById('btn-connect').addEventListener('click', ()=>{document.getElementById('config-panel').classList.remove('open');startApp();});
