@@ -41,1067 +41,231 @@
     font-family: var(--font-ui);
     background: var(--ink);
     color: var(--text);
-    height: 100vh;
-    height: 100dvh;
+    height: 100vh; height: 100dvh;
     overflow: hidden;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* ===== TOPBAR ===== */
   #topbar {
     position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
     height: calc(56px + env(safe-area-inset-top, 0px));
     padding-top: env(safe-area-inset-top, 0px);
     background: var(--panel);
     border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); gap: 16px;
+    display: flex; align-items: center;
+    padding-left: max(24px, env(safe-area-inset-left, 0px));
+    padding-right: max(24px, env(safe-area-inset-right, 0px));
+    gap: 16px;
     backdrop-filter: blur(12px);
     box-shadow: 0 1px 4px var(--shadow);
   }
-
-  .logo {
-    font-family: var(--font-ui);
-    font-size: 1.35rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: var(--text);
-    flex-shrink: 0;
-  }
+  .logo { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.01em; color: var(--text); flex-shrink: 0; }
   .logo span { color: var(--accent); }
+  .tagline { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; border-left: 1px solid var(--border); padding-left: 16px; flex-shrink: 0; }
+  #topbar-right { margin-left: auto; display: flex; gap: 12px; align-items: center; flex-shrink: 1; min-width: 0; overflow: hidden; }
+  #stats-pill { font-size: 0.75rem; color: var(--accent); background: rgba(0,120,212,0.08); border: 1px solid var(--border-accent); padding: 4px 12px; border-radius: 20px; display: none; white-space: nowrap; }
 
-  .tagline {
-    font-size: 0.75rem;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    border-left: 1px solid var(--border);
-    padding-left: 16px;
-    flex-shrink: 0;
-  }
-
-  #topbar-right {
-    margin-left: auto;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-shrink: 1;
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  #stats-pill {
-    font-size: 0.75rem;
-    color: var(--accent);
-    background: rgba(0,120,212,0.08);
-    border: 1px solid var(--border-accent);
-    padding: 4px 12px;
-    border-radius: 20px;
-    letter-spacing: 0.02em;
-    display: none;
-    white-space: nowrap;
-  }
-
-  #scan-status {
-    display: none;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.72rem;
-    color: var(--text-secondary);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 4px 12px;
-    border-radius: 20px;
-    white-space: nowrap;
-    position: relative;
-    overflow: hidden;
-    min-width: 0;
-  }
-
+  #scan-status { display: none; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; white-space: nowrap; position: relative; overflow: hidden; min-width: 0; }
   #scan-status.visible { display: flex; }
+  #scan-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: scan-pulse 1.5s ease-in-out infinite; }
+  #scan-status.paused #scan-status-dot { background: #f0a030; animation: none; }
+  #scan-status.done #scan-status-dot { background: #2ea043; animation: none; }
+  #scan-status.error #scan-status-dot { background: var(--danger); animation: none; }
+  @keyframes scan-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  #scan-status-text { overflow: hidden; text-overflow: ellipsis; }
+  #scan-status-count { font-weight: 600; color: var(--accent); }
+  #scan-progress-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; }
+  #scan-progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s ease; border-radius: 0 0 20px 20px; }
 
-  #scan-status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--accent);
-    flex-shrink: 0;
-    animation: scan-pulse 1.5s ease-in-out infinite;
-  }
-
-  #scan-status.paused #scan-status-dot {
-    background: #f0a030;
-    animation: none;
-  }
-
-  #scan-status.done #scan-status-dot {
-    background: #2ea043;
-    animation: none;
-  }
-
-  #scan-status.error #scan-status-dot {
-    background: var(--danger);
-    animation: none;
-  }
-
-  @keyframes scan-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  #scan-status-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  #scan-status-count {
-    font-weight: 600;
-    color: var(--accent);
-  }
-
-  #scan-progress-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: transparent;
-  }
-
-  #scan-progress-fill {
-    height: 100%;
-    background: var(--accent);
-    width: 0%;
-    transition: width 0.5s ease;
-    border-radius: 0 0 20px 20px;
-  }
-
-  .btn {
-    font-family: var(--font-ui);
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    border: none;
-    cursor: pointer;
-    padding: 8px 20px;
-    border-radius: 6px;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
-  /* Bouton config : toujours une icône ronde */
-  #btn-config {
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 1.1rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #fff;
-  }
+  .btn { font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600; border: none; cursor: pointer; padding: 8px 20px; border-radius: 6px; transition: all 0.15s; white-space: nowrap; }
+  #btn-config { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .btn-primary { background: var(--accent); color: #fff; }
   .btn-primary:hover { background: var(--accent-dark); }
-
-  .btn-ghost {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-
-  .btn-danger {
-    background: transparent;
-    color: var(--danger);
-    border: 1px solid rgba(209,52,56,0.3);
-  }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(209,52,56,0.3); }
   .btn-danger:hover { background: rgba(209,52,56,0.08); border-color: var(--danger); }
 
-  #map {
-    position: fixed;
-    top: calc(56px + env(safe-area-inset-top, 0px)); left: 0; right: 0; bottom: 0;
-    z-index: 1;
-  }
+  /* ===== MAP ===== */
+  #map { position: fixed; top: calc(56px + env(safe-area-inset-top, 0px)); left: 0; right: 0; bottom: 0; z-index: 1; }
+  .leaflet-tile { filter: saturate(0.85) contrast(1.05); }
 
-  .leaflet-tile {
-    filter: saturate(0.85) contrast(1.05);
+  /* Map layer toggle */
+  #map-layer-toggle {
+    position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; z-index: 500;
+    width: 44px; height: 44px; border-radius: 8px; border: 2px solid #fff;
+    background: var(--panel); cursor: pointer; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none; padding: 0;
   }
+  #map-layer-toggle.visible { display: block; }
+  #map-layer-toggle img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #map-layer-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: #fff; font-size: 0.55rem; text-align: center; padding: 1px 0; font-weight: 600; }
 
-  #splash {
-    position: fixed; inset: 0; z-index: 2000;
-    background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 50%, #e8f0fe 100%);
-    display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 32px;
-    transition: opacity 0.6s, visibility 0.6s;
-  }
-
-  #splash.hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .splash-globe {
-    width: 120px; height: 120px;
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    position: relative;
-    animation: spinGlobe 12s linear infinite;
-    display: flex; align-items: center; justify-content: center;
-  }
-
-  .splash-globe::before {
-    content: '';
-    position: absolute; inset: 8px;
-    border: 1px solid var(--border-accent);
-    border-radius: 50%;
-    animation: spinGlobe 8s linear infinite reverse;
-  }
-
+  /* ===== SPLASH ===== */
+  #splash { position: fixed; inset: 0; z-index: 2000; background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 50%, #e8f0fe 100%); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 32px; transition: opacity 0.6s, visibility 0.6s; }
+  #splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .splash-globe { width: 120px; height: 120px; border: 2px solid var(--accent); border-radius: 50%; position: relative; animation: spinGlobe 12s linear infinite; display: flex; align-items: center; justify-content: center; }
+  .splash-globe::before { content:''; position: absolute; inset: 8px; border: 1px solid var(--border-accent); border-radius: 50%; animation: spinGlobe 8s linear infinite reverse; }
   .globe-icon { font-size: 3rem; }
-
-  @keyframes spinGlobe {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  .splash-title {
-    font-family: var(--font-ui);
-    font-size: 2.8rem;
-    font-weight: 700;
-    text-align: center;
-    line-height: 1.1;
-    color: var(--text);
-  }
-
+  @keyframes spinGlobe { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  .splash-title { font-size: 2.8rem; font-weight: 700; text-align: center; line-height: 1.1; color: var(--text); }
   .splash-title span { color: var(--accent); }
+  .splash-sub { color: var(--text-secondary); font-size: 0.95rem; text-align: center; max-width: 380px; line-height: 1.6; }
+  #btn-login { padding: 15px 44px; font-size: 0.95rem; border-radius: 32px; box-shadow: 0 4px 18px rgba(0,120,212,0.35); }
+  #btn-login:hover { box-shadow: 0 6px 24px rgba(0,120,212,0.45); transform: translateY(-1px); }
+  .splash-note { font-size: 0.72rem; color: var(--muted); text-align: center; max-width: 320px; line-height: 1.5; }
 
-  .splash-sub {
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    text-align: center;
-    max-width: 380px;
-    line-height: 1.6;
-  }
-
-  #btn-login {
-    padding: 15px 44px;
-    font-size: 0.95rem;
-    border-radius: 32px;
-    letter-spacing: 0.01em;
-    box-shadow: 0 4px 18px rgba(0,120,212,0.35);
-  }
-
-  #btn-login:hover {
-    box-shadow: 0 6px 24px rgba(0,120,212,0.45);
-    transform: translateY(-1px);
-  }
-
-  .splash-note {
-    font-size: 0.72rem;
-    color: var(--muted);
-    text-align: center;
-    max-width: 320px;
-    line-height: 1.5;
-  }
-
-  #loading-overlay {
-    position: fixed; inset: 0; z-index: 1900;
-    background: rgba(255,255,255,0.92);
-    flex-direction: column;
-    align-items: center; justify-content: center; gap: 24px;
-    display: none;
-  }
-
+  /* ===== LOADING ===== */
+  #loading-overlay { position: fixed; inset: 0; z-index: 1900; background: rgba(255,255,255,0.92); flex-direction: column; align-items: center; justify-content: center; gap: 24px; display: none; }
   #loading-overlay.visible { display: flex; }
+  .loading-msg { font-size: 0.9rem; color: var(--text-secondary); text-align: center; }
+  .progress-bar-wrap { width: 300px; height: 3px; background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.4s ease; }
+  #loading-count { font-size: 2rem; font-weight: 700; color: var(--accent); }
 
-  .loading-msg {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    text-align: center;
-    max-width: 80vw;
-  }
-
-  .progress-bar-wrap {
-    width: 300px; height: 3px;
-    background: rgba(0,0,0,0.08);
-    border-radius: 2px; overflow: hidden;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    width: 0%;
-    transition: width 0.4s ease;
-  }
-
-  #loading-count {
-    font-family: var(--font-ui);
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--accent);
-  }
-
-  /* PANEL */
-  #photo-panel {
-    position: fixed;
-    right: 0;
-    top: calc(56px + env(safe-area-inset-top, 0px));
-    bottom: 0;
-    z-index: 500;
-    width: 420px;
-    background: var(--panel);
-    border-left: 1px solid var(--border);
-    backdrop-filter: blur(16px);
-    box-shadow: -2px 0 12px var(--shadow);
-    transform: translateX(100%);
-    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
+  /* ===== PANEL ===== */
+  #photo-panel { position: fixed; right: 0; top: calc(56px + env(safe-area-inset-top, 0px)); bottom: 0; z-index: 500; width: 420px; background: var(--panel); border-left: 1px solid var(--border); backdrop-filter: blur(16px); box-shadow: -2px 0 12px var(--shadow); transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; overflow: hidden; }
   #photo-panel.open { transform: translateX(0); }
+  .panel-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; }
+  .panel-location { font-size: 1.1rem; font-weight: 600; line-height: 1.3; max-width: 250px; color: var(--text); }
+  .panel-date { font-size: 0.72rem; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
+  .panel-count { font-size: 0.7rem; color: var(--muted); margin-top: 6px; }
+  .btn-close { background: transparent; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; padding: 4px 6px; line-height: 1; border-radius: 4px; }
+  .btn-close:hover { color: var(--text); background: var(--surface); }
 
-  .panel-header {
-    padding: 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-  }
-
-  .panel-location {
-    font-family: var(--font-ui);
-    font-size: 1.1rem;
-    font-weight: 600;
-    line-height: 1.3;
-    max-width: 250px;
-    color: var(--text);
-  }
-
-  .panel-date {
-    font-size: 0.72rem;
-    color: var(--accent);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin-top: 4px;
-  }
-
-  .panel-count {
-    font-size: 0.7rem;
-    color: var(--muted);
-    margin-top: 6px;
-  }
-
-  .btn-close {
-    background: transparent;
-    border: none;
-    color: var(--muted);
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 4px 6px;
-    line-height: 1;
-    transition: color 0.2s;
-    border-radius: 4px;
-  }
-
-  .btn-close:hover {
-    color: var(--text);
-    background: var(--surface);
-  }
-
-  #panel-photos {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding: 16px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: min-content;
-    gap: 10px;
-    align-content: start;
-  }
-
+  #panel-photos { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: min-content; gap: 10px; align-content: start; }
   #panel-photos::-webkit-scrollbar { width: 4px; }
-  #panel-photos::-webkit-scrollbar-track { background: transparent; }
   #panel-photos::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
 
-  .thumb-card {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-    border-radius: 8px;
-    cursor: pointer;
-    position: relative;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    transition: border-color 0.2s, transform 0.2s;
-    box-shadow: 0 1px 4px var(--shadow);
-  }
-
-  .thumb-card:hover {
-    border-color: var(--accent);
-    transform: scale(1.02);
-  }
-
-  .thumb-card img,
-  .thumb-card video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transform: none !important;
-    filter: none !important;
-    border-radius: 0;
-  }
-
-  .thumb-card .thumb-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, transparent 55%);
-    opacity: 0;
-    transition: opacity 0.2s;
-    display: flex;
-    align-items: flex-end;
-    padding: 8px;
-    font-size: 0.68rem;
-    color: #fff;
-    line-height: 1.2;
-  }
-
+  .thumb-card { width: 100%; aspect-ratio: 1/1; overflow: hidden; border-radius: 8px; cursor: pointer; position: relative; background: var(--surface); border: 1px solid var(--border); transition: border-color 0.2s, transform 0.2s; box-shadow: 0 1px 4px var(--shadow); }
+  .thumb-card:hover { border-color: var(--accent); transform: scale(1.02); }
+  .thumb-card img, .thumb-card video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb-card .thumb-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, transparent 55%); opacity: 0; transition: opacity 0.2s; display: flex; align-items: flex-end; padding: 8px; font-size: 0.68rem; color: #fff; line-height: 1.2; }
   .thumb-card:hover .thumb-overlay { opacity: 1; }
 
-  /* LIGHTBOX */
-  #lightbox {
-    position: fixed;
-    inset: 0;
-    z-index: 3000;
-    background: rgba(0,0,0,0.95);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 10px;
-    padding: 8px;
-  }
-
+  /* ===== LIGHTBOX ===== */
+  #lightbox { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; flex-direction: column; gap: 10px; padding: 8px; }
   #lightbox.open { display: flex; }
 
-  #lightbox-img,
-  #lightbox-video {
-    display: none;
-    width: 92vw;
-    height: 80vh;
-    flex-shrink: 1;
-    min-height: 0;
-    object-fit: contain;
-    border-radius: 8px;
-    box-shadow: 0 0 80px rgba(0,0,0,0.85);
-  }
+  .lightbox-media-wrap { position: relative; display: flex; align-items: center; justify-content: center; width: 92vw; height: 80vh; flex-shrink: 1; min-height: 0; }
+  #lightbox-img, #lightbox-video { display: none; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 0 80px rgba(0,0,0,0.85); }
 
-  #lightbox-img.portrait,
-  #lightbox-video.portrait {
-    width: 60vw;
-    height: 85vh;
-  }
+  /* HD loading indicator */
+  .hd-badge { position: absolute; top: 16px; right: 16px; display: none; align-items: center; gap: 6px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; backdrop-filter: blur(8px); z-index: 10; }
+  .hd-badge.visible { display: flex; }
+  .hd-badge.done { background: rgba(46,160,67,0.7); }
+  .hd-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: hd-spin 0.8s linear infinite; }
+  @keyframes hd-spin { to{transform:rotate(360deg)} }
 
-  #lightbox-img.landscape,
-  #lightbox-video.landscape {
-    width: 92vw;
-    height: 80vh;
-  }
+  .lightbox-info { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.82rem; flex-shrink: 0; }
+  .lightbox-info strong { display: block; font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  #lightbox-actions { margin-top: 10px; display: flex; justify-content: center; gap: 10px; }
+  #lightbox-open-onedrive { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; font-weight: 600; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 28px; padding: 11px 26px; backdrop-filter: blur(12px); transition: background 0.15s, border-color 0.15s; }
+  #lightbox-open-onedrive:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
 
-  .lightbox-info {
-    text-align: center;
-    color: rgba(255,255,255,0.7);
-    font-size: 0.82rem;
-    flex-shrink: 0;
-  }
-
-  .lightbox-info strong {
-    display: block;
-    font-family: var(--font-ui);
-    font-size: 1rem;
-    font-weight: 600;
-    color: #fff;
-    margin-bottom: 4px;
-  }
-
-  #lightbox-actions {
-    margin-top: 10px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-  }
-
-  #lightbox-open-onedrive {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 0.88rem;
-    font-weight: 600;
-    background: rgba(255,255,255,0.15);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 28px;
-    padding: 11px 26px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    letter-spacing: 0.01em;
-    transition: background 0.15s, border-color 0.15s;
-    min-width: 0;
-  }
-
-  #lightbox-open-onedrive:hover {
-    background: rgba(255,255,255,0.25);
-    border-color: rgba(255,255,255,0.5);
-  }
-
-  .lightbox-nav {
-    position: fixed;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: #fff;
-    font-size: 1.6rem;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-    z-index: 3001;
-  }
-
+  .lightbox-nav { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.6rem; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 3001; }
   .lightbox-nav:hover { background: rgba(255,255,255,0.3); }
-
   #lightbox-prev { left: 20px; }
   #lightbox-next { right: 20px; }
-
-  #lightbox-close {
-    position: fixed;
-    top: 24px;
-    right: 24px;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: #fff;
-    font-size: 1.4rem;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-    z-index: 3001;
-  }
-
+  #lightbox-close { position: fixed; top: 24px; right: 24px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.4rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 3001; }
   #lightbox-close:hover { background: rgba(255,255,255,0.2); }
 
-  /* DYNAMIC MARKER — Apple Maps style */
-  .photo-marker-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    filter: drop-shadow(0 4px 14px rgba(0,0,0,0.35));
-    transition: transform 0.15s;
-  }
+  /* ===== MARKERS — uniform size ===== */
+  .photo-marker-wrap { display: flex; flex-direction: column; align-items: center; cursor: pointer; filter: drop-shadow(0 4px 14px rgba(0,0,0,0.35)); transition: transform 0.15s; }
+  .photo-marker-wrap:hover { transform: scale(1.08); }
+  .photo-marker { width: 72px; height: 72px; border-radius: 14px; overflow: hidden; border: 3px solid #fff; background: #e0e0e0; position: relative; flex-shrink: 0; }
+  .photo-marker > img, .photo-marker > video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-marker-count { position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.55); color: #fff; font-size: 11px; font-weight: 700; line-height: 1; padding: 2px 6px; border-radius: 8px; pointer-events: none; }
+  .photo-marker-tail { width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid #fff; margin-top: -2px; }
 
-  .photo-marker-wrap:hover {
-    transform: scale(1.08);
-  }
+  .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background: none !important; border: none !important; box-shadow: none !important; }
+  .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background: none !important; }
 
-  .photo-marker {
-    border-radius: 16px;
-    overflow: hidden;
-    border: 3px solid #fff;
-    background: #e0e0e0;
-    position: relative;
-    flex-shrink: 0;
-  }
-
-  .photo-marker > img,
-  .photo-marker > video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .photo-marker-count {
-    position: absolute;
-    bottom: 6px;
-    left: 6px;
-    background: rgba(0,0,0,0.55);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1;
-    padding: 3px 7px;
-    border-radius: 10px;
-    pointer-events: none;
-  }
-
-  .photo-marker-tail {
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-top: 10px solid #fff;
-    margin-top: -2px;
-  }
-
-  /* hide old Leaflet cluster styles */
-  .marker-cluster-small,
-  .marker-cluster-medium,
-  .marker-cluster-large {
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  .marker-cluster-small div,
-  .marker-cluster-medium div,
-  .marker-cluster-large div {
-    background: none !important;
-  }
-
-  #filter-bar {
-    position: fixed;
-    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 500;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 40px;
-    padding: 8px 16px;
-    display: none;
-    gap: 6px;
-    align-items: center;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 2px 12px var(--shadow);
-    max-width: 90vw;
-    overflow-x: auto;
-  }
-
+  /* ===== FILTER BAR ===== */
+  #filter-bar { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); z-index: 500; background: var(--panel); border: 1px solid var(--border); border-radius: 40px; padding: 8px 16px; display: none; gap: 6px; align-items: center; backdrop-filter: blur(12px); box-shadow: 0 2px 12px var(--shadow); max-width: 90vw; overflow-x: auto; }
   #filter-bar.visible { display: flex; }
-
   #filter-bar::-webkit-scrollbar { display: none; }
   #filter-bar { -ms-overflow-style: none; scrollbar-width: none; }
+  .filter-label { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; margin-right: 4px; }
+  .year-btn { background: transparent; border: 1px solid transparent; color: var(--muted); font-family: var(--font-ui); font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .year-btn:hover { color: var(--text); border-color: var(--border); }
+  .year-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
 
-  .filter-label {
-    font-size: 0.7rem;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    margin-right: 4px;
-  }
-
-  .year-btn {
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--muted);
-    font-family: var(--font-ui);
-    font-size: 0.78rem;
-    padding: 4px 12px;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .year-btn:hover {
-    color: var(--text);
-    border-color: var(--border);
-  }
-
-  .year-btn.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-    font-weight: 500;
-  }
-
-  #config-panel {
-    position: fixed;
-    inset: 0;
-    z-index: 1500;
-    background: rgba(0,0,0,0.4);
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
-
+  /* ===== CONFIG PANEL ===== */
+  #config-panel { position: fixed; inset: 0; z-index: 1500; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; }
   #config-panel.open { display: flex; }
+  .config-box { background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 28px 28px 32px; max-width: 420px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.15); }
+  .config-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .config-box h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin: 0; }
+  .config-close-btn { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .config-buttons { display: flex; flex-direction: column; gap: 12px; }
+  .config-btn { width: 100%; padding: 14px 24px; border-radius: 28px; font-size: 0.95rem; font-weight: 600; text-align: center; }
 
-  .config-box {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 28px 28px 32px;
-    max-width: 380px;
-    width: 90%;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
-  }
+  .config-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); }
+  .config-toggle-label { font-size: 0.88rem; font-weight: 500; color: var(--text); }
+  .config-toggle-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .toggle-switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; margin-left: 12px; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 26px; cursor: pointer; transition: background 0.2s; }
+  .toggle-slider::before { content:''; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+  .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
 
-  .config-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 28px;
-  }
-
-  .config-box h2 {
-    font-family: var(--font-ui);
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0;
-  }
-
-  .config-close-btn {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .config-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .config-btn {
-    width: 100%;
-    padding: 14px 24px;
-    border-radius: 28px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    text-align: center;
-  }
-
-  #toast {
-    position: fixed;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 4000;
-    background: #fff;
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 0.82rem;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    max-width: 90vw;
-    text-align: center;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  }
-
+  #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 4000; background: #fff; border: 1px solid var(--border); color: var(--text); padding: 10px 20px; border-radius: 8px; font-size: 0.82rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 90vw; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
   #toast.show { opacity: 1; }
 
-  /* ==========================================
-     MOBILE / IPHONE OPTIMIZATION
-     ========================================== */
+  /* ===== MOBILE ===== */
   @media (max-width: 600px) {
-
-    /* ---- TOPBAR ---- */
     .tagline { display: none; }
-
-    #topbar {
-      height: calc(54px + env(safe-area-inset-top, 0px));
-      padding-left: max(14px, env(safe-area-inset-left, 0px));
-      padding-right: max(14px, env(safe-area-inset-right, 0px));
-      gap: 8px;
-    }
-
+    #topbar { height: calc(54px + env(safe-area-inset-top, 0px)); padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px)); gap: 8px; }
     .logo { font-size: 1.2rem; }
-
-    #topbar-right {
-      gap: 8px;
-      flex-shrink: 1;
-      min-width: 0;
-      overflow: hidden;
-    }
-
-    #stats-pill {
-      font-size: 0.78rem;
-      padding: 5px 10px;
-      max-width: 140px;
-      flex-shrink: 1;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* Masquer stats-pill quand le scan est visible (trop d'info dans la topbar) */
-    #topbar-right:has(#scan-status.visible) #stats-pill {
-      display: none !important;
-    }
-
-    /* Buttons: icon-only, large tap target */
-    .btn {
-      padding: 0;
-      font-size: 1.1rem;
-      min-width: 44px;
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    #topbar-right { gap: 8px; }
+    #stats-pill { font-size: 0.78rem; padding: 5px 10px; max-width: 140px; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
+    #topbar-right:has(#scan-status.visible) #stats-pill { display: none !important; }
+    .btn { padding: 0; font-size: 1.1rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
     #btn-config { font-size: 1.2rem; }
-
-    #scan-status {
-      font-size: 0.75rem;
-      padding: 5px 10px;
-      gap: 6px;
-      max-width: 180px;
-      flex-shrink: 1;
-      min-width: 0;
-    }
+    #scan-status { font-size: 0.75rem; padding: 5px 10px; gap: 6px; max-width: 180px; }
     #scan-status-text { max-width: 100px; }
-    #scan-status-count { font-size: 0.75rem; flex-shrink: 0; }
-
-    /* Bouton OneDrive dans lightbox: plus compact sur mobile */
-    #lightbox-open-onedrive {
-      font-size: 0.85rem;
-      padding: 10px 22px;
-    }
-
-    /* ---- MAP ---- */
-    #map {
-      top: calc(54px + env(safe-area-inset-top, 0px));
-    }
-
-    /* ---- PHOTO PANEL: bottom sheet ---- */
-    #photo-panel {
-      top: auto;
-      right: 0;
-      left: 0;
-      bottom: 0;
-      width: 100%;
-      height: 72dvh;
-      border-left: none;
-      border-top: 1px solid var(--border);
-      border-radius: 20px 20px 0 0;
-      transform: translateY(100%);
-      padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
-
+    #lightbox-open-onedrive { font-size: 0.85rem; padding: 10px 22px; }
+    #map { top: calc(54px + env(safe-area-inset-top, 0px)); }
+    #map-layer-toggle { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: 12px; }
+    #photo-panel { top: auto; right: 0; left: 0; bottom: 0; width: 100%; height: 72dvh; border-left: none; border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; transform: translateY(100%); padding-bottom: env(safe-area-inset-bottom, 0px); }
     #photo-panel.open { transform: translateY(0); }
-
-    .panel-header {
-      padding: 18px 18px 14px;
-      position: relative;
-    }
-
-    /* drag handle indicator */
-    .panel-header::before {
-      content: '';
-      position: absolute;
-      top: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 40px;
-      height: 4px;
-      background: var(--muted);
-      border-radius: 2px;
-      opacity: 0.5;
-    }
-
+    .panel-header { padding: 18px 18px 14px; position: relative; }
+    .panel-header::before { content:''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: var(--muted); border-radius: 2px; opacity: 0.5; }
     .panel-location { font-size: 1.1rem; max-width: 70vw; }
-    .panel-date { font-size: 0.82rem; }
-    .panel-count { font-size: 0.8rem; }
-
-    .btn-close {
-      font-size: 1.5rem;
-      min-width: 44px;
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-    }
-
-    #panel-photos {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      padding: 12px;
-    }
-
+    .btn-close { font-size: 1.5rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    #panel-photos { grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
     .thumb-card { border-radius: 10px; }
-
-    .thumb-overlay {
-      font-size: 0.72rem;
-      padding: 8px;
-    }
-
-    /* ---- FILTER BAR ---- */
-    #filter-bar {
-      bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-      padding: 8px 14px;
-      gap: 6px;
-      border-radius: 32px;
-      max-width: 96vw;
-    }
-
-    .filter-label { font-size: 0.78rem; margin-right: 4px; }
-
-    .year-btn {
-      font-size: 0.82rem;
-      padding: 6px 14px;
-      min-height: 34px;
-    }
-
-    /* ---- LIGHTBOX: full screen ---- */
-    #lightbox {
-      padding: 0;
-      gap: 0;
-    }
-
-    #lightbox-img,
-    #lightbox-video {
-      width: 100vw;
-      height: 70dvh;
-      border-radius: 0;
-      box-shadow: none;
-    }
-
-    #lightbox-img.portrait,
-    #lightbox-video.portrait {
-      width: 100vw;
-      height: 78dvh;
-    }
-
-    #lightbox-img.landscape,
-    #lightbox-video.landscape {
-      width: 100vw;
-      height: 65dvh;
-    }
-
-    /* Nav buttons: bottom bar on mobile */
-    .lightbox-nav {
-      top: auto;
-      bottom: calc(90px + env(safe-area-inset-bottom, 0px));
-      transform: none;
-      width: 56px;
-      height: 56px;
-      font-size: 2rem;
-    }
-
-    #lightbox-prev { left: 20px; }
-    #lightbox-next { right: 20px; }
-
-    #lightbox-close {
-      top: max(16px, env(safe-area-inset-top, 10px));
-      right: 16px;
-      width: 48px;
-      height: 48px;
-      font-size: 1.5rem;
-    }
-
-    .lightbox-info {
-      padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
-      width: 100%;
-      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
-    }
-
+    #filter-bar { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding: 8px 14px; border-radius: 32px; max-width: 96vw; }
+    .year-btn { font-size: 0.82rem; padding: 6px 14px; min-height: 34px; }
+    #lightbox { padding: 0; gap: 0; }
+    .lightbox-media-wrap { width: 100vw; height: 70dvh; }
+    #lightbox-img, #lightbox-video { border-radius: 0; box-shadow: none; }
+    .lightbox-nav { top: auto; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: none; width: 56px; height: 56px; font-size: 2rem; }
+    #lightbox-close { top: max(16px, env(safe-area-inset-top, 10px)); right: 16px; width: 48px; height: 48px; font-size: 1.5rem; }
+    .lightbox-info { padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px)); width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); }
     .lightbox-info strong { font-size: 0.95rem; }
-    #lightbox-meta { font-size: 0.82rem; gap: 8px; }
-
     #lightbox-actions { margin-top: 10px; }
-
-    #lightbox-open-onedrive {
-      min-width: 190px;
-      font-size: 0.82rem;
-      padding: 10px 20px;
-    }
-
-    /* ---- SPLASH ---- */
+    #lightbox-open-onedrive { min-width: 190px; font-size: 0.82rem; padding: 10px 20px; }
     #splash { gap: 22px; padding: 28px; }
-
     .splash-globe { width: 90px; height: 90px; }
     .globe-icon { font-size: 2.4rem; }
     .splash-title { font-size: 2rem; }
-    .splash-sub { font-size: 0.9rem; padding: 0 12px; max-width: 320px; }
-
+    .splash-sub { font-size: 0.9rem; max-width: 320px; }
     #btn-login { padding: 14px 36px; font-size: 0.95rem; }
-
     .splash-note { font-size: 0.75rem; max-width: 300px; }
-
-    /* ---- CONFIG PANEL ---- */
-    .config-box {
-      padding: 24px 22px 28px;
-      max-width: 100%;
-      width: 94%;
-      border-radius: 24px;
-    }
-
-    .config-box h2 { font-size: 1.35rem; }
-
-    .config-btn {
-      font-size: 0.95rem;
-      padding: 15px 24px;
-      min-height: 52px;
-    }
-
-    /* ---- LOADING ---- */
+    .config-box { padding: 24px 22px 28px; width: 94%; border-radius: 24px; }
+    .config-btn { font-size: 0.95rem; padding: 15px 24px; min-height: 52px; }
     .progress-bar-wrap { width: 240px; }
-    .loading-msg { font-size: 0.9rem; }
-    #loading-count { font-size: 1.8rem; }
-
-    /* ---- TOAST ---- */
-    #toast {
-      bottom: calc(70px + env(safe-area-inset-bottom, 0px));
-      font-size: 0.85rem;
-      padding: 10px 20px;
-      border-radius: 24px;
-    }
-
-    /* ---- ZOOM CONTROL ---- */
-    .leaflet-control-zoom {
-      margin-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
-      margin-right: 12px !important;
-    }
-
-    .leaflet-control-zoom a {
-      width: 36px !important;
-      height: 36px !important;
-      line-height: 36px !important;
-      font-size: 1.2rem !important;
-    }
+    #toast { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); font-size: 0.85rem; border-radius: 24px; }
+    .leaflet-control-zoom { margin-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important; margin-right: 12px !important; }
+    .leaflet-control-zoom a { width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 1.2rem !important; }
+    .photo-marker { width: 62px; height: 62px; border-radius: 12px; border-width: 2.5px; }
+    .photo-marker-count { font-size: 10px; padding: 2px 5px; }
   }
-
-  /* Extra small phones (iPhone SE etc) */
   @media (max-width: 375px) {
     .logo { font-size: 1.05rem; }
     #stats-pill { display: none !important; }
@@ -1110,8 +274,8 @@
     .splash-globe { width: 72px; height: 72px; }
     .globe-icon { font-size: 1.8rem; }
     .year-btn { font-size: 0.78rem; padding: 5px 11px; }
+    .photo-marker { width: 54px; height: 54px; }
   }
-
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
@@ -1136,6 +300,11 @@
 
 <div id="map"></div>
 
+<button id="map-layer-toggle" title="Changer le fond de carte">
+  <img id="map-layer-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10' font-family='sans-serif'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/>
+  <div id="map-layer-label">Satellite</div>
+</button>
+
 <div id="filter-bar">
   <span class="filter-label">Année</span>
   <button class="year-btn active" data-year="all">Toutes</button>
@@ -1150,7 +319,6 @@
     </div>
     <button class="btn-close" id="panel-close" title="Fermer">✕</button>
   </div>
-
   <div id="panel-photos"></div>
 </div>
 
@@ -1158,25 +326,23 @@
   <button id="lightbox-close" title="Fermer">✕</button>
   <button class="lightbox-nav" id="lightbox-prev" title="Précédent">‹</button>
   <button class="lightbox-nav" id="lightbox-next" title="Suivant">›</button>
-
-  <img id="lightbox-img" src="" alt="Média"/>
-  <video id="lightbox-video" controls playsinline></video>
-
+  <div class="lightbox-media-wrap">
+    <img id="lightbox-img" src="" alt="Média"/>
+    <video id="lightbox-video" controls playsinline></video>
+    <div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div><span>HD</span></div>
+    <div class="hd-badge done" id="hd-done"><span>✓ HD</span></div>
+  </div>
   <div class="lightbox-info">
     <strong id="lightbox-name"></strong>
     <span id="lightbox-meta"></span>
     <div id="lightbox-actions">
-      <button id="lightbox-open-onedrive" class="btn btn-primary" type="button">
-        ↗ Ouvrir dans OneDrive
-      </button>
+      <button id="lightbox-open-onedrive" class="btn btn-primary" type="button">↗ Ouvrir dans OneDrive</button>
     </div>
   </div>
 </div>
 
 <div id="splash">
-  <div class="splash-globe">
-    <div class="globe-icon">🌍</div>
-  </div>
+  <div class="splash-globe"><div class="globe-icon">🌍</div></div>
   <div class="splash-title">Vos photos,<br><span>sur la planète</span></div>
   <div class="splash-sub">Connectez votre OneDrive pour visualiser toutes vos photos et vidéos géolocalisées sur une mappemonde interactive.</div>
   <button class="btn btn-primary btn-lg" id="btn-login">Connecter OneDrive</button>
@@ -1186,9 +352,7 @@
 <div id="loading-overlay">
   <div id="loading-count">0</div>
   <div class="loading-msg" id="loading-msg">Connexion à OneDrive…</div>
-  <div class="progress-bar-wrap">
-    <div class="progress-bar-fill" id="progress-fill"></div>
-  </div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill"></div></div>
 </div>
 
 <div id="config-panel">
@@ -1200,6 +364,16 @@
     <div class="config-buttons">
       <div id="config-connect-wrap">
         <button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button>
+      </div>
+      <div class="config-toggle" id="config-cache-toggle">
+        <div>
+          <div class="config-toggle-label">Cache local des vignettes</div>
+          <div class="config-toggle-sub" id="cache-toggle-sub">Chargement instantané hors-ligne</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-local-cache">
+          <span class="toggle-slider"></span>
+        </label>
       </div>
       <div id="config-rescan-wrap" style="display:none">
         <button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button>
@@ -1214,1589 +388,554 @@
 <div id="toast"></div>
 
 <script>
+/* ================================================================
+   PhotoMap v2.0 — Upgraded
+   ================================================================ */
 const STORAGE_KEY_CLIENT_ID = 'photomap_client_id';
 const DB_NAME = 'photomap_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_MEDIA = 'media';
 const STORE_META = 'meta';
-
+const STORE_THUMBS = 'thumbs';
 const DEFAULT_CLIENT_ID = '74655b12-46c1-4cdb-be1a-27655fa47677';
-
-const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'gif', 'bmp', 'tiff']);
-const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'm4v', 'hevc', 'avi', 'webm', '3gp', 'mkv']);
-
-/* FIX: thumbnail URL TTL for staleness detection (4 hours) */
+const IMAGE_EXTENSIONS = new Set(['jpg','jpeg','png','heic','heif','webp','gif','bmp','tiff']);
+const VIDEO_EXTENSIONS = new Set(['mp4','mov','m4v','hevc','avi','webm','3gp','mkv']);
 const THUMBNAIL_TTL_MS = 4 * 60 * 60 * 1000;
+const MARKER_SIZE = 72;
+const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
 
-let msalInstance = null;
-let allPhotos = [];
-let markers = [];
-let clusterGroup = null;
-let currentYear = 'all';
-let isLoading = false;
-let backgroundSyncRunning = false;
-let autoSyncTimer = null;
-const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+let msalInstance = null, allPhotos = [], markers = [], clusterGroup = null;
+let currentYear = 'all', isLoading = false, backgroundSyncRunning = false;
+let autoSyncTimer = null, startAppRunning = false;
+let lightboxPhotos = [], lightboxIndex = 0, panelAllPhotos = [];
+let _dbInstance = null, _currentToken = null;
+const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
-/* FIX: guard to prevent duplicate startApp calls */
-let startAppRunning = false;
+/* === LOCAL CACHE SETTING === */
+const STORAGE_KEY_LOCAL_CACHE = 'photomap_local_thumb_cache';
+let localCacheEnabled = localStorage.getItem(STORAGE_KEY_LOCAL_CACHE) === 'true';
+const thumbObjectUrls = new Map();
 
-let lightboxPhotos = [];
-let lightboxIndex = 0;
+/* === MAP LAYERS === */
+let currentLayerType = 'standard';
+let standardLayer, satelliteLayer;
 
-let panelAllPhotos = [];
-
-/* FIX: shared DB connection to avoid reopening repeatedly */
-let _dbInstance = null;
-
+/* ==================== IndexedDB ==================== */
 function openDb() {
   if (_dbInstance) return Promise.resolve(_dbInstance);
-
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-
-      if (!db.objectStoreNames.contains(STORE_MEDIA)) {
-        const mediaStore = db.createObjectStore(STORE_MEDIA, { keyPath: 'id' });
-        mediaStore.createIndex('by_date', 'date', { unique: false });
-      }
-
-      if (!db.objectStoreNames.contains(STORE_META)) {
-        db.createObjectStore(STORE_META, { keyPath: 'key' });
-      }
+  return new Promise((ok, fail) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_MEDIA)) { const s = db.createObjectStore(STORE_MEDIA, {keyPath:'id'}); s.createIndex('by_date','date',{unique:false}); }
+      if (!db.objectStoreNames.contains(STORE_META)) db.createObjectStore(STORE_META, {keyPath:'key'});
+      if (!db.objectStoreNames.contains(STORE_THUMBS)) db.createObjectStore(STORE_THUMBS, {keyPath:'id'});
     };
-
-    request.onsuccess = () => {
-      _dbInstance = request.result;
-
-      /* If the DB connection closes unexpectedly, clear the cached reference */
-      _dbInstance.onclose = () => { _dbInstance = null; };
-      _dbInstance.onversionchange = () => {
-        _dbInstance.close();
-        _dbInstance = null;
-      };
-
-      resolve(_dbInstance);
-    };
-    request.onerror = () => reject(request.error);
+    req.onsuccess = () => { _dbInstance = req.result; _dbInstance.onclose = () => { _dbInstance = null; }; _dbInstance.onversionchange = () => { _dbInstance.close(); _dbInstance = null; }; ok(_dbInstance); };
+    req.onerror = () => fail(req.error);
   });
 }
-
 async function dbPutMediaBatch(items) {
-  if (!items || items.length === 0) return;
-
+  if (!items?.length) return;
   const db = await openDb();
-  await new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_MEDIA, 'readwrite');
-    const store = tx.objectStore(STORE_MEDIA);
-
-    for (const item of items) {
-      store.put({
-        ...item,
-        date: item.date ? item.date.toISOString() : null,
-        /* FIX: store timestamp so we can detect stale thumbnails */
-        fetchedAt: item.fetchedAt || new Date().toISOString()
-      });
-    }
-
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
+  await new Promise((ok, fail) => {
+    const tx = db.transaction(STORE_MEDIA, 'readwrite'); const s = tx.objectStore(STORE_MEDIA);
+    for (const it of items) s.put({...it, date: it.date ? it.date.toISOString() : null, fetchedAt: it.fetchedAt || new Date().toISOString()});
+    tx.oncomplete = ok; tx.onerror = () => fail(tx.error); tx.onabort = () => fail(tx.error);
   });
 }
-
 async function dbGetAllMedia() {
   const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_MEDIA, 'readonly');
-    const store = tx.objectStore(STORE_MEDIA);
-    const request = store.getAll();
+  return new Promise((ok, fail) => { const req = db.transaction(STORE_MEDIA,'readonly').objectStore(STORE_MEDIA).getAll(); req.onsuccess = () => ok((req.result||[]).map(i => ({...i, date: i.date ? new Date(i.date) : null}))); req.onerror = () => fail(req.error); });
+}
+async function dbClearMedia() { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_MEDIA,'readwrite'); tx.objectStore(STORE_MEDIA).clear(); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
+async function dbSetMeta(k, v) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_META,'readwrite'); tx.objectStore(STORE_META).put({key:k,value:v}); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
+async function dbGetMeta(k) { const db = await openDb(); return new Promise((ok, fail) => { const req = db.transaction(STORE_META,'readonly').objectStore(STORE_META).get(k); req.onsuccess = () => ok(req.result?.value ?? null); req.onerror = () => fail(req.error); }); }
+async function dbDeleteMeta(k) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_META,'readwrite'); tx.objectStore(STORE_META).delete(k); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
+async function dbDeleteMediaItem(id) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_MEDIA,'readwrite'); tx.objectStore(STORE_MEDIA).delete(id); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
 
-    request.onsuccess = () => {
-      const rows = (request.result || []).map(item => ({
-        ...item,
-        date: item.date ? new Date(item.date) : null
-      }));
-      resolve(rows);
+/* Thumbnail blob store */
+async function dbPutThumb(id, blob) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_THUMBS,'readwrite'); tx.objectStore(STORE_THUMBS).put({id, blob, savedAt: new Date().toISOString()}); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
+async function dbGetThumb(id) { const db = await openDb(); return new Promise((ok, fail) => { const req = db.transaction(STORE_THUMBS,'readonly').objectStore(STORE_THUMBS).get(id); req.onsuccess = () => ok(req.result || null); req.onerror = () => fail(req.error); }); }
+async function dbGetAllThumbIds() { const db = await openDb(); return new Promise((ok, fail) => { const req = db.transaction(STORE_THUMBS,'readonly').objectStore(STORE_THUMBS).getAllKeys(); req.onsuccess = () => ok(new Set(req.result || [])); req.onerror = () => fail(req.error); }); }
+async function dbClearThumbs() { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_THUMBS,'readwrite'); tx.objectStore(STORE_THUMBS).clear(); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
+async function dbDeleteThumb(id) { const db = await openDb(); await new Promise((ok, fail) => { const tx = db.transaction(STORE_THUMBS,'readwrite'); tx.objectStore(STORE_THUMBS).delete(id); tx.oncomplete = ok; tx.onerror = () => fail(tx.error); }); }
+
+/* Thumbnail helpers */
+function getThumbSrc(photo) {
+  if (localCacheEnabled && thumbObjectUrls.has(photo.id)) return thumbObjectUrls.get(photo.id);
+  return photo.thumbnailUrl || FALLBACK_ICON;
+}
+
+async function loadCachedThumbs() {
+  if (!localCacheEnabled) return;
+  const db = await openDb();
+  return new Promise((ok, fail) => {
+    const req = db.transaction(STORE_THUMBS,'readonly').objectStore(STORE_THUMBS).openCursor();
+    req.onsuccess = e => {
+      const c = e.target.result;
+      if (c) { const {id, blob} = c.value; if (blob && !thumbObjectUrls.has(id)) try { thumbObjectUrls.set(id, URL.createObjectURL(blob)); } catch {} c.continue(); }
+      else ok();
     };
-    request.onerror = () => reject(request.error);
+    req.onerror = () => fail(req.error);
   });
 }
 
-async function dbClearMedia() {
-  const db = await openDb();
-  await new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_MEDIA, 'readwrite');
-    tx.objectStore(STORE_MEDIA).clear();
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+async function downloadAndCacheThumb(photo) {
+  const url = photo.thumbnailUrl;
+  if (!url) return;
+  try { const res = await fetch(url); if (!res.ok) return; const blob = await res.blob(); await dbPutThumb(photo.id, blob); thumbObjectUrls.set(photo.id, URL.createObjectURL(blob)); } catch {}
 }
 
-async function dbSetMeta(key, value) {
-  const db = await openDb();
-  await new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_META, 'readwrite');
-    tx.objectStore(STORE_META).put({ key, value });
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+let _thumbCacheRunning = false;
+async function backgroundCacheThumbs() {
+  if (!localCacheEnabled || _thumbCacheRunning) return;
+  _thumbCacheRunning = true;
+  try {
+    const cachedIds = await dbGetAllThumbIds();
+    const missing = allPhotos.filter(p => !cachedIds.has(p.id) && p.thumbnailUrl);
+    for (let i = 0; i < missing.length; i++) {
+      if (!localCacheEnabled) break;
+      await downloadAndCacheThumb(missing[i]);
+      if (i % 10 === 9) await new Promise(r => setTimeout(r, 100));
+    }
+  } catch (err) { console.warn('Thumb cache error:', err); }
+  finally { _thumbCacheRunning = false; }
 }
 
-async function dbGetMeta(key) {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_META, 'readonly');
-    const request = tx.objectStore(STORE_META).get(key);
-    request.onsuccess = () => resolve(request.result?.value ?? null);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function dbDeleteMeta(key) {
-  const db = await openDb();
-  await new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_META, 'readwrite');
-    tx.objectStore(STORE_META).delete(key);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
+/* ==================== MAP ==================== */
 const map = L.map('map', {
-  center: [20, 0],
-  zoom: 2,
-  zoomControl: false,
-  minZoom: 2,
-  maxBoundsViscosity: 1.0
+  center: [20, 0], zoom: 2, zoomControl: false, minZoom: 2,
+  maxBoundsViscosity: 0,
+  worldCopyJump: true
 });
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap',
-  maxZoom: 19
-}).addTo(map);
-
+standardLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19, noWrap: false });
+satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri', maxZoom: 19, noWrap: false });
+standardLayer.addTo(map);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+document.getElementById('map-layer-toggle').addEventListener('click', () => {
+  const label = document.getElementById('map-layer-label');
+  if (currentLayerType === 'standard') { map.removeLayer(standardLayer); satelliteLayer.addTo(map); currentLayerType = 'satellite'; label.textContent = 'Plan'; }
+  else { map.removeLayer(satelliteLayer); standardLayer.addTo(map); currentLayerType = 'standard'; label.textContent = 'Satellite'; }
+});
+
 clusterGroup = L.markerClusterGroup({
-  showCoverageOnHover: false,
-  maxClusterRadius: 50,
-  spiderfyOnMaxZoom: true,
-  disableClusteringAtZoom: 18,
+  showCoverageOnHover: false, maxClusterRadius: 50, spiderfyOnMaxZoom: true, disableClusteringAtZoom: 18,
   iconCreateFunction(cluster) {
     const count = cluster.getChildCount();
-    const children = cluster.getAllChildMarkers();
-    const firstPhoto = children[0]?._photoData;
-    const thumbSrc = firstPhoto?.thumbnailUrl || FALLBACK_ICON;
-    const photoId = firstPhoto?.id || '';
-    const sz = 80;
+    const first = cluster.getAllChildMarkers()[0]?._photoData;
+    const src = first ? getThumbSrc(first) : FALLBACK_ICON;
+    const pid = first?.id || '';
     return L.divIcon({
       className: '',
-      html: `
-        <div class="photo-marker-wrap">
-          <div class="photo-marker" style="width:${sz}px;height:${sz}px;">
-            <img src="${thumbSrc}" loading="lazy"
-              data-photo-id="${photoId}"
-              onerror="this.src='${FALLBACK_ICON}'"/>
-            <div class="photo-marker-count">${count}</div>
-          </div>
-          <div class="photo-marker-tail"></div>
-        </div>
-      `,
-      iconSize: [sz, sz + 10],
-      iconAnchor: [sz / 2, sz + 10]
+      html: `<div class="photo-marker-wrap"><div class="photo-marker"><img src="${src}" loading="lazy" data-photo-id="${pid}" onerror="this.src='${FALLBACK_ICON}'"/><div class="photo-marker-count">${count}</div></div><div class="photo-marker-tail"></div></div>`,
+      iconSize: [MARKER_SIZE, MARKER_SIZE+10], iconAnchor: [MARKER_SIZE/2, MARKER_SIZE+10]
     });
   }
 });
 map.addLayer(clusterGroup);
 
+/* ==================== UI HELPERS ==================== */
 let toastTimer = null;
-function showToast(msg, duration = 3000) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), duration);
-}
+function showToast(msg, dur=3000) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); if (toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), dur); }
+function setLoading(v, msg='', p=0) { const el = document.getElementById('loading-overlay'); el.classList.toggle('visible',v); if (msg) document.getElementById('loading-msg').textContent = msg; document.getElementById('progress-fill').style.width = p+'%'; isLoading = v; }
+function setLoadingCount(n) { document.getElementById('loading-count').textContent = n; }
 
-function setLoading(visible, msg = '', progress = 0) {
-  const el = document.getElementById('loading-overlay');
-  el.classList.toggle('visible', visible);
-  if (msg) document.getElementById('loading-msg').textContent = msg;
-  document.getElementById('progress-fill').style.width = progress + '%';
-  isLoading = visible;
-}
-
-function setLoadingCount(n) {
-  document.getElementById('loading-count').textContent = n;
-}
-
-/* ==========================================
-   SCAN STATUS INDICATOR (topbar)
-   States: scanning, paused, done, error
-   ========================================== */
 function setScanStatus(state, text, count, progress) {
-  const el = document.getElementById('scan-status');
-  const textEl = document.getElementById('scan-status-text');
-  const countEl = document.getElementById('scan-status-count');
-  const fillEl = document.getElementById('scan-progress-fill');
-
-  if (state === 'hidden') {
-    el.style.display = 'none';
-    el.classList.remove('visible', 'paused', 'done', 'error');
-    return;
-  }
-
-  el.style.display = 'flex';
-  el.classList.add('visible');
-  el.classList.remove('paused', 'done', 'error');
-
-  if (state === 'paused') el.classList.add('paused');
-  if (state === 'done') el.classList.add('done');
-  if (state === 'error') el.classList.add('error');
-
-  if (text) textEl.textContent = text;
-  if (count !== undefined && count !== null) countEl.textContent = count;
-  if (progress !== undefined) fillEl.style.width = Math.min(progress, 100) + '%';
+  const el = document.getElementById('scan-status'), te = document.getElementById('scan-status-text'), ce = document.getElementById('scan-status-count'), fe = document.getElementById('scan-progress-fill');
+  if (state === 'hidden') { el.style.display = 'none'; el.classList.remove('visible','paused','done','error'); return; }
+  el.style.display = 'flex'; el.classList.add('visible'); el.classList.remove('paused','done','error');
+  if (state==='paused') el.classList.add('paused'); if (state==='done') el.classList.add('done'); if (state==='error') el.classList.add('error');
+  if (text) te.textContent = text; if (count!=null) ce.textContent = count; if (progress!=null) fe.style.width = Math.min(progress,100)+'%';
 }
-
-/* Auto-hide the "done" status after a delay */
 let _scanDoneTimer = null;
-function setScanDone(count, detail) {
-  setScanStatus('done', 'Terminé', detail || (count + ' médias'), 100);
-  if (_scanDoneTimer) clearTimeout(_scanDoneTimer);
-  _scanDoneTimer = setTimeout(() => setScanStatus('hidden'), 5000);
-}
+function setScanDone(c, d) { setScanStatus('done','Terminé', d||(c+' médias'), 100); if (_scanDoneTimer) clearTimeout(_scanDoneTimer); _scanDoneTimer = setTimeout(() => setScanStatus('hidden'), 5000); }
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function isVideoByName(n='') { return VIDEO_EXTENSIONS.has(n.split('.').pop()?.toLowerCase()); }
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-function isVideoByName(name = '') {
-  const ext = name.split('.').pop()?.toLowerCase();
-  return VIDEO_EXTENSIONS.has(ext);
-}
-
-function updateUiWithCurrentPhotos(fit = false) {
-  if (!allPhotos || allPhotos.length === 0) return;
-
+function updateUiWithCurrentPhotos(fit=false) {
+  if (!allPhotos?.length) return;
   buildYearFilter(allPhotos);
-  renderMarkers(currentYear === 'all'
-    ? allPhotos
-    : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear)
-  );
-
-  updateStats(currentYear === 'all'
-    ? allPhotos.length
-    : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear).length
-  );
-
-  if (fit && markers.length > 0) {
-    const group = L.featureGroup(markers);
-    map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 14 });
-  }
-
+  const filtered = currentYear==='all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear()==currentYear);
+  renderMarkers(filtered); updateStats(filtered.length);
+  if (fit && markers.length) { map.fitBounds(L.featureGroup(markers).getBounds().pad(0.15), {maxZoom:14}); }
   document.getElementById('btn-config').style.display = 'inline-flex';
-
-  /* After rendering, check viewport for stale thumbnails to refresh */
+  document.getElementById('map-layer-toggle').classList.add('visible');
   setTimeout(refreshVisibleStaleThumbnails, 800);
 }
 
-async function initMsal(clientId) {
-  msalInstance = new msal.PublicClientApplication({
-    auth: {
-      clientId,
-      authority: 'https://login.microsoftonline.com/common',
-      redirectUri: window.location.origin + window.location.pathname
-    },
-    cache: { cacheLocation: 'localStorage' }
-  });
-  await msalInstance.initialize();
-}
+/* ==================== MSAL ==================== */
+async function initMsal(cid) { msalInstance = new msal.PublicClientApplication({ auth: { clientId: cid, authority: 'https://login.microsoftonline.com/common', redirectUri: location.origin + location.pathname }, cache: { cacheLocation: 'localStorage' } }); await msalInstance.initialize(); }
+async function getToken() { const a = msalInstance.getAllAccounts(); try { return (await msalInstance.acquireTokenSilent({scopes:['Files.Read','User.Read'], account:a[0]})).accessToken; } catch { await msalInstance.acquireTokenRedirect({scopes:['Files.Read','User.Read'], account:a[0]}); return null; } }
+async function getTokenFresh() { const a = msalInstance.getAllAccounts(); try { return (await msalInstance.acquireTokenSilent({scopes:['Files.Read','User.Read'], account:a[0], forceRefresh:true})).accessToken; } catch { await msalInstance.acquireTokenRedirect({scopes:['Files.Read','User.Read'], account:a[0]}); return null; } }
 
-async function getToken() {
-  const accounts = msalInstance.getAllAccounts();
-  const request = {
-    scopes: ['Files.Read', 'User.Read'],
-    account: accounts[0] || undefined
-  };
-
-  try {
-    const result = await msalInstance.acquireTokenSilent(request);
-    return result.accessToken;
-  } catch {
-    await msalInstance.acquireTokenRedirect(request);
-    return null;
-  }
-}
-
-/* Force a fresh token (bypasses cache) — used after a 401 */
-async function getTokenFresh() {
-  const accounts = msalInstance.getAllAccounts();
-  const request = {
-    scopes: ['Files.Read', 'User.Read'],
-    account: accounts[0] || undefined,
-    forceRefresh: true
-  };
-
-  try {
-    const result = await msalInstance.acquireTokenSilent(request);
-    return result.accessToken;
-  } catch {
-    await msalInstance.acquireTokenRedirect(request);
-    return null;
-  }
-}
-
-let _currentToken = null;
-
-async function graphGet(url, token, _retried = false) {
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-
-  if (res.status === 401 && !_retried) {
-    /* Token expired — get a fresh one and retry once */
-    const freshToken = await getTokenFresh();
-    if (freshToken) {
-      _currentToken = freshToken;
-      return graphGet(url, freshToken, true);
-    }
-    /* If getTokenFresh triggered a redirect, execution stops */
-    return null;
-  }
-
-  if (res.status === 401) {
-    throw new Error('Session expirée. Veuillez vous reconnecter.');
-  }
-
-  if (res.status === 429) {
-    const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10);
-    await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return graphGet(url, token);
-  }
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Erreur API Graph (${res.status}) : ${text.substring(0, 200)}`);
-  }
-
+async function graphGet(url, token, retried=false) {
+  const res = await fetch(url, {headers:{Authorization:`Bearer ${token}`}});
+  if (res.status===401 && !retried) { const ft = await getTokenFresh(); if (ft) { _currentToken = ft; return graphGet(url, ft, true); } return null; }
+  if (res.status===401) throw new Error('Session expirée. Veuillez vous reconnecter.');
+  if (res.status===429) { await new Promise(r => setTimeout(r, parseInt(res.headers.get('Retry-After')||'5',10)*1000)); return graphGet(url, token); }
+  if (!res.ok) { const t = await res.text(); throw new Error(`Erreur API Graph (${res.status}) : ${t.substring(0,200)}`); }
   return res.json();
 }
+function isMediaFile(item) { if (!item.file||!item.name) return false; const ext = item.name.split('.').pop()?.toLowerCase(); return IMAGE_EXTENSIONS.has(ext)||VIDEO_EXTENSIONS.has(ext); }
+async function getThumbnail(id) { try { const d = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${id}/thumbnails`, _currentToken); return d.value?.[0]?.medium?.url || d.value?.[0]?.large?.url || d.value?.[0]?.small?.url || null; } catch { return null; } }
 
-function isMediaFile(item) {
-  if (!item.file || !item.name) return false;
-  const ext = item.name.split('.').pop()?.toLowerCase();
-  return IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext);
-}
-
-async function listChildren(itemId) {
-  let url = itemId === 'root'
-    ? 'https://graph.microsoft.com/v1.0/me/drive/root/children?$top=200&$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl'
-    : `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/children?$top=200&$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl`;
-
-  const items = [];
-
-  while (url) {
-    const data = await graphGet(url, _currentToken);
-    items.push(...(data.value || []));
-    url = data['@odata.nextLink'] || null;
-  }
-
-  return items;
-}
-
-async function getThumbnail(itemId) {
-  try {
-    const data = await graphGet(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/thumbnails`,
-      _currentToken
-    );
-    return data.value?.[0]?.medium?.url
-        || data.value?.[0]?.large?.url
-        || data.value?.[0]?.small?.url
-        || null;
-  } catch {
-    return null;
-  }
-}
-
-/* FIX: refresh a single item's thumbnail + download URL if stale */
 async function refreshMediaUrls(item) {
   try {
-    const data = await graphGet(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${item.id}?$select=id,@microsoft.graph.downloadUrl,webUrl`,
-      _currentToken
-    );
-    const thumbnailUrl = await getThumbnail(item.id);
-
-    item.downloadUrl = data['@microsoft.graph.downloadUrl'] || thumbnailUrl || item.downloadUrl;
-    item.thumbnailUrl = thumbnailUrl || item.thumbnailUrl;
+    const d = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${item.id}?$select=id,@microsoft.graph.downloadUrl,webUrl`, _currentToken);
+    const tu = await getThumbnail(item.id);
+    item.downloadUrl = d['@microsoft.graph.downloadUrl'] || tu || item.downloadUrl;
+    item.thumbnailUrl = tu || item.thumbnailUrl;
     item.fetchedAt = new Date().toISOString();
-
-    /* Persist refreshed URLs */
     await dbPutMediaBatch([item]);
-  } catch (err) {
-    console.warn('Failed to refresh URLs for', item.id, err);
-  }
+    if (localCacheEnabled && tu) downloadAndCacheThumb(item).catch(()=>{});
+  } catch (err) { console.warn('Failed to refresh URLs for', item.id, err); }
 }
-
-/* FIX: check if a media item's URLs are likely expired */
 function isUrlStale(item) {
+  if (localCacheEnabled && thumbObjectUrls.has(item.id)) return false;
   if (!item.fetchedAt) return true;
-  const age = Date.now() - new Date(item.fetchedAt).getTime();
-  return age > THUMBNAIL_TTL_MS;
+  return (Date.now() - new Date(item.fetchedAt).getTime()) > THUMBNAIL_TTL_MS;
 }
 
-/* ==========================================
-   THUMBNAIL REFRESH QUEUE
-   Automatically refreshes expired thumbnails,
-   prioritizing photos visible in the current viewport.
-   ========================================== */
-const _refreshQueue = new Set();       /* photo IDs pending refresh */
-const _refreshInProgress = new Set();  /* photo IDs currently being refreshed */
-const _failedImgElements = new Map();  /* photo ID → Set of <img> elements to update */
+/* ==================== THUMB REFRESH QUEUE ==================== */
+const _refreshQueue = new Set(), _refreshInProgress = new Set(), _failedImgElements = new Map();
 let _refreshProcessing = false;
-const REFRESH_CONCURRENCY = 4;
-const REFRESH_DELAY_MS = 200;
-
-/* Register a failed <img> so we can update it after refresh */
-function queueThumbnailRefresh(photoId, imgElement) {
-  if (!_currentToken) return;         /* no token = can't refresh */
-  if (_refreshInProgress.has(photoId)) return; /* already refreshing */
-
-  _refreshQueue.add(photoId);
-
-  if (imgElement) {
-    if (!_failedImgElements.has(photoId)) _failedImgElements.set(photoId, new Set());
-    _failedImgElements.get(photoId).add(imgElement);
-  }
-
-  scheduleRefreshProcessing();
-}
-
-function scheduleRefreshProcessing() {
-  if (_refreshProcessing) return;
-  _refreshProcessing = true;
-  setTimeout(processRefreshQueue, 50);
-}
+function queueThumbnailRefresh(pid, img) { if (!_currentToken||_refreshInProgress.has(pid)) return; _refreshQueue.add(pid); if (img) { if (!_failedImgElements.has(pid)) _failedImgElements.set(pid, new Set()); _failedImgElements.get(pid).add(img); } if (!_refreshProcessing) { _refreshProcessing = true; setTimeout(processRefreshQueue, 50); } }
 
 async function processRefreshQueue() {
-  if (_refreshQueue.size === 0) {
-    _refreshProcessing = false;
-    return;
-  }
-
-  /* Prioritize photos visible in the current viewport */
-  const bounds = map.getBounds();
-  const priorityIds = [];
-  const normalIds = [];
-
-  for (const id of _refreshQueue) {
-    const photo = allPhotos.find(p => p.id === id);
-    if (photo && bounds.contains([photo.lat, photo.lng])) {
-      priorityIds.push(id);
-    } else {
-      normalIds.push(id);
-    }
-  }
-
-  /* Take up to REFRESH_CONCURRENCY items, priority first */
-  const batch = [...priorityIds, ...normalIds].slice(0, REFRESH_CONCURRENCY);
-
-  const promises = batch.map(async (id) => {
-    _refreshQueue.delete(id);
-    _refreshInProgress.add(id);
-
-    const photo = allPhotos.find(p => p.id === id);
+  if (!_refreshQueue.size) { _refreshProcessing = false; return; }
+  const bounds = map.getBounds(); const pri = [], norm = [];
+  for (const id of _refreshQueue) { const p = allPhotos.find(x=>x.id===id); if (p && bounds.contains([p.lat,p.lng])) pri.push(id); else norm.push(id); }
+  const batch = [...pri,...norm].slice(0,4);
+  await Promise.allSettled(batch.map(async id => {
+    _refreshQueue.delete(id); _refreshInProgress.add(id);
+    const photo = allPhotos.find(p=>p.id===id);
     if (!photo) { _refreshInProgress.delete(id); return; }
-
     try {
       await refreshMediaUrls(photo);
-
-      /* Update all registered <img> elements for this photo */
-      const newSrc = photo.thumbnailUrl || photo.downloadUrl || FALLBACK_ICON;
-      const imgSet = _failedImgElements.get(id);
-      if (imgSet) {
-        for (const img of imgSet) {
-          if (img.isConnected) { /* still in DOM */
-            img.onerror = null; /* prevent infinite loop */
-            img.src = newSrc;
-            /* Re-attach a one-shot onerror in case new URL also fails */
-            img.onerror = function() { this.src = FALLBACK_ICON; };
-          }
-        }
-        _failedImgElements.delete(id);
-      }
-
-      /* Update marker icon on the map */
-      updateMarkerThumb(id, newSrc);
-
-    } catch (err) {
-      console.warn('Thumbnail refresh failed for', id, err);
-    } finally {
-      _refreshInProgress.delete(id);
-    }
-  });
-
-  await Promise.allSettled(promises);
-
-  /* Small delay then process next batch */
-  if (_refreshQueue.size > 0) {
-    setTimeout(processRefreshQueue, REFRESH_DELAY_MS);
-  } else {
-    _refreshProcessing = false;
-  }
+      const src = getThumbSrc(photo);
+      const imgs = _failedImgElements.get(id);
+      if (imgs) { for (const im of imgs) if (im.isConnected) { im.onerror=null; im.src=src; im.onerror=function(){this.src=FALLBACK_ICON;}; } _failedImgElements.delete(id); }
+      updateMarkerThumb(id, src);
+    } catch {} finally { _refreshInProgress.delete(id); }
+  }));
+  if (_refreshQueue.size) setTimeout(processRefreshQueue, 200); else _refreshProcessing = false;
 }
-
-/* Find and update a marker's thumbnail on the map */
-function updateMarkerThumb(photoId, newSrc) {
-  for (const m of markers) {
-    if (m._photoData && m._photoData.id === photoId) {
-      const el = m.getElement?.();
-      if (el) {
-        const img = el.querySelector('img');
-        if (img) {
-          img.onerror = null;
-          img.src = newSrc;
-          img.onerror = function() { this.src = FALLBACK_ICON; };
-        }
-      }
-      break;
-    }
-  }
-}
-
-/* On map move/zoom: check visible markers for stale thumbnails and queue them */
+function updateMarkerThumb(pid, src) { for (const m of markers) { if (m._photoData?.id===pid) { const img = m.getElement?.()?.querySelector('img'); if (img) { img.onerror=null; img.src=src; img.onerror=function(){this.src=FALLBACK_ICON;}; } break; } } }
 function refreshVisibleStaleThumbnails() {
-  if (!_currentToken) return;
-
-  const bounds = map.getBounds();
-  let queued = 0;
-
-  for (const m of markers) {
-    if (queued >= 20) break; /* don't queue too many at once */
-    const photo = m._photoData;
-    if (!photo) continue;
-    if (!bounds.contains([photo.lat, photo.lng])) continue;
-    if (_refreshInProgress.has(photo.id) || _refreshQueue.has(photo.id)) continue;
-
-    if (isUrlStale(photo)) {
-      _refreshQueue.add(photo.id);
-      queued++;
-    }
-  }
-
-  if (queued > 0) scheduleRefreshProcessing();
+  if (!_currentToken) return; const b = map.getBounds(); let q=0;
+  for (const m of markers) { if (q>=20) break; const p=m._photoData; if (!p||!b.contains([p.lat,p.lng])||_refreshInProgress.has(p.id)||_refreshQueue.has(p.id)) continue; if (isUrlStale(p)) { _refreshQueue.add(p.id); q++; } }
+  if (q>0 && !_refreshProcessing) { _refreshProcessing=true; setTimeout(processRefreshQueue,50); }
 }
-
 let _visibleRefreshTimer = null;
-map.on('moveend', () => {
-  if (_visibleRefreshTimer) clearTimeout(_visibleRefreshTimer);
-  _visibleRefreshTimer = setTimeout(refreshVisibleStaleThumbnails, 500);
-});
+map.on('moveend', () => { clearTimeout(_visibleRefreshTimer); _visibleRefreshTimer = setTimeout(refreshVisibleStaleThumbnails, 500); });
 
-async function flushBatchToIndexedDb(batch, allItemsRef) {
-  if (!batch.length) return;
-  await dbPutMediaBatch(batch);
-  allItemsRef.push(...batch);
-  batch.length = 0;
-}
-
-/*
- * DELTA-BASED SYNC
- *
- * Uses Microsoft Graph's delta query API:
- * - First sync: fetches ALL files in OneDrive (flat, no recursion needed)
- * - Subsequent syncs: only fetches changes since the last deltaLink
- * - Handles additions, modifications, and deletions
- * - Stores the deltaLink in IndexedDB for persistence across sessions
- *
- * This is dramatically faster than recursive folder scanning because
- * it skips unchanged files entirely at the API level.
- */
+/* ==================== DELTA SYNC ==================== */
 const DELTA_BASE_URL = 'https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
 
-async function dbDeleteMediaItem(id) {
-  const db = await openDb();
-  await new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_MEDIA, 'readwrite');
-    tx.objectStore(STORE_MEDIA).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
 async function runDeltaSync() {
-  _currentToken = await getToken();
-  if (!_currentToken) return [];
-
+  _currentToken = await getToken(); if (!_currentToken) return [];
   const existing = await dbGetAllMedia();
-  const existingMap = new Map(existing.map(p => [p.id, p]));
-  const existingCount = existing.length;
-
-  /* Load saved deltaLink — if it exists, we only get changes */
+  const eMap = new Map(existing.map(p=>[p.id,p]));
+  const eCount = existing.length;
   let deltaLink = await dbGetMeta('deltaLink');
   let url = deltaLink || DELTA_BASE_URL;
-  const isFirstScan = !deltaLink;
+  const isFirst = !deltaLink;
+  setScanStatus('scanning', isFirst ? 'Premier scan…' : 'Synchronisation…', isFirst ? '' : eCount+' en cache', 2);
 
-  if (isFirstScan) {
-    setScanStatus('scanning', 'Premier scan…', '', 2);
-  } else {
-    setScanStatus('scanning', 'Synchronisation…', existingCount + ' en cache', 2);
-  }
-
-  let scanned = 0;
-  let added = 0;
-  let deleted = 0;
-  let newDeltaLink = null;
+  let scanned=0, added=0, deleted=0, newDelta=null;
   const batch = [];
 
   while (url) {
     const data = await graphGet(url, _currentToken);
-    const items = data.value || [];
-
-    for (const item of items) {
+    for (const item of (data.value||[])) {
       scanned++;
+      if (scanned%50===0) setScanStatus('scanning', isFirst?`Analyse… ${scanned} fichiers`:`Synchro… ${scanned} changements`, isFirst?(eCount+added)+' trouvés':(added>0?`+${added} nouveaux`:'vérification…'), Math.min(5+scanned*0.005,95));
 
-      /* Update topbar every 50 items */
-      if (scanned % 50 === 0) {
-        const label = isFirstScan
-          ? `Analyse… ${scanned} fichiers`
-          : `Synchro… ${scanned} changements`;
-        const countLabel = isFirstScan
-          ? (existingCount + added) + ' trouvés'
-          : (added > 0 ? `+${added} nouveaux` : 'vérification…');
+      if (item.deleted) { if (eMap.has(item.id)) { eMap.delete(item.id); await dbDeleteMediaItem(item.id); if (localCacheEnabled) dbDeleteThumb(item.id).catch(()=>{}); deleted++; } continue; }
+      if (item.folder || !isMediaFile(item)) continue;
 
-        setScanStatus('scanning', label, countLabel,
-          Math.min(5 + scanned * 0.005, 95)
-        );
-      }
-
-      /* Handle deletions */
-      if (item.deleted) {
-        if (existingMap.has(item.id)) {
-          existingMap.delete(item.id);
-          await dbDeleteMediaItem(item.id);
-          deleted++;
+      if (!isFirst && eMap.has(item.id)) {
+        const lat=item.location?.latitude, lng=item.location?.longitude;
+        if (lat!=null && lng!=null && !(lat===0&&lng===0)) {
+          const tu = await getThumbnail(item.id);
+          const dt = item.photo?.takenDateTime || item.createdDateTime;
+          const u = { id:item.id, name:item.name, lat:Number(lat), lng:Number(lng), date:dt?new Date(dt):null, thumbnailUrl:tu, downloadUrl:item['@microsoft.graph.downloadUrl']||tu, webUrl:item.webUrl||null, mediaType:isVideoByName(item.name)?'video':'image', fetchedAt:new Date().toISOString() };
+          eMap.set(item.id, u); batch.push(u);
+          if (localCacheEnabled && tu) downloadAndCacheThumb(u).catch(()=>{});
         }
         continue;
       }
+      if (isFirst && eMap.has(item.id)) continue;
 
-      /* Skip folders and non-media */
-      if (item.folder) continue;
-      if (!isMediaFile(item)) continue;
+      const lat=item.location?.latitude, lng=item.location?.longitude;
+      if (lat==null||lng==null||lat===0&&lng===0) continue;
+      const tu = await getThumbnail(item.id);
+      const dt = item.photo?.takenDateTime || item.createdDateTime;
+      const mi = { id:item.id, name:item.name, lat:Number(lat), lng:Number(lng), date:dt?new Date(dt):null, thumbnailUrl:tu, downloadUrl:item['@microsoft.graph.downloadUrl']||tu, webUrl:item.webUrl||null, mediaType:isVideoByName(item.name)?'video':'image', fetchedAt:new Date().toISOString() };
+      eMap.set(item.id, mi); batch.push(mi); added++;
+      if (localCacheEnabled && tu) downloadAndCacheThumb(mi).catch(()=>{});
 
-      /* Skip if already known and not a delta update */
-      if (!isFirstScan && existingMap.has(item.id)) {
-        /* Delta returned it = it was modified, update it */
-        const lat = item.location?.latitude;
-        const lng = item.location?.longitude;
-        if (lat != null && lng != null && !(lat === 0 && lng === 0)) {
-          const thumbnailUrl = await getThumbnail(item.id);
-          const date = item.photo?.takenDateTime || item.createdDateTime;
-          const updated = {
-            id: item.id,
-            name: item.name,
-            lat: Number(lat),
-            lng: Number(lng),
-            date: date ? new Date(date) : null,
-            thumbnailUrl,
-            downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
-            webUrl: item.webUrl || null,
-            mediaType: isVideoByName(item.name) ? 'video' : 'image',
-            fetchedAt: new Date().toISOString()
-          };
-          existingMap.set(item.id, updated);
-          batch.push(updated);
-        }
-        continue;
-      }
-
-      /* First scan: skip if already in cache */
-      if (isFirstScan && existingMap.has(item.id)) continue;
-
-      /* New item — check geo data */
-      const lat = item.location?.latitude;
-      const lng = item.location?.longitude;
-      if (lat == null || lng == null) continue;
-      if (lat === 0 && lng === 0) continue;
-
-      const thumbnailUrl = await getThumbnail(item.id);
-      const date = item.photo?.takenDateTime || item.createdDateTime;
-
-      const mediaItem = {
-        id: item.id,
-        name: item.name,
-        lat: Number(lat),
-        lng: Number(lng),
-        date: date ? new Date(date) : null,
-        thumbnailUrl,
-        downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
-        webUrl: item.webUrl || null,
-        mediaType: isVideoByName(item.name) ? 'video' : 'image',
-        fetchedAt: new Date().toISOString()
-      };
-
-      existingMap.set(item.id, mediaItem);
-      batch.push(mediaItem);
-      added++;
-
-      /* Flush to IndexedDB and update map live */
-      const flushThreshold = (existingCount + added) < 50 ? 5 : 25;
-      if (batch.length >= flushThreshold) {
-        await dbPutMediaBatch(batch);
-        batch.length = 0;
-
-        allPhotos = [...existingMap.values()];
-        const shouldFit = existingCount === 0 && added <= flushThreshold;
-        updateUiWithCurrentPhotos(shouldFit);
-
-        setScanStatus('scanning',
-          isFirstScan ? `Analyse… ${scanned} fichiers` : `Synchro… ${scanned} changements`,
-          isFirstScan ? (existingCount + added) + ' trouvés' : `+${added} nouveaux`,
-          Math.min(5 + scanned * 0.005, 95)
-        );
+      const ft = (eCount+added)<50 ? 5 : 25;
+      if (batch.length>=ft) {
+        await dbPutMediaBatch(batch); batch.length=0;
+        allPhotos=[...eMap.values()];
+        updateUiWithCurrentPhotos(eCount===0 && added<=ft);
+        setScanStatus('scanning', isFirst?`Analyse… ${scanned} fichiers`:`Synchro… ${scanned} changements`, isFirst?(eCount+added)+' trouvés':`+${added} nouveaux`, Math.min(5+scanned*0.005,95));
       }
     }
-
-    /* Follow pagination or store deltaLink */
-    if (data['@odata.nextLink']) {
-      url = data['@odata.nextLink'];
-    } else {
-      newDeltaLink = data['@odata.deltaLink'] || null;
-      url = null;
-    }
+    url = data['@odata.nextLink'] || (newDelta=data['@odata.deltaLink']||null, null);
   }
+  if (batch.length) await dbPutMediaBatch(batch);
+  if (newDelta) await dbSetMeta('deltaLink', newDelta);
+  allPhotos=[...eMap.values()];
+  updateUiWithCurrentPhotos(eCount===0 && allPhotos.length>0);
+  await dbSetMeta('scan_state', {scanned, found:allPhotos.length, updatedAt:new Date().toISOString(), completed:true});
 
-  /* Flush remaining batch */
-  if (batch.length > 0) {
-    await dbPutMediaBatch(batch);
-  }
-
-  /* Save deltaLink for next time */
-  if (newDeltaLink) {
-    await dbSetMeta('deltaLink', newDeltaLink);
-  }
-
-  /* Final update */
-  allPhotos = [...existingMap.values()];
-  updateUiWithCurrentPhotos(existingCount === 0 && allPhotos.length > 0);
-
-  await dbSetMeta('scan_state', {
-    scanned,
-    found: allPhotos.length,
-    updatedAt: new Date().toISOString(),
-    completed: true
-  });
-
-  if (isFirstScan) {
-    setScanDone(allPhotos.length, allPhotos.length + ' médias');
-  } else if (added > 0 || deleted > 0) {
-    const parts = [];
-    if (added > 0) parts.push(`+${added}`);
-    if (deleted > 0) parts.push(`-${deleted}`);
-    setScanDone(allPhotos.length, parts.join(' ') + ' · ' + allPhotos.length + ' total');
-  } else {
-    setScanDone(allPhotos.length, 'à jour');
-  }
-
+  if (isFirst) setScanDone(allPhotos.length, allPhotos.length+' médias');
+  else if (added>0||deleted>0) { const p=[]; if(added>0)p.push(`+${added}`); if(deleted>0)p.push(`-${deleted}`); setScanDone(allPhotos.length, p.join(' ')+' · '+allPhotos.length+' total'); }
+  else setScanDone(allPhotos.length, 'à jour');
+  if (localCacheEnabled) setTimeout(backgroundCacheThumbs, 2000);
   return allPhotos;
 }
 
-async function runBackgroundSync() {
-  if (backgroundSyncRunning) return;
-  backgroundSyncRunning = true;
+async function runBackgroundSync() { if (backgroundSyncRunning) return; backgroundSyncRunning=true; try { await runDeltaSync(); } catch(e) { console.warn('Sync error',e); setScanStatus('error','Sync interrompue','',0); setTimeout(()=>setScanStatus('hidden'),4000); } finally { backgroundSyncRunning=false; } }
+function startAutoSync() { if(autoSyncTimer) clearInterval(autoSyncTimer); autoSyncTimer = setInterval(()=>{ if(_currentToken&&!backgroundSyncRunning) runBackgroundSync(); }, AUTO_SYNC_INTERVAL_MS); }
+function stopAutoSync() { if(autoSyncTimer){clearInterval(autoSyncTimer);autoSyncTimer=null;} }
 
-  try {
-    await runDeltaSync();
-  } catch (err) {
-    console.warn('Erreur pendant la synchronisation en arrière-plan', err);
-    setScanStatus('error', 'Sync interrompue', '', 0);
-    setTimeout(() => setScanStatus('hidden'), 4000);
-  } finally {
-    backgroundSyncRunning = false;
-  }
-}
-
-function startAutoSync() {
-  if (autoSyncTimer) clearInterval(autoSyncTimer);
-  autoSyncTimer = setInterval(() => {
-    if (_currentToken && !backgroundSyncRunning) {
-      runBackgroundSync();
-    }
-  }, AUTO_SYNC_INTERVAL_MS);
-}
-
-function stopAutoSync() {
-  if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
-}
-
-const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
-
-function getMarkerSize() {
-  const z = map.getZoom();
-  if (z >= 17) return 140;
-  if (z >= 15) return 120;
-  if (z >= 13) return 100;
-  if (z >= 11) return 85;
-  if (z >= 9) return 72;
-  return 60;
-}
-
-/*
- * FIX: precompute a spatial index for nearby-photo lookups.
- * Groups photos into grid cells so `createMarker` is O(1) per marker
- * instead of O(n), bringing total from O(n²) to O(n).
- */
+/* ==================== SPATIAL INDEX ==================== */
 let spatialIndex = {};
 const SPATIAL_CELL_SIZE = 0.0005;
-
-function buildSpatialIndex(photos) {
-  spatialIndex = {};
-  for (const p of photos) {
-    const cellKey = Math.round(p.lat / SPATIAL_CELL_SIZE) + ',' + Math.round(p.lng / SPATIAL_CELL_SIZE);
-    if (!spatialIndex[cellKey]) spatialIndex[cellKey] = [];
-    spatialIndex[cellKey].push(p);
-  }
+function buildSpatialIndex(photos) { spatialIndex={}; for (const p of photos) { const k=Math.round(p.lat/SPATIAL_CELL_SIZE)+','+Math.round(p.lng/SPATIAL_CELL_SIZE); (spatialIndex[k]||(spatialIndex[k]=[])).push(p); } }
+function getNearbyPhotos(lat, lng, fSet) {
+  const cLat=Math.round(lat/SPATIAL_CELL_SIZE), cLng=Math.round(lng/SPATIAL_CELL_SIZE), r=[];
+  for (let di=-1;di<=1;di++) for (let dj=-1;dj<=1;dj++) { const c=spatialIndex[(cLat+di)+','+(cLng+dj)]; if (!c) continue; for (const p of c) { if (fSet&&!fSet.has(p.id)) continue; if (Math.abs(p.lat-lat)<SPATIAL_CELL_SIZE&&Math.abs(p.lng-lng)<SPATIAL_CELL_SIZE) r.push(p); } }
+  return r;
 }
 
-function getNearbyPhotos(lat, lng, filteredSet) {
-  const cellLat = Math.round(lat / SPATIAL_CELL_SIZE);
-  const cellLng = Math.round(lng / SPATIAL_CELL_SIZE);
-  const result = [];
-
-  /* Check the cell and all 8 neighbors */
-  for (let di = -1; di <= 1; di++) {
-    for (let dj = -1; dj <= 1; dj++) {
-      const key = (cellLat + di) + ',' + (cellLng + dj);
-      const cell = spatialIndex[key];
-      if (!cell) continue;
-      for (const p of cell) {
-        if (filteredSet && !filteredSet.has(p.id)) continue;
-        const dlat = Math.abs(p.lat - lat);
-        const dlng = Math.abs(p.lng - lng);
-        if (dlat < SPATIAL_CELL_SIZE && dlng < SPATIAL_CELL_SIZE) {
-          result.push(p);
-        }
-      }
-    }
-  }
-
-  return result;
-}
-
-function createMarker(photo, filteredIdSet) {
-  const thumbSrc = photo.thumbnailUrl || FALLBACK_ICON;
-  let size = getMarkerSize();
-
-  /* FIX: use spatial index instead of O(n) scan */
-  const isolatedCount = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet).length;
-  if (isolatedCount === 1) size += 16;
-
-  const photoId = photo.id;
-
-  const countBadge = isolatedCount > 1
-    ? `<div class="photo-marker-count">${isolatedCount}</div>`
-    : '';
-
+/* ==================== MARKERS ==================== */
+function createMarker(photo, fIdSet) {
+  const src = getThumbSrc(photo), pid = photo.id;
+  const nearby = getNearbyPhotos(photo.lat, photo.lng, fIdSet);
+  const badge = nearby.length>1 ? `<div class="photo-marker-count">${nearby.length}</div>` : '';
   const icon = L.divIcon({
     className: '',
-    html: `
-      <div class="photo-marker-wrap">
-        <div class="photo-marker" style="width:${size}px;height:${size}px;">
-          <img src="${thumbSrc}" loading="lazy"
-            data-photo-id="${photoId}"
-            onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${photoId}', this);"/>
-          ${countBadge}
-        </div>
-        <div class="photo-marker-tail"></div>
-      </div>
-    `,
-    iconSize: [size, size + 10],
-    iconAnchor: [size / 2, size + 10]
+    html: `<div class="photo-marker-wrap"><div class="photo-marker"><img src="${src}" loading="lazy" data-photo-id="${pid}" onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${pid}', this);"/>${badge}</div><div class="photo-marker-tail"></div></div>`,
+    iconSize: [MARKER_SIZE, MARKER_SIZE+10], iconAnchor: [MARKER_SIZE/2, MARKER_SIZE+10]
   });
-
-  const marker = L.marker([photo.lat, photo.lng], { icon });
-
-  marker.on('click', () => {
-    const nearby = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet);
-    openPanel(nearby.length > 0 ? nearby : [photo], photo.lat, photo.lng);
-  });
-
-  marker._photoData = photo;
-  return marker;
+  const m = L.marker([photo.lat, photo.lng], {icon});
+  m.on('click', () => { const np = getNearbyPhotos(photo.lat,photo.lng,fIdSet); openPanel(np.length?np:[photo], photo.lat, photo.lng); });
+  m._photoData = photo;
+  return m;
 }
-
 function renderMarkers(filtered) {
-  clusterGroup.off('clusterclick');
-  clusterGroup.clearLayers();
-  markers = [];
-
-  /* FIX: build spatial index from ALL photos, then create a set of filtered IDs */
+  clusterGroup.off('clusterclick'); clusterGroup.clearLayers(); markers=[];
   buildSpatialIndex(allPhotos);
-  const filteredIdSet = new Set(filtered.map(p => p.id));
-
-  filtered.forEach(photo => {
-    const m = createMarker(photo, filteredIdSet);
-    markers.push(m);
-  });
-
+  const fIdSet = new Set(filtered.map(p=>p.id));
+  filtered.forEach(p => markers.push(createMarker(p, fIdSet)));
   clusterGroup.addLayers(markers);
-
-  clusterGroup.on('clusterclick', e => {
-    const childMarkers = e.layer.getAllChildMarkers();
-    const photos = childMarkers.map(m => m._photoData);
-    const center = e.latlng;
-    openPanel(photos, center.lat, center.lng);
-  });
+  clusterGroup.on('clusterclick', e => { openPanel(e.layer.getAllChildMarkers().map(m=>m._photoData), e.latlng.lat, e.latlng.lng); });
 }
 
-/*
- * FIX: only re-render on zoom if marker sizes actually changed.
- * Avoids expensive full rebuild on every zoom level change.
- */
-let lastMarkerSize = null;
-let zoomRefreshTimer = null;
-
-map.on('zoomend', () => {
-  if (zoomRefreshTimer) clearTimeout(zoomRefreshTimer);
-  zoomRefreshTimer = setTimeout(() => {
-    const newSize = getMarkerSize();
-    if (newSize !== lastMarkerSize) {
-      lastMarkerSize = newSize;
-      applyFilter();
-    }
-  }, 80);
-});
-
+/* ==================== PANEL ==================== */
 function openPanel(photos, lat, lng) {
-  const panel = document.getElementById('photo-panel');
-  const locName = document.getElementById('panel-location-name');
-  const dateRange = document.getElementById('panel-date-range');
-  const countEl = document.getElementById('panel-count');
-
-  panelAllPhotos = [...photos].sort((a, b) => (b.date || 0) - (a.date || 0));
-
-  const dates = panelAllPhotos.filter(p => p.date).map(p => p.date);
-  if (dates.length) {
-    const min = new Date(Math.min(...dates));
-    const max = new Date(Math.max(...dates));
-    const fmt = d => d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
-    dateRange.textContent =
-      min.getFullYear() === max.getFullYear() && min.getMonth() === max.getMonth()
-        ? fmt(min)
-        : `${fmt(min)} — ${fmt(max)}`;
-  } else {
-    dateRange.textContent = '';
-  }
-
-  countEl.textContent = `${panelAllPhotos.length} média${panelAllPhotos.length > 1 ? 's' : ''}`;
-
-  locName.textContent = 'Chargement…';
-  reverseGeocode(lat, lng).then(name => { locName.textContent = name; });
-
+  panelAllPhotos = [...photos].sort((a,b) => (b.date||0)-(a.date||0));
+  const dates = panelAllPhotos.filter(p=>p.date).map(p=>p.date);
+  const dr = document.getElementById('panel-date-range');
+  if (dates.length) { const mn=new Date(Math.min(...dates)), mx=new Date(Math.max(...dates)); const f=d=>d.toLocaleDateString('fr-FR',{month:'short',year:'numeric'}); dr.textContent = mn.getFullYear()===mx.getFullYear()&&mn.getMonth()===mx.getMonth()?f(mn):`${f(mn)} — ${f(mx)}`; } else dr.textContent='';
+  document.getElementById('panel-count').textContent = `${panelAllPhotos.length} média${panelAllPhotos.length>1?'s':''}`;
+  const loc = document.getElementById('panel-location-name'); loc.textContent='Chargement…';
+  reverseGeocode(lat,lng).then(n => loc.textContent=n);
   renderPanelPhotos();
-  panel.classList.add('open');
+  document.getElementById('photo-panel').classList.add('open');
 }
-
 function renderPanelPhotos() {
-  const grid = document.getElementById('panel-photos');
-  grid.innerHTML = '';
-
-  panelAllPhotos.forEach((photo, idx) => {
-    const card = document.createElement('div');
-    card.className = 'thumb-card';
-
-    const dateStr = photo.date
-      ? photo.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
-      : '';
-
-    const mediaEl = document.createElement('img');
-    mediaEl.src = photo.thumbnailUrl || photo.downloadUrl || FALLBACK_ICON;
-    mediaEl.loading = 'lazy';
-    mediaEl.decoding = 'async';
-    mediaEl.alt = photo.name;
-    mediaEl.dataset.photoId = photo.id;
-    mediaEl.onerror = function() {
-      this.src = FALLBACK_ICON;
-      queueThumbnailRefresh(photo.id, this);
-    };
-
-    const overlay = document.createElement('div');
-    overlay.className = 'thumb-overlay';
-    overlay.innerHTML = `${escapeHtml(photo.name)}<br>${dateStr}`;
-
-    card.appendChild(mediaEl);
-    card.appendChild(overlay);
-
-    card.addEventListener('click', () => {
-      lightboxPhotos = panelAllPhotos;
-      lightboxIndex = idx;
-      showLightboxPhoto();
-    });
-
-    grid.appendChild(card);
+  const g = document.getElementById('panel-photos'); g.innerHTML='';
+  panelAllPhotos.forEach((photo,idx) => {
+    const card=document.createElement('div'); card.className='thumb-card';
+    const ds = photo.date ? photo.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : '';
+    const img=document.createElement('img'); img.src=getThumbSrc(photo); img.loading='lazy'; img.decoding='async'; img.alt=photo.name; img.dataset.photoId=photo.id;
+    img.onerror = function() { this.src=FALLBACK_ICON; queueThumbnailRefresh(photo.id,this); };
+    const ov=document.createElement('div'); ov.className='thumb-overlay'; ov.innerHTML=`${escapeHtml(photo.name)}<br>${ds}`;
+    card.appendChild(img); card.appendChild(ov);
+    card.addEventListener('click', () => { lightboxPhotos=panelAllPhotos; lightboxIndex=idx; showLightboxPhoto(); });
+    g.appendChild(card);
   });
 }
 
+/* ==================== LIGHTBOX WITH HD ==================== */
+let _hdAbort = null;
 function showLightboxPhoto() {
-  if (lightboxPhotos.length === 0) return;
-
+  if (!lightboxPhotos.length) return;
+  if (_hdAbort) { _hdAbort.abort(); _hdAbort=null; }
   const photo = lightboxPhotos[lightboxIndex];
-  const lb = document.getElementById('lightbox');
-  const img = document.getElementById('lightbox-img');
-  const video = document.getElementById('lightbox-video');
-  const openBtn = document.getElementById('lightbox-open-onedrive');
+  const lb=document.getElementById('lightbox'), img=document.getElementById('lightbox-img'), video=document.getElementById('lightbox-video');
+  const hdLoad=document.getElementById('hd-loader'), hdDone=document.getElementById('hd-done'), openBtn=document.getElementById('lightbox-open-onedrive');
+  img.style.display='none'; video.style.display='none';
+  hdLoad.classList.remove('visible'); hdDone.classList.remove('visible');
+  video.onloadedmetadata=null; img.onload=null; img.onerror=null;
+  video.pause(); try{video.removeAttribute('src');video.load();}catch{}
 
-  img.style.display = 'none';
-  video.style.display = 'none';
-  img.classList.remove('portrait', 'landscape');
-  video.classList.remove('portrait', 'landscape');
-
-  /* FIX: clean up previous event handlers before reassigning */
-  video.onloadedmetadata = null;
-  img.onload = null;
-  img.onerror = null;
-
-  video.pause();
-  video.removeAttribute('src');
-  video.load();
-
+  const thumbSrc = getThumbSrc(photo);
   const fullSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
+  const currentId = photo.id;
 
-  /* FIX: if URL is stale, try refreshing in the background */
-  if (isUrlStale(photo) && msalInstance) {
-    getToken().then(token => { _currentToken = token; return refreshMediaUrls(photo); }).then(() => {
-      /* If the lightbox is still showing this photo, update src */
-      if (lightboxPhotos[lightboxIndex]?.id === photo.id) {
-        const currentSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
-        if (photo.mediaType === 'video') {
-          video.src = currentSrc;
-        } else {
-          img.src = currentSrc;
-        }
-      }
-    }).catch(() => { /* ignore refresh failures in lightbox */ });
-  }
-
-  if (photo.mediaType === 'video') {
-    video.src = fullSrc;
-    video.style.display = 'block';
-
-    video.onloadedmetadata = () => {
-      /* FIX: guard — only apply classes if this video is still the current one */
-      if (lightboxPhotos[lightboxIndex]?.id !== photo.id) return;
-      const isPortrait = video.videoHeight > video.videoWidth;
-      video.classList.toggle('portrait', isPortrait);
-      video.classList.toggle('landscape', !isPortrait);
-    };
+  if (photo.mediaType==='video') {
+    video.src=fullSrc; video.style.display='block';
   } else {
-    img.src = fullSrc;
-    img.style.display = 'block';
-
-    img.onload = () => {
-      /* FIX: guard — only apply classes if this image is still the current one */
-      if (lightboxPhotos[lightboxIndex]?.id !== photo.id) return;
-      const isPortrait = img.naturalHeight > img.naturalWidth;
-      img.classList.toggle('portrait', isPortrait);
-      img.classList.toggle('landscape', !isPortrait);
-    };
-
-    img.onerror = () => {
-      img.src = photo.thumbnailUrl || FALLBACK_ICON;
-    };
+    img.src=thumbSrc; img.style.display='block';
+    /* Load HD */
+    if (fullSrc && fullSrc!==thumbSrc && fullSrc!==FALLBACK_ICON) {
+      hdLoad.classList.add('visible');
+      const hd = new Image();
+      hd.onload = () => { if (lightboxPhotos[lightboxIndex]?.id!==currentId) return; img.src=hd.src; hdLoad.classList.remove('visible'); hdDone.classList.add('visible'); setTimeout(()=>{ if(lightboxPhotos[lightboxIndex]?.id===currentId) hdDone.classList.remove('visible'); },2000); };
+      hd.onerror = () => {
+        if (lightboxPhotos[lightboxIndex]?.id!==currentId) return;
+        hdLoad.classList.remove('visible');
+        if (isUrlStale(photo) && _currentToken) {
+          refreshMediaUrls(photo).then(() => {
+            if (lightboxPhotos[lightboxIndex]?.id!==currentId) return;
+            const ns = photo.downloadUrl||photo.thumbnailUrl;
+            if (ns) { hdLoad.classList.add('visible'); const r=new Image(); r.onload=()=>{ if(lightboxPhotos[lightboxIndex]?.id===currentId){img.src=r.src;hdLoad.classList.remove('visible');hdDone.classList.add('visible');setTimeout(()=>hdDone.classList.remove('visible'),2000);} }; r.onerror=()=>hdLoad.classList.remove('visible'); r.src=ns; }
+          }).catch(()=>{});
+        }
+      };
+      hd.src = fullSrc;
+    }
+    img.onerror = () => { img.src = photo.thumbnailUrl || FALLBACK_ICON; };
   }
 
   document.getElementById('lightbox-name').textContent = photo.name;
-
-  const dateStr = photo.date
-    ? photo.date.toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      })
-    : '';
-
-  const coords = `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`;
-  document.getElementById('lightbox-meta').textContent =
-    [dateStr, coords].filter(Boolean).join('  ·  ');
-
-  const oneDriveUrl = photo.webUrl || photo.downloadUrl;
-  if (oneDriveUrl) {
-    openBtn.dataset.webUrl = oneDriveUrl;
-    openBtn.style.display = 'inline-flex';
-  } else {
-    delete openBtn.dataset.webUrl;
-    openBtn.style.display = 'none';
-  }
-
-  document.getElementById('lightbox-prev').style.display =
-    lightboxPhotos.length > 1 ? 'flex' : 'none';
-  document.getElementById('lightbox-next').style.display =
-    lightboxPhotos.length > 1 ? 'flex' : 'none';
-
+  const dateStr = photo.date ? photo.date.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : '';
+  document.getElementById('lightbox-meta').textContent = [dateStr, `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`].filter(Boolean).join('  ·  ');
+  const odUrl = photo.webUrl||photo.downloadUrl;
+  if (odUrl) { openBtn.dataset.webUrl=odUrl; openBtn.style.display='inline-flex'; } else { delete openBtn.dataset.webUrl; openBtn.style.display='none'; }
+  document.getElementById('lightbox-prev').style.display = lightboxPhotos.length>1?'flex':'none';
+  document.getElementById('lightbox-next').style.display = lightboxPhotos.length>1?'flex':'none';
   lb.classList.add('open');
 }
 
-document.getElementById('panel-close').addEventListener('click', () => {
-  document.getElementById('photo-panel').classList.remove('open');
-});
+/* ==================== EVENT LISTENERS ==================== */
+document.getElementById('panel-close').addEventListener('click', () => document.getElementById('photo-panel').classList.remove('open'));
+map.on('click', () => document.getElementById('photo-panel').classList.remove('open'));
+document.getElementById('lightbox-close').addEventListener('click', () => document.getElementById('lightbox').classList.remove('open'));
+document.getElementById('lightbox-prev').addEventListener('click', e => { e.stopPropagation(); lightboxIndex=(lightboxIndex-1+lightboxPhotos.length)%lightboxPhotos.length; showLightboxPhoto(); });
+document.getElementById('lightbox-next').addEventListener('click', e => { e.stopPropagation(); lightboxIndex=(lightboxIndex+1)%lightboxPhotos.length; showLightboxPhoto(); });
+document.getElementById('lightbox').addEventListener('click', e => { if(e.target===document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('open'); });
+document.getElementById('lightbox-open-onedrive').addEventListener('click', e => { e.stopPropagation(); const u=e.currentTarget.dataset.webUrl; if(!u)return; if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) location.href=u; else window.open(u,'_blank','noopener'); });
+document.addEventListener('keydown', e => { const lb=document.getElementById('lightbox'); if(!lb.classList.contains('open'))return; if(e.key==='Escape')lb.classList.remove('open'); if(e.key==='ArrowLeft'){lightboxIndex=(lightboxIndex-1+lightboxPhotos.length)%lightboxPhotos.length;showLightboxPhoto();} if(e.key==='ArrowRight'){lightboxIndex=(lightboxIndex+1)%lightboxPhotos.length;showLightboxPhoto();} });
+document.addEventListener('keydown', e => { if(e.key==='Escape') document.getElementById('photo-panel').classList.remove('open'); });
 
-map.on('click', () => {
-  document.getElementById('photo-panel').classList.remove('open');
-});
-
-document.getElementById('lightbox-close').addEventListener('click', () => {
-  document.getElementById('lightbox').classList.remove('open');
-});
-
-document.getElementById('lightbox-prev').addEventListener('click', (e) => {
-  e.stopPropagation();
-  lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
-  showLightboxPhoto();
-});
-
-document.getElementById('lightbox-next').addEventListener('click', (e) => {
-  e.stopPropagation();
-  lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
-  showLightboxPhoto();
-});
-
-document.getElementById('lightbox').addEventListener('click', e => {
-  if (e.target === document.getElementById('lightbox')) {
-    document.getElementById('lightbox').classList.remove('open');
-  }
-});
-
-/*
- * Open in OneDrive.
- *
- * On iOS/Android: OneDrive web URLs are registered as Universal Links /
- * App Links by Microsoft. If the OneDrive app is installed, the OS
- * automatically opens the app instead of the browser — no custom URL
- * scheme needed. If the app isn't installed, it opens in the browser.
- *
- * On desktop: opens in a new tab.
- */
-document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) => {
-  e.stopPropagation();
-
-  const webUrl = e.currentTarget.dataset.webUrl;
-  if (!webUrl) return;
-
-  /* On mobile, navigate in same tab so iOS Universal Links can intercept */
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-  if (isMobile) {
-    window.location.href = webUrl;
-  } else {
-    window.open(webUrl, '_blank', 'noopener');
-  }
-});
-
-document.addEventListener('keydown', e => {
-  const lb = document.getElementById('lightbox');
-  if (!lb.classList.contains('open')) return;
-
-  if (e.key === 'Escape') lb.classList.remove('open');
-  if (e.key === 'ArrowLeft') {
-    lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
-    showLightboxPhoto();
-  }
-  if (e.key === 'ArrowRight') {
-    lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
-    showLightboxPhoto();
-  }
-});
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    document.getElementById('photo-panel').classList.remove('open');
-  }
-});
-
-/* ==========================================
-   TOUCH SWIPE SUPPORT
-   ========================================== */
+/* Touch swipe */
 (function() {
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let touchEndX = 0;
-  let touchEndY = 0;
-  const SWIPE_THRESHOLD = 50;
-
-  const lb = document.getElementById('lightbox');
-
-  /* Lightbox swipe: left/right to navigate, down to close */
-  lb.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-  }, { passive: true });
-
-  lb.addEventListener('touchend', e => {
-    touchEndX = e.changedTouches[0].screenX;
-    touchEndY = e.changedTouches[0].screenY;
-
-    const dx = touchEndX - touchStartX;
-    const dy = touchEndY - touchStartY;
-
-    /* Prioritize horizontal swipe */
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
-      if (dx < 0) {
-        /* swipe left → next */
-        lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
-        showLightboxPhoto();
-      } else {
-        /* swipe right → prev */
-        lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
-        showLightboxPhoto();
-      }
-    } else if (dy > SWIPE_THRESHOLD * 1.5 && Math.abs(dy) > Math.abs(dx)) {
-      /* swipe down → close */
-      lb.classList.remove('open');
-    }
-  }, { passive: true });
-
-  /* Panel swipe-down to close on mobile */
-  const panelHeader = document.querySelector('.panel-header');
-  let panelTouchStartY = 0;
-
-  panelHeader.addEventListener('touchstart', e => {
-    panelTouchStartY = e.changedTouches[0].screenY;
-  }, { passive: true });
-
-  panelHeader.addEventListener('touchend', e => {
-    const dy = e.changedTouches[0].screenY - panelTouchStartY;
-    if (dy > 60) {
-      document.getElementById('photo-panel').classList.remove('open');
-    }
-  }, { passive: true });
+  let sx=0,sy=0; const T=50, lb=document.getElementById('lightbox');
+  lb.addEventListener('touchstart', e=>{sx=e.changedTouches[0].screenX;sy=e.changedTouches[0].screenY;},{passive:true});
+  lb.addEventListener('touchend', e=>{const dx=e.changedTouches[0].screenX-sx,dy=e.changedTouches[0].screenY-sy; if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>T){if(dx<0){lightboxIndex=(lightboxIndex+1)%lightboxPhotos.length;}else{lightboxIndex=(lightboxIndex-1+lightboxPhotos.length)%lightboxPhotos.length;}showLightboxPhoto();}else if(dy>T*1.5&&Math.abs(dy)>Math.abs(dx))lb.classList.remove('open');},{passive:true});
+  const ph=document.querySelector('.panel-header'); let py=0;
+  ph.addEventListener('touchstart', e=>{py=e.changedTouches[0].screenY;},{passive:true});
+  ph.addEventListener('touchend', e=>{if(e.changedTouches[0].screenY-py>60) document.getElementById('photo-panel').classList.remove('open');},{passive:true});
 })();
 
-const geocodeCache = {};
-let lastGeocodeTime = 0;
-
-/*
- * FIX: added retry with exponential backoff for geocoding 429s.
- */
-async function reverseGeocode(lat, lng, _retries = 0) {
-  const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
-  if (geocodeCache[key]) return geocodeCache[key];
-
-  const now = Date.now();
-  const wait = Math.max(0, 1100 - (now - lastGeocodeTime));
-  if (wait > 0) await new Promise(r => setTimeout(r, wait));
-  lastGeocodeTime = Date.now();
-
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`,
-      { headers: { 'User-Agent': 'PhotoMap/1.0' } }
-    );
-
-    /* FIX: handle 429 with retry */
-    if (res.status === 429) {
-      if (_retries < 3) {
-        const backoff = (2 ** _retries) * 1500;
-        await new Promise(r => setTimeout(r, backoff));
-        return reverseGeocode(lat, lng, _retries + 1);
-      }
-      throw new Error('Nominatim rate limit exceeded');
-    }
-
-    if (!res.ok) throw new Error(res.status);
-    const data = await res.json();
-    const addr = data.address || {};
-    const name = addr.city || addr.town || addr.village || addr.county || addr.state || addr.country || 'Lieu inconnu';
-    const country = addr.country || '';
-    const result = country && name !== country ? `${name}, ${country}` : name;
-    geocodeCache[key] = result;
-    return result;
-  } catch {
-    return `${lat.toFixed(3)}°, ${lng.toFixed(3)}°`;
-  }
+/* ==================== GEOCODING ==================== */
+const geocodeCache = {}; let lastGeoTime = 0;
+async function reverseGeocode(lat,lng,retries=0) {
+  const k=`${lat.toFixed(2)},${lng.toFixed(2)}`; if(geocodeCache[k]) return geocodeCache[k];
+  const w=Math.max(0,1100-(Date.now()-lastGeoTime)); if(w>0) await new Promise(r=>setTimeout(r,w)); lastGeoTime=Date.now();
+  try { const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`,{headers:{'User-Agent':'PhotoMap/1.0'}});
+    if(res.status===429){if(retries<3){await new Promise(r=>setTimeout(r,(2**retries)*1500));return reverseGeocode(lat,lng,retries+1);}throw new Error('Rate limit');}
+    if(!res.ok)throw new Error(res.status); const d=await res.json(); const a=d.address||{};
+    const n=a.city||a.town||a.village||a.county||a.state||a.country||'Lieu inconnu'; const c=a.country||'';
+    const r=c&&n!==c?`${n}, ${c}`:n; geocodeCache[k]=r; return r;
+  } catch { return `${lat.toFixed(3)}°, ${lng.toFixed(3)}°`; }
 }
 
-/*
- * FIX: buildYearFilter uses a single persistent onclick handler
- * instead of reassigning on every call. The handler is attached
- * via event delegation once.
- */
-let yearFilterInitialized = false;
-
+/* ==================== YEAR FILTER ==================== */
+let yearFilterInit = false;
 function buildYearFilter(photos) {
-  const years = [...new Set(
-    photos.filter(p => p.date).map(p => p.date.getFullYear())
-  )].sort((a, b) => b - a);
-
-  const bar = document.getElementById('filter-bar');
-
-  /* Rebuild buttons */
-  bar.innerHTML = `<span class="filter-label">Année</span>
-    <button class="year-btn${currentYear === 'all' ? ' active' : ''}" data-year="all">Toutes</button>`;
-
-  years.forEach(y => {
-    const btn = document.createElement('button');
-    btn.className = 'year-btn' + (currentYear == y ? ' active' : '');
-    btn.dataset.year = y;
-    btn.textContent = y;
-    bar.appendChild(btn);
-  });
-
+  const years=[...new Set(photos.filter(p=>p.date).map(p=>p.date.getFullYear()))].sort((a,b)=>b-a);
+  const bar=document.getElementById('filter-bar');
+  bar.innerHTML=`<span class="filter-label">Année</span><button class="year-btn${currentYear==='all'?' active':''}" data-year="all">Toutes</button>`;
+  years.forEach(y=>{const b=document.createElement('button');b.className='year-btn'+(currentYear==y?' active':'');b.dataset.year=y;b.textContent=y;bar.appendChild(b);});
   bar.classList.add('visible');
-
-  /* FIX: attach click handler only once via delegation */
-  if (!yearFilterInitialized) {
-    yearFilterInitialized = true;
-
-    bar.addEventListener('click', (e) => {
-      const btn = e.target.closest('.year-btn');
-      if (!btn) return;
-      bar.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentYear = btn.dataset.year;
-      applyFilter();
-    });
-  }
+  if(!yearFilterInit){yearFilterInit=true;bar.addEventListener('click',e=>{const b=e.target.closest('.year-btn');if(!b)return;bar.querySelectorAll('.year-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');currentYear=b.dataset.year;applyFilter();});}
 }
+function applyFilter() { const f=currentYear==='all'?allPhotos:allPhotos.filter(p=>p.date&&p.date.getFullYear()==currentYear); renderMarkers(f); updateStats(f.length); document.getElementById('photo-panel').classList.remove('open'); }
+function updateStats(c) { const el=document.getElementById('stats-pill'); el.textContent=`${c} média${c>1?'s':''} géolocalisé${c>1?'s':''}`; el.style.display='block'; }
 
-function applyFilter() {
-  const filtered = currentYear === 'all'
-    ? allPhotos
-    : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
-
-  renderMarkers(filtered);
-  updateStats(filtered.length);
-  document.getElementById('photo-panel').classList.remove('open');
-}
-
-function updateStats(count) {
-  const el = document.getElementById('stats-pill');
-  el.textContent = `${count} média${count > 1 ? 's' : ''} géolocalisé${count > 1 ? 's' : ''}`;
-  el.style.display = 'block';
-}
-
-async function startApp() {
-  /* FIX: prevent duplicate concurrent runs */
-  if (startAppRunning) return;
-  startAppRunning = true;
-
-  try {
-    await _startAppInner();
-  } finally {
-    startAppRunning = false;
-  }
-}
-
+/* ==================== APP STARTUP ==================== */
+async function startApp() { if(startAppRunning)return; startAppRunning=true; try{await _startAppInner();}finally{startAppRunning=false;} }
 async function _startAppInner() {
-  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
-  if (!clientId) {
-    document.getElementById('splash').classList.add('hidden');
-    showConfigPanel();
-    return;
-  }
-
+  const cid=localStorage.getItem(STORAGE_KEY_CLIENT_ID)||DEFAULT_CLIENT_ID;
+  if(!cid){document.getElementById('splash').classList.add('hidden');showConfigPanel();return;}
   document.getElementById('splash').classList.add('hidden');
-
-  /* Load cache and show it immediately */
-  let cached = [];
+  try { const cached=await dbGetAllMedia(); if(cached.length){allPhotos=cached;if(localCacheEnabled)await loadCachedThumbs();updateUiWithCurrentPhotos(true);} } catch{}
+  document.getElementById('btn-config').style.display='inline-flex';
+  document.getElementById('map-layer-toggle').classList.add('visible');
+  setScanStatus('scanning','Connexion à Microsoft…','',0);
   try {
-    cached = await dbGetAllMedia();
-    if (cached.length > 0) {
-      allPhotos = cached;
-      updateUiWithCurrentPhotos(true);
-    }
-  } catch (err) {
-    console.warn('Impossible de lire IndexedDB au démarrage', err);
-  }
-
-  /* Show buttons right away so the user can interact */
-  document.getElementById('btn-config').style.display = 'inline-flex';
-
-  /* Authenticate — this is the only blocking step */
-  setScanStatus('scanning', 'Connexion à Microsoft…', '', 0);
-
-  try {
-    try {
-      await initMsal(clientId);
-      const redirectResult = await msalInstance.handleRedirectPromise();
-      if (redirectResult) {
-        setScanStatus('scanning', 'Authentification réussie', '', 3);
-      }
-    } catch (msalErr) {
-      msalInstance = null;
-      throw new Error(
-        'Impossible d\'initialiser l\'authentification Microsoft. '
-        + 'Vérifiez votre Client ID. Détails : '
-        + (msalErr.message || String(msalErr))
-      );
-    }
-
-    setScanStatus('scanning', 'Authentification…', '', 3);
-    const token = await getToken();
-
-    /* If getToken triggered a redirect, execution stops here */
-    if (!token) return;
-
-    _currentToken = token;
-
-    /* Auth done — launch scan in background, user can already use the map */
-    runBackgroundSync();
-    startAutoSync();
-
-  } catch (err) {
-    console.error('PhotoMap error:', err);
-    setScanStatus('error', 'Erreur de connexion', '', 0);
-    setTimeout(() => setScanStatus('hidden'), 6000);
-    showToast('Erreur : ' + (err.message || String(err)), 8000);
-  }
+    try{await initMsal(cid);const rr=await msalInstance.handleRedirectPromise();if(rr)setScanStatus('scanning','Authentification réussie','',3);}catch(e){msalInstance=null;throw new Error('Impossible d\'initialiser l\'authentification. '+e.message);}
+    setScanStatus('scanning','Authentification…','',3);
+    const t=await getToken(); if(!t)return; _currentToken=t;
+    runBackgroundSync(); startAutoSync();
+  } catch(err) { console.error('PhotoMap error:',err); setScanStatus('error','Erreur de connexion','',0); setTimeout(()=>setScanStatus('hidden'),6000); showToast('Erreur : '+err.message,8000); }
 }
 
+/* ==================== CONFIG ==================== */
 function showConfigPanel() {
-  const hasAuth = msalInstance && msalInstance.getAllAccounts().length > 0;
-  document.getElementById('config-rescan-wrap').style.display = hasAuth ? 'block' : 'none';
-  document.getElementById('config-logout-wrap').style.display = hasAuth ? 'block' : 'none';
+  const hasAuth=msalInstance&&msalInstance.getAllAccounts().length>0;
+  document.getElementById('config-rescan-wrap').style.display=hasAuth?'block':'none';
+  document.getElementById('config-logout-wrap').style.display=hasAuth?'block':'none';
+  document.getElementById('toggle-local-cache').checked=localCacheEnabled;
+  updateCacheSub();
   document.getElementById('config-panel').classList.add('open');
 }
+function updateCacheSub() { document.getElementById('cache-toggle-sub').textContent = localCacheEnabled ? 'Activé — vignettes stockées hors-ligne' : 'Désactivé — vignettes chargées à la volée'; }
 
-document.getElementById('btn-config-cancel').addEventListener('click', () => {
-  document.getElementById('config-panel').classList.remove('open');
+document.getElementById('toggle-local-cache').addEventListener('change', async e => {
+  localCacheEnabled=e.target.checked; localStorage.setItem(STORAGE_KEY_LOCAL_CACHE, localCacheEnabled?'true':'false');
+  updateCacheSub();
+  if(localCacheEnabled){showToast('Cache local activé — téléchargement en cours…',4000);backgroundCacheThumbs();}
+  else{for(const[,u]of thumbObjectUrls)try{URL.revokeObjectURL(u);}catch{}thumbObjectUrls.clear();await dbClearThumbs().catch(()=>{});showToast('Cache local désactivé');}
 });
 
-document.getElementById('btn-config-logout').addEventListener('click', async () => {
-  try {
-    if (msalInstance) {
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0) {
-        await msalInstance.logoutRedirect({ account: accounts[0] }).catch(() => {});
-        return; /* page navigates away */
-      }
-    }
-  } finally {
+document.getElementById('btn-config-cancel').addEventListener('click', ()=>document.getElementById('config-panel').classList.remove('open'));
+document.getElementById('btn-config-logout').addEventListener('click', async()=>{
+  try{if(msalInstance){const a=msalInstance.getAllAccounts();if(a.length){await msalInstance.logoutRedirect({account:a[0]}).catch(()=>{});return;}}}finally{
     localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
-    await dbClearMedia().catch(() => {});
-    await dbDeleteMeta('scan_state').catch(() => {});
-    await dbDeleteMeta('deltaLink').catch(() => {});
-
-    stopAutoSync();
-    msalInstance = null;
-    allPhotos = [];
-    markers = [];
-    clusterGroup.clearLayers();
-
+    await dbClearMedia().catch(()=>{}); await dbClearThumbs().catch(()=>{});
+    await dbDeleteMeta('scan_state').catch(()=>{}); await dbDeleteMeta('deltaLink').catch(()=>{});
+    for(const[,u]of thumbObjectUrls)try{URL.revokeObjectURL(u);}catch{}thumbObjectUrls.clear();
+    stopAutoSync(); msalInstance=null; allPhotos=[]; markers=[]; clusterGroup.clearLayers();
     document.getElementById('config-panel').classList.remove('open');
     document.getElementById('filter-bar').classList.remove('visible');
-    document.getElementById('stats-pill').style.display = 'none';
-    document.getElementById('btn-config').style.display = 'none';
+    document.getElementById('stats-pill').style.display='none';
+    document.getElementById('btn-config').style.display='none';
+    document.getElementById('map-layer-toggle').classList.remove('visible');
     document.getElementById('photo-panel').classList.remove('open');
     document.getElementById('splash').classList.remove('hidden');
-    setScanStatus('hidden');
-
-    showToast('Déconnecté avec succès');
+    setScanStatus('hidden'); showToast('Déconnecté avec succès');
   }
 });
 
 document.getElementById('btn-config').addEventListener('click', showConfigPanel);
+document.getElementById('btn-login').addEventListener('click', ()=>{if(!localStorage.getItem(STORAGE_KEY_CLIENT_ID))localStorage.setItem(STORAGE_KEY_CLIENT_ID,DEFAULT_CLIENT_ID);startApp();});
+document.getElementById('btn-connect').addEventListener('click', ()=>{document.getElementById('config-panel').classList.remove('open');startApp();});
+document.getElementById('btn-full-rescan').addEventListener('click', async()=>{document.getElementById('config-panel').classList.remove('open');await dbDeleteMeta('deltaLink').catch(()=>{});await dbDeleteMeta('scan_state').catch(()=>{});runBackgroundSync();});
+document.getElementById('config-panel').addEventListener('click', e=>{if(e.target===document.getElementById('config-panel'))document.getElementById('config-panel').classList.remove('open');});
 
-document.getElementById('btn-login').addEventListener('click', () => {
-  /* Save the default client ID if none is set, then connect directly */
-  if (!localStorage.getItem(STORAGE_KEY_CLIENT_ID)) {
-    localStorage.setItem(STORAGE_KEY_CLIENT_ID, DEFAULT_CLIENT_ID);
-  }
-  startApp();
+/* ==================== INIT ==================== */
+document.addEventListener('DOMContentLoaded', async()=>{
+  const cid=localStorage.getItem(STORAGE_KEY_CLIENT_ID)||DEFAULT_CLIENT_ID;
+  const hs=location.hash+location.search;
+  const isRedir=hs.includes('code=')||hs.includes('access_token')||hs.includes('id_token')||hs.includes('error=');
+  try{const cached=await dbGetAllMedia();if(cached.length){allPhotos=cached;if(localCacheEnabled)await loadCachedThumbs();updateUiWithCurrentPhotos(true);document.getElementById('btn-config').style.display='inline-flex';document.getElementById('map-layer-toggle').classList.add('visible');document.getElementById('splash').classList.add('hidden');if(cid&&!isRedir)trySilentBackgroundSync(cid);}}catch{}
+  if(cid&&isRedir)startApp();
 });
 
-document.getElementById('btn-connect').addEventListener('click', () => {
-  document.getElementById('config-panel').classList.remove('open');
-  startApp();
-});
-
-document.getElementById('btn-full-rescan').addEventListener('click', async () => {
-  document.getElementById('config-panel').classList.remove('open');
-  /* Clear delta state to force a full re-index from scratch */
-  await dbDeleteMeta('deltaLink').catch(() => {});
-  await dbDeleteMeta('scan_state').catch(() => {});
-  runBackgroundSync();
-});
-
-document.getElementById('config-panel').addEventListener('click', e => {
-  if (e.target === document.getElementById('config-panel')) {
-    document.getElementById('config-panel').classList.remove('open');
-  }
-});
-
-/*
- * On DOMContentLoaded:
- * - If we have cached data, show it immediately
- * - If we're returning from a Microsoft auth redirect (URL has hash), auto-start
- * - Otherwise, just show the splash
- */
-document.addEventListener('DOMContentLoaded', async () => {
-  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
-
-  /* Detect if we're returning from a Microsoft auth redirect */
-  const hashOrSearch = window.location.hash + window.location.search;
-  const isAuthRedirectReturn = hashOrSearch.includes('code=')
-    || hashOrSearch.includes('access_token')
-    || hashOrSearch.includes('id_token')
-    || hashOrSearch.includes('error=');
-
-  try {
-    const cached = await dbGetAllMedia();
-    if (cached.length > 0) {
-      allPhotos = cached;
-      updateUiWithCurrentPhotos(true);
-      document.getElementById('btn-config').style.display = 'inline-flex';
-      document.getElementById('splash').classList.add('hidden');
-
-      /* Try silent background sync only if we have a client ID.
-         If the token is expired, this will fail silently — the cache stays visible. */
-      if (clientId && !isAuthRedirectReturn) {
-        trySilentBackgroundSync(clientId);
-      }
-    }
-  } catch (err) {
-    console.warn('Impossible de précharger le cache IndexedDB', err);
-  }
-
-  /* Only auto-start full auth flow if returning from Microsoft redirect */
-  if (clientId && isAuthRedirectReturn) {
-    startApp();
-  }
-});
-
-/*
- * Try to silently refresh the token and run a background sync.
- * If the token is expired and can't be refreshed silently, do nothing —
- * the cached data is already displayed and the user can manually reconnect.
- */
-async function trySilentBackgroundSync(clientId) {
-  try {
-    if (!msalInstance) {
-      await initMsal(clientId);
-      await msalInstance.handleRedirectPromise();
-    }
-
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length === 0) return; /* No session — skip silently */
-
-    const result = await msalInstance.acquireTokenSilent({
-      scopes: ['Files.Read', 'User.Read'],
-      account: accounts[0]
-    });
-
-    _currentToken = result.accessToken;
-    runBackgroundSync();
-  } catch {
-    /* Token can't be refreshed silently — that's fine, cache is shown */
-    console.log('Synchronisation silencieuse ignorée — reconnexion nécessaire pour mettre à jour.');
-  }
+async function trySilentBackgroundSync(cid){
+  try{if(!msalInstance){await initMsal(cid);await msalInstance.handleRedirectPromise();}const a=msalInstance.getAllAccounts();if(!a.length)return;const r=await msalInstance.acquireTokenSilent({scopes:['Files.Read','User.Read'],account:a[0]});_currentToken=r.accessToken;runBackgroundSync();startAutoSync();}catch{console.log('Silent sync skipped — reconnection needed.');}
 }
 </script>
 </body>
