@@ -168,20 +168,21 @@
 
   #map-layer-toggle {
     position: fixed;
-    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-    left: 16px; z-index: 500;
-    width: 44px; height: 44px; border-radius: 8px;
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    right: 16px; z-index: 500;
+    width: 58px; height: 58px; border-radius: 14px;
     border: 2px solid #fff; background: var(--panel);
     cursor: pointer; overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.22);
     display: none; padding: 0;
   }
   #map-layer-toggle.visible { display: block; }
   #map-layer-toggle img { width: 100%; height: 100%; object-fit: cover; display: block; }
   #map-layer-label {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: rgba(0,0,0,0.6); color: #fff;
-    font-size: 0.55rem; text-align: center; padding: 1px 0; font-weight: 600;
+    background: rgba(0,0,0,0.62); color: #fff;
+    font-size: 0.62rem; text-align: center; padding: 2px 0; font-weight: 700;
+    letter-spacing: 0.01em;
   }
 
   #splash {
@@ -410,7 +411,17 @@
   .config-box h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); margin: 0; }
   .config-close-btn { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .config-buttons { display: flex; flex-direction: column; gap: 12px; }
-  .config-btn { width: 100%; padding: 14px 24px; border-radius: 28px; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; text-align: center; }
+  .config-btn {
+    width: 100%; padding: 16px 20px; border-radius: 16px; font-size: 0.95rem;
+    font-weight: 600; letter-spacing: 0.01em; text-align: center;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 72px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+  }
+  .config-btn.btn-primary { background: var(--surface); color: var(--accent); border-color: var(--border-accent); }
+  .config-btn.btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .config-btn.btn-danger { background: var(--surface); color: var(--danger); border-color: rgba(209,52,56,0.28); }
+  .config-btn:hover { background: var(--surface-hover); transform: none; }
 
   .config-toggle {
     display: flex; align-items: center; justify-content: space-between;
@@ -420,6 +431,12 @@
   .config-toggle-label { font-size: 0.88rem; font-weight: 500; color: var(--text); }
   .config-toggle-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
   .config-toggle-status { font-size: 0.68rem; color: var(--accent); margin-top: 3px; font-weight: 500; }
+  .storage-stats {
+    margin-top: 0; padding: 14px 16px; border-radius: 16px;
+    background: var(--surface); border: 1px solid var(--border);
+  }
+  .storage-stats-title { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+  .storage-stats-lines { margin-top: 6px; font-size: 0.74rem; color: var(--text-secondary); line-height: 1.55; }
   .toggle-switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; margin-left: 12px; }
   .toggle-switch input { opacity: 0; width: 0; height: 0; }
   .toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 26px; cursor: pointer; transition: background 0.2s; }
@@ -451,7 +468,7 @@
     #scan-status-count { font-size: 0.75rem; flex-shrink: 0; }
     #lightbox-open-onedrive { font-size: 0.85rem; padding: 10px 22px; }
     #map { top: calc(54px + env(safe-area-inset-top, 0px)); }
-    #map-layer-toggle { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: 12px; }
+    #map-layer-toggle { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); right: 12px; width: 56px; height: 56px; left: auto; }
     #photo-panel { top: auto; right: 0; left: 0; bottom: 0; width: 100%; height: 72dvh; border-left: none; border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; transform: translateY(100%); padding-bottom: env(safe-area-inset-bottom, 0px); }
     #photo-panel.open { transform: translateY(0); }
     .panel-header { padding: 18px 18px 14px; position: relative; }
@@ -487,13 +504,11 @@
     .splash-note { font-size: 0.75rem; max-width: 300px; }
     .config-box { padding: 24px 22px 28px; max-width: 100%; width: 94%; border-radius: 24px; }
     .config-box h2 { font-size: 1.35rem; }
-    .config-btn { font-size: 0.95rem; padding: 15px 24px; min-height: 52px; }
+    .config-btn { font-size: 0.95rem; min-height: 68px; padding: 15px 20px; }
     .progress-bar-wrap { width: 240px; }
     .loading-msg { font-size: 0.9rem; }
     #loading-count { font-size: 1.8rem; }
     #toast { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); font-size: 0.85rem; padding: 10px 20px; border-radius: 24px; }
-    .leaflet-control-zoom { margin-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important; margin-right: 12px !important; }
-    .leaflet-control-zoom a { width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 1.2rem !important; }
     .photo-marker { border-radius: 14px; border-width: 2.5px; }
   }
 
@@ -533,7 +548,7 @@
 <div id="map"></div>
 
 <button id="map-layer-toggle" title="Fond de carte">
-  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/>
+  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a2f5a'/%3E%3Cpath d='M14 40l12-10 9 6 15-14v26H14z' fill='%2339a96b'/%3E%3Cpath d='M40 17l5 2 2 5-5-2z' fill='%23ffffff' opacity='.95'/%3E%3Ccircle cx='46' cy='18' r='3' fill='%23ffffff'/%3E%3Cpath d='M12 44h40' stroke='%23ffffff' stroke-opacity='.5' stroke-width='2'/%3E%3C/svg%3E" alt=""/>
   <div id="map-layer-label">Satellite</div>
 </button>
 
@@ -610,6 +625,10 @@
           <span class="toggle-slider"></span>
         </label>
       </div>
+      <div class="storage-stats">
+        <div class="storage-stats-title">Stockage local</div>
+        <div class="storage-stats-lines" id="storage-stats-lines">Calcul en cours…</div>
+      </div>
       <div id="config-rescan-wrap" style="display:none">
         <button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button>
       </div>
@@ -647,7 +666,6 @@ let allPhotos = [];
 let markers = [];
 let clusterGroup = null;
 let currentYear = 'all';
-let isLoading = false;
 let backgroundSyncRunning = false;
 let autoSyncTimer = null;
 let startAppRunning = false;
@@ -692,6 +710,8 @@ function revokeThumbUrl(id) {
 function setThumbObjectUrl(id, blob) {
   revokeThumbUrl(id);
   thumbBlobUrls.set(id, URL.createObjectURL(blob));
+  const photo = allPhotos.find(p => p.id === id);
+  if (photo) photo.thumbnailBroken = false;
 }
 
 function revokeAllThumbUrls() {
@@ -845,6 +865,56 @@ async function dbDeleteThumb(id) {
   });
 }
 
+async function estimateLocalStorageUsage() {
+  const media = await dbGetAllMedia().catch(() => []);
+  const db = await openDb();
+  const thumbStats = await new Promise((resolve, reject) => {
+    let totalBytes = 0;
+    let count = 0;
+    const req = db.transaction(STORE_THUMBS, 'readonly').objectStore(STORE_THUMBS).openCursor();
+    req.onsuccess = (e) => {
+      const cursor = e.target.result;
+      if (!cursor) return resolve({ count, totalBytes });
+      count++;
+      totalBytes += cursor.value?.blob?.size || 0;
+      cursor.continue();
+    };
+    req.onerror = () => reject(req.error);
+  });
+
+  const mediaJsonBytes = new Blob([JSON.stringify(media.map(item => ({ ...item, date: item.date ? item.date.toISOString() : null })))]).size;
+  return {
+    mediaBytes: mediaJsonBytes,
+    thumbBytes: thumbStats.totalBytes,
+    thumbCount: thumbStats.count,
+    totalBytes: mediaJsonBytes + thumbStats.totalBytes
+  };
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '0 o';
+  const units = ['o', 'Ko', 'Mo', 'Go'];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+  return `${value >= 100 ? Math.round(value) : value.toFixed(value >= 10 ? 1 : 2)} ${units[unitIndex]}`;
+}
+
+async function refreshStorageStats() {
+  const el = document.getElementById('storage-stats-lines');
+  if (!el) return;
+  el.textContent = 'Calcul en cours…';
+  try {
+    const stats = await estimateLocalStorageUsage();
+    el.innerHTML = `Photos et métadonnées : ${formatBytes(stats.mediaBytes)}<br>Vignettes locales : ${formatBytes(stats.thumbBytes)} (${stats.thumbCount})<br>Total local : ${formatBytes(stats.totalBytes)}`;
+  } catch {
+    el.textContent = 'Impossible de calculer le stockage local.';
+  }
+}
+
 async function loadCachedThumbs() {
   if (!lcEnabled) return;
   const db = await openDb();
@@ -868,16 +938,30 @@ async function loadCachedThumbs() {
 
 function getThumbSrc(photo) {
   if (lcEnabled && thumbBlobUrls.has(photo.id)) return thumbBlobUrls.get(photo.id);
+  if (photo.thumbnailBroken) return FALLBACK_ICON;
   return photo.thumbnailUrl || FALLBACK_ICON;
 }
 
+function markThumbnailBroken(photoId) {
+  const photo = allPhotos.find(p => p.id === photoId);
+  if (photo) photo.thumbnailBroken = true;
+}
+
+function markThumbnailHealthy(photoId) {
+  const photo = allPhotos.find(p => p.id === photoId);
+  if (photo) photo.thumbnailBroken = false;
+}
+
+function handleThumbnailError(photoId, imgElement) {
+  markThumbnailBroken(photoId);
+  if (imgElement) imgElement.src = FALLBACK_ICON;
+  if (window.queueThumbnailRefresh) window.queueThumbnailRefresh(photoId, imgElement);
+}
+window.handleThumbnailError = handleThumbnailError;
+
 async function initMsal(clientId) {
   msalInstance = new msal.PublicClientApplication({
-    auth: {
-      clientId,
-      authority: 'https://login.microsoftonline.com/common',
-      redirectUri: window.location.origin + window.location.pathname
-    },
+    auth: { clientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + window.location.pathname },
     cache: { cacheLocation: 'localStorage' }
   });
   await msalInstance.initialize();
@@ -886,28 +970,19 @@ async function initMsal(clientId) {
 async function getToken() {
   const accounts = msalInstance.getAllAccounts();
   const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined };
-  try {
-    return (await msalInstance.acquireTokenSilent(request)).accessToken;
-  } catch {
-    await msalInstance.acquireTokenRedirect(request);
-    return null;
-  }
+  try { return (await msalInstance.acquireTokenSilent(request)).accessToken; }
+  catch { await msalInstance.acquireTokenRedirect(request); return null; }
 }
 
 async function getTokenFresh() {
   const accounts = msalInstance.getAllAccounts();
   const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined, forceRefresh: true };
-  try {
-    return (await msalInstance.acquireTokenSilent(request)).accessToken;
-  } catch {
-    await msalInstance.acquireTokenRedirect(request);
-    return null;
-  }
+  try { return (await msalInstance.acquireTokenSilent(request)).accessToken; }
+  catch { await msalInstance.acquireTokenRedirect(request); return null; }
 }
 
 async function graphGet(url, token, attempt = 0) {
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-
   if (res.status === 401) {
     if (attempt >= 1) throw new Error('Session expirée. Veuillez vous reconnecter.');
     const freshToken = await getTokenFresh();
@@ -915,19 +990,16 @@ async function graphGet(url, token, attempt = 0) {
     _currentToken = freshToken;
     return graphGet(url, freshToken, attempt + 1);
   }
-
   if (res.status === 429) {
     if (attempt >= GRAPH_RETRY_LIMIT) throw new Error('API Graph temporairement limitée. Réessayez plus tard.');
     const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10);
     await new Promise(r => setTimeout(r, Math.max(1, retryAfter) * 1000));
     return graphGet(url, token, attempt + 1);
   }
-
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Erreur API Graph (${res.status}) : ${text.substring(0, 200)}`);
   }
-
   return res.json();
 }
 
@@ -941,9 +1013,7 @@ async function getThumbnail(itemId) {
   try {
     const data = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/thumbnails`, _currentToken);
     return data?.value?.[0]?.medium?.url || data?.value?.[0]?.large?.url || data?.value?.[0]?.small?.url || null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 async function refreshMediaUrls(item) {
@@ -954,6 +1024,7 @@ async function refreshMediaUrls(item) {
     item.thumbnailUrl = thumbnailUrl || item.thumbnailUrl;
     item.webUrl = data?.webUrl || item.webUrl;
     item.fetchedAt = new Date().toISOString();
+    item.thumbnailBroken = false;
     await dbPutMediaBatch([item]);
     if (lcEnabled && thumbnailUrl) downloadAndCacheThumb(item).catch(() => {});
   } catch (err) {
@@ -978,16 +1049,13 @@ async function downloadAndCacheThumb(photo) {
     await dbPutThumb(photo.id, blob);
     setThumbObjectUrl(photo.id, blob);
     return true;
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
 async function runWithConcurrency(items, limit, worker) {
   if (!items.length) return [];
   const results = new Array(items.length);
   let nextIndex = 0;
-
   async function runner() {
     while (true) {
       const i = nextIndex++;
@@ -995,7 +1063,6 @@ async function runWithConcurrency(items, limit, worker) {
       results[i] = await worker(items[i], i);
     }
   }
-
   const runners = Array.from({ length: Math.min(limit, items.length) }, () => runner());
   await Promise.all(runners);
   return results;
@@ -1009,6 +1076,7 @@ async function maybeResolveThumbnailUrls(items, shouldResolve) {
       item.thumbnailUrl = thumbnailUrl;
       item.downloadUrl = item.downloadUrl || thumbnailUrl;
       item.fetchedAt = new Date().toISOString();
+      item.thumbnailBroken = false;
     }
   });
   return items;
@@ -1023,29 +1091,23 @@ async function backgroundCacheThumbs() {
     const total = allPhotos.length;
     let done = haveIds.size;
     updateCacheStatus(done, total);
-
     await runWithConcurrency(need, THUMB_CACHE_CONCURRENCY, async (photo, index) => {
       if (!lcEnabled) return;
       if (await downloadAndCacheThumb(photo)) done++;
       if (index % 4 === 0) updateCacheStatus(done, total);
     });
-
     updateCacheStatus(done, total);
     refreshCurrentViews();
+    refreshStorageStats();
   } catch (e) {
     console.warn('Cache error:', e);
-  } finally {
-    _thumbCacheRunning = false;
-  }
+  } finally { _thumbCacheRunning = false; }
 }
 
 function updateCacheStatus(done, total) {
   const el = document.getElementById('cache-toggle-status');
   if (!el) return;
-  if (!lcEnabled || !total) {
-    el.textContent = '';
-    return;
-  }
+  if (!lcEnabled || !total) { el.textContent = ''; return; }
   el.textContent = done >= total ? `✓ ${done} vignettes en cache` : `⟳ ${done} / ${total} en cours…`;
 }
 
@@ -1067,7 +1129,6 @@ satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/servic
 });
 
 standardLayer.addTo(map);
-L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 document.getElementById('map-layer-toggle').addEventListener('click', () => {
   const label = document.getElementById('map-layer-label');
@@ -1097,22 +1158,34 @@ clusterGroup = L.markerClusterGroup({
     const count = cluster.getChildCount();
     const children = cluster.getAllChildMarkers();
     let bestPhoto = null;
+
     for (const child of children) {
       const p = child._photoData;
       if (!p) continue;
-      if (lcEnabled && thumbBlobUrls.has(p.id)) {
-        bestPhoto = p;
-        break;
+      if (lcEnabled && thumbBlobUrls.has(p.id)) { bestPhoto = p; break; }
+    }
+    if (!bestPhoto) {
+      for (const child of children) {
+        const p = child._photoData;
+        if (!p || p.thumbnailBroken) continue;
+        if (p.thumbnailUrl && !isUrlStale(p) && p.thumbnailUrl !== FALLBACK_ICON) { bestPhoto = p; break; }
       }
-      if (p.thumbnailUrl && p.thumbnailUrl !== FALLBACK_ICON) {
-        if (!bestPhoto) bestPhoto = p;
-        if (p.fetchedAt && (Date.now() - new Date(p.fetchedAt).getTime()) < THUMBNAIL_TTL_MS) {
-          bestPhoto = p;
-          break;
-        }
+    }
+    if (!bestPhoto) {
+      for (const child of children) {
+        const p = child._photoData;
+        if (!p || p.thumbnailBroken) continue;
+        if (p.thumbnailUrl && p.thumbnailUrl !== FALLBACK_ICON) { bestPhoto = p; break; }
+      }
+    }
+    if (!bestPhoto) {
+      for (const child of children) {
+        const p = child._photoData;
+        if (p && !p.thumbnailBroken) { bestPhoto = p; break; }
       }
     }
     if (!bestPhoto) bestPhoto = children[0]?._photoData;
+
     const thumbSrc = bestPhoto ? getThumbSrc(bestPhoto) : FALLBACK_ICON;
     const photoId = bestPhoto?.id || '';
     const sz = getMarkerSize();
@@ -1123,7 +1196,7 @@ clusterGroup = L.markerClusterGroup({
           <div class="photo-marker">
             <img src="${thumbSrc}" loading="lazy"
               data-photo-id="${photoId}"
-              onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) window.queueThumbnailRefresh('${photoId}', this);"/>
+              onerror="window.handleThumbnailError && window.handleThumbnailError('${photoId}', this);"/>
             <div class="photo-marker-count">${count}</div>
           </div>
           <div class="photo-marker-tail"></div>
@@ -1142,18 +1215,6 @@ function showToast(msg, duration = 3000) {
   t.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), duration);
-}
-
-function setLoading(visible, msg = '', progress = 0) {
-  const el = document.getElementById('loading-overlay');
-  el.classList.toggle('visible', visible);
-  if (msg) document.getElementById('loading-msg').textContent = msg;
-  document.getElementById('progress-fill').style.width = progress + '%';
-  isLoading = visible;
-}
-
-function setLoadingCount(n) {
-  document.getElementById('loading-count').textContent = n;
 }
 
 function setScanStatus(state, text, count, progress) {
@@ -1228,31 +1289,23 @@ function scheduleRefreshProcessing() {
 }
 
 async function processRefreshQueue() {
-  if (_refreshQueue.size === 0) {
-    _refreshProcessing = false;
-    return;
-  }
-
+  if (_refreshQueue.size === 0) { _refreshProcessing = false; return; }
   const bounds = map.getBounds();
-  const priorityIds = [];
-  const normalIds = [];
+  const priorityIds = [], normalIds = [];
   for (const id of _refreshQueue) {
     const photo = allPhotos.find(p => p.id === id);
     if (photo && bounds.contains([photo.lat, photo.lng])) priorityIds.push(id);
     else normalIds.push(id);
   }
-
   const batch = [...priorityIds, ...normalIds].slice(0, REFRESH_CONCURRENCY);
   const promises = batch.map(async (id) => {
     _refreshQueue.delete(id);
     _refreshInProgress.add(id);
     const photo = allPhotos.find(p => p.id === id);
-    if (!photo) {
-      _refreshInProgress.delete(id);
-      return;
-    }
+    if (!photo) { _refreshInProgress.delete(id); return; }
     try {
       await refreshMediaUrls(photo);
+      markThumbnailHealthy(id);
       const newSrc = getThumbSrc(photo);
       const imgSet = _failedImgElements.get(id);
       if (imgSet) {
@@ -1260,19 +1313,15 @@ async function processRefreshQueue() {
           if (img.isConnected) {
             img.onerror = null;
             img.src = newSrc;
-            img.onerror = function() { this.src = FALLBACK_ICON; };
+            img.onerror = function() { window.handleThumbnailError && window.handleThumbnailError(id, this); };
           }
         }
         _failedImgElements.delete(id);
       }
       updateMarkerThumb(id, newSrc);
-    } catch (err) {
-      console.warn('Thumbnail refresh failed for', id, err);
-    } finally {
-      _refreshInProgress.delete(id);
-    }
+    } catch (err) { console.warn('Thumbnail refresh failed for', id, err); }
+    finally { _refreshInProgress.delete(id); }
   });
-
   await Promise.allSettled(promises);
   if (_refreshQueue.size > 0) setTimeout(processRefreshQueue, REFRESH_DELAY_MS);
   else _refreshProcessing = false;
@@ -1287,7 +1336,7 @@ function updateMarkerThumb(photoId, newSrc) {
         if (img) {
           img.onerror = null;
           img.src = newSrc;
-          img.onerror = function() { this.src = FALLBACK_ICON; };
+          img.onerror = function() { window.handleThumbnailError && window.handleThumbnailError(photoId, this); };
         }
       }
       break;
@@ -1305,10 +1354,7 @@ function refreshVisibleStaleThumbnails() {
     if (!photo) continue;
     if (!bounds.contains([photo.lat, photo.lng])) continue;
     if (_refreshInProgress.has(photo.id) || _refreshQueue.has(photo.id)) continue;
-    if (isUrlStale(photo)) {
-      _refreshQueue.add(photo.id);
-      queued++;
-    }
+    if (isUrlStale(photo)) { _refreshQueue.add(photo.id); queued++; }
   }
   if (queued > 0) scheduleRefreshProcessing();
 }
@@ -1351,7 +1397,6 @@ function createMarker(photo, filteredIdSet) {
   const photoId = photo.id;
   const isolatedCount = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet).length;
   const countBadge = isolatedCount > 1 ? `<div class="photo-marker-count">${isolatedCount}</div>` : '';
-
   const icon = L.divIcon({
     className: '',
     html: `
@@ -1359,7 +1404,7 @@ function createMarker(photo, filteredIdSet) {
         <div class="photo-marker">
           <img src="${thumbSrc}" loading="lazy"
             data-photo-id="${photoId}"
-            onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) window.queueThumbnailRefresh('${photoId}', this);"/>
+            onerror="window.handleThumbnailError && window.handleThumbnailError('${photoId}', this);"/>
           ${countBadge}
         </div>
         <div class="photo-marker-tail"></div>
@@ -1368,7 +1413,6 @@ function createMarker(photo, filteredIdSet) {
     iconSize: [size, size + 12],
     iconAnchor: [size / 2, size + 12]
   });
-
   const marker = L.marker([photo.lat, photo.lng], { icon });
   marker.on('click', () => {
     const nearby = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet);
@@ -1395,7 +1439,6 @@ function renderMarkers(filtered) {
 function openPanel(photos, lat, lng) {
   const panel = document.getElementById('photo-panel');
   panelAllPhotos = [...photos].sort((a, b) => (b.date || 0) - (a.date || 0));
-
   const dates = panelAllPhotos.filter(p => p.date).map(p => p.date);
   const dateRange = document.getElementById('panel-date-range');
   if (dates.length) {
@@ -1403,18 +1446,13 @@ function openPanel(photos, lat, lng) {
     const max = new Date(Math.max(...dates));
     const fmt = d => d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
     dateRange.textContent = (min.getFullYear() === max.getFullYear() && min.getMonth() === max.getMonth()) ? fmt(min) : `${fmt(min)} — ${fmt(max)}`;
-  } else {
-    dateRange.textContent = '';
-  }
-
+  } else dateRange.textContent = '';
   document.getElementById('panel-count').textContent = `${panelAllPhotos.length} média${panelAllPhotos.length > 1 ? 's' : ''}`;
   const locName = document.getElementById('panel-location-name');
   const requestId = ++currentPanelRequestId;
   locName.textContent = 'Chargement…';
   reverseGeocode(lat, lng).then(name => {
-    if (requestId === currentPanelRequestId && panel.classList.contains('open')) {
-      locName.textContent = name;
-    }
+    if (requestId === currentPanelRequestId && panel.classList.contains('open')) locName.textContent = name;
   });
   renderPanelPhotos();
   panel.classList.add('open');
@@ -1433,20 +1471,13 @@ function renderPanelPhotos() {
     mediaEl.decoding = 'async';
     mediaEl.alt = photo.name;
     mediaEl.dataset.photoId = photo.id;
-    mediaEl.onerror = function() {
-      this.src = FALLBACK_ICON;
-      queueThumbnailRefresh(photo.id, this);
-    };
+    mediaEl.onerror = function() { handleThumbnailError(photo.id, this); };
     const overlay = document.createElement('div');
     overlay.className = 'thumb-overlay';
     overlay.innerHTML = `${escapeHtml(photo.name)}<br>${dateStr}`;
     card.appendChild(mediaEl);
     card.appendChild(overlay);
-    card.addEventListener('click', () => {
-      lightboxPhotos = panelAllPhotos;
-      lightboxIndex = idx;
-      showLightboxPhoto();
-    });
+    card.addEventListener('click', () => { lightboxPhotos = panelAllPhotos; lightboxIndex = idx; showLightboxPhoto(); });
     grid.appendChild(card);
   });
 }
@@ -1461,16 +1492,11 @@ function setHdState(mode) {
 }
 
 function scheduleHdDoneHide() {
-  setTimeout(() => {
-    const done = document.getElementById('hd-done');
-    done.classList.remove('visible');
-  }, 1200);
+  setTimeout(() => { document.getElementById('hd-done').classList.remove('visible'); }, 1200);
 }
 
 async function ensureFreshMediaUrl(photo) {
-  if (!isUrlStale(photo) && (photo.downloadUrl || photo.webUrl || photo.thumbnailUrl)) {
-    return photo.downloadUrl || photo.webUrl || photo.thumbnailUrl;
-  }
+  if (!isUrlStale(photo) && (photo.downloadUrl || photo.webUrl || photo.thumbnailUrl)) return photo.downloadUrl || photo.webUrl || photo.thumbnailUrl;
   if (!msalInstance) return photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
   const token = await getToken();
   if (!token) return photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
@@ -1481,43 +1507,26 @@ async function ensureFreshMediaUrl(photo) {
 
 async function showLightboxPhoto() {
   if (!lightboxPhotos.length) return;
-
   const photo = lightboxPhotos[lightboxIndex];
   const lb = document.getElementById('lightbox');
   const img = document.getElementById('lightbox-img');
   const video = document.getElementById('lightbox-video');
   const openBtn = document.getElementById('lightbox-open-onedrive');
-
   img.style.display = 'none';
   video.style.display = 'none';
-  img.onload = null;
-  img.onerror = null;
-  video.onloadeddata = null;
-  video.onerror = null;
-  video.pause();
-  video.removeAttribute('src');
-  video.load();
-
+  img.onload = null; img.onerror = null; video.onloadeddata = null; video.onerror = null;
+  video.pause(); video.removeAttribute('src'); video.load();
   const lowSrc = getThumbSrc(photo);
   const initialSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || lowSrc || FALLBACK_ICON;
-
   document.getElementById('lightbox-name').textContent = photo.name;
   const dateStr = photo.date ? photo.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
   const coords = `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`;
   document.getElementById('lightbox-meta').textContent = [dateStr, coords].filter(Boolean).join('  ·  ');
-
   const oneDriveUrl = photo.webUrl || photo.downloadUrl;
-  if (oneDriveUrl) {
-    openBtn.dataset.webUrl = oneDriveUrl;
-    openBtn.style.display = 'inline-flex';
-  } else {
-    delete openBtn.dataset.webUrl;
-    openBtn.style.display = 'none';
-  }
-
+  if (oneDriveUrl) { openBtn.dataset.webUrl = oneDriveUrl; openBtn.style.display = 'inline-flex'; }
+  else { delete openBtn.dataset.webUrl; openBtn.style.display = 'none'; }
   document.getElementById('lightbox-prev').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
   document.getElementById('lightbox-next').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
-
   lb.classList.add('open');
   setHdState('hidden');
 
@@ -1532,18 +1541,13 @@ async function showLightboxPhoto() {
         video.src = freshSrc;
         setHdState('done');
         scheduleHdDoneHide();
-      } catch {
-        setHdState('hidden');
-      }
+      } catch { setHdState('hidden'); }
     }
   } else {
     img.src = lowSrc;
     img.style.display = 'block';
     setHdState('loading');
-    img.onerror = function() {
-      this.src = FALLBACK_ICON;
-      setHdState('hidden');
-    };
+    img.onerror = function() { this.src = FALLBACK_ICON; setHdState('hidden'); };
     try {
       const freshSrc = await ensureFreshMediaUrl(photo) || initialSrc;
       if (lightboxPhotos[lightboxIndex]?.id !== photo.id) return;
@@ -1554,13 +1558,9 @@ async function showLightboxPhoto() {
         setHdState('done');
         scheduleHdDoneHide();
       };
-      hdImg.onerror = () => {
-        setHdState('hidden');
-      };
+      hdImg.onerror = () => { setHdState('hidden'); };
       hdImg.src = freshSrc;
-    } catch {
-      setHdState('hidden');
-    }
+    } catch { setHdState('hidden'); }
   }
 }
 
@@ -1574,29 +1574,16 @@ document.getElementById('panel-close').addEventListener('click', () => {
   currentPanelRequestId++;
   document.getElementById('photo-panel').classList.remove('open');
 });
-
 map.on('click', () => {
   currentPanelRequestId++;
   document.getElementById('photo-panel').classList.remove('open');
 });
-
 document.getElementById('lightbox-close').addEventListener('click', () => {
   document.getElementById('lightbox').classList.remove('open');
   setHdState('hidden');
 });
-
-document.getElementById('lightbox-prev').addEventListener('click', (e) => {
-  e.stopPropagation();
-  lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
-  showLightboxPhoto();
-});
-
-document.getElementById('lightbox-next').addEventListener('click', (e) => {
-  e.stopPropagation();
-  lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
-  showLightboxPhoto();
-});
-
+document.getElementById('lightbox-prev').addEventListener('click', (e) => { e.stopPropagation(); lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; showLightboxPhoto(); });
+document.getElementById('lightbox-next').addEventListener('click', (e) => { e.stopPropagation(); lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; showLightboxPhoto(); });
 document.getElementById('lightbox').addEventListener('click', e => {
   if (e.target === document.getElementById('lightbox')) {
     document.getElementById('lightbox').classList.remove('open');
@@ -1616,35 +1603,20 @@ document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) 
 document.addEventListener('keydown', e => {
   const lb = document.getElementById('lightbox');
   if (!lb.classList.contains('open')) return;
-  if (e.key === 'Escape') {
-    lb.classList.remove('open');
-    setHdState('hidden');
-  }
-  if (e.key === 'ArrowLeft') {
-    lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
-    showLightboxPhoto();
-  }
-  if (e.key === 'ArrowRight') {
-    lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
-    showLightboxPhoto();
-  }
+  if (e.key === 'Escape') { lb.classList.remove('open'); setHdState('hidden'); }
+  if (e.key === 'ArrowLeft') { lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; showLightboxPhoto(); }
+  if (e.key === 'ArrowRight') { lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; showLightboxPhoto(); }
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    currentPanelRequestId++;
-    document.getElementById('photo-panel').classList.remove('open');
-  }
+  if (e.key === 'Escape') { currentPanelRequestId++; document.getElementById('photo-panel').classList.remove('open'); }
 });
 
 (function() {
   let touchStartX = 0, touchStartY = 0;
   const SWIPE_THRESHOLD = 50;
   const lb = document.getElementById('lightbox');
-  lb.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-  }, { passive: true });
+  lb.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, { passive: true });
   lb.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].screenX - touchStartX;
     const dy = e.changedTouches[0].screenY - touchStartY;
@@ -1660,9 +1632,7 @@ document.addEventListener('keydown', e => {
 
   const panelHeader = document.querySelector('.panel-header');
   let panelTouchStartY = 0;
-  panelHeader.addEventListener('touchstart', e => {
-    panelTouchStartY = e.changedTouches[0].screenY;
-  }, { passive: true });
+  panelHeader.addEventListener('touchstart', e => { panelTouchStartY = e.changedTouches[0].screenY; }, { passive: true });
   panelHeader.addEventListener('touchend', e => {
     if (e.changedTouches[0].screenY - panelTouchStartY > 60) {
       currentPanelRequestId++;
@@ -1695,9 +1665,7 @@ async function reverseGeocode(lat, lng, _retries = 0) {
     const result = country && name !== country ? `${name}, ${country}` : name;
     geocodeCache[key] = result;
     return result;
-  } catch {
-    return `${lat.toFixed(3)}°, ${lng.toFixed(3)}°`;
-  }
+  } catch { return `${lat.toFixed(3)}°, ${lng.toFixed(3)}°`; }
 }
 
 function buildYearFilter(photos) {
@@ -1754,7 +1722,8 @@ function normalizeMediaItemFromGraph(item, existingItem = null) {
     downloadUrl: item['@microsoft.graph.downloadUrl'] || existingItem?.downloadUrl || null,
     webUrl: item.webUrl || existingItem?.webUrl || null,
     mediaType: isVideoByName(item.name) ? 'video' : 'image',
-    fetchedAt: existingItem?.fetchedAt || new Date().toISOString()
+    fetchedAt: existingItem?.fetchedAt || new Date().toISOString(),
+    thumbnailBroken: existingItem?.thumbnailBroken || false
   };
 }
 
@@ -1773,10 +1742,7 @@ async function runDeltaSync() {
   if (isFirstScan) setScanStatus('scanning', 'Premier scan…', '', 2);
   else setScanStatus('scanning', 'Synchronisation…', existingCount + ' en cache', 2);
 
-  let scanned = 0;
-  let added = 0;
-  let deleted = 0;
-  let newDeltaLink = null;
+  let scanned = 0, added = 0, deleted = 0, newDeltaLink = null;
   const writeBatch = [];
   const thumbResolveQueue = [];
 
@@ -1787,12 +1753,7 @@ async function runDeltaSync() {
     for (const item of items) {
       scanned++;
       if (scanned % 50 === 0) {
-        setScanStatus(
-          'scanning',
-          isFirstScan ? `Analyse… ${scanned} fichiers` : `Synchro… ${scanned} changements`,
-          isFirstScan ? (existingCount + added) + ' trouvés' : (added > 0 ? `+${added} nouveaux` : 'vérification…'),
-          Math.min(5 + scanned * 0.005, 95)
-        );
+        setScanStatus('scanning', isFirstScan ? `Analyse… ${scanned} fichiers` : `Synchro… ${scanned} changements`, isFirstScan ? (existingCount + added) + ' trouvés' : (added > 0 ? `+${added} nouveaux` : 'vérification…'), Math.min(5 + scanned * 0.005, 95));
       }
 
       if (item.deleted) {
@@ -1807,18 +1768,14 @@ async function runDeltaSync() {
       }
 
       if (item.folder || !isMediaFile(item)) continue;
-
       const existingItem = existingMap.get(item.id) || null;
       const mediaItem = normalizeMediaItemFromGraph(item, existingItem);
       if (!mediaItem) continue;
 
       existingMap.set(item.id, mediaItem);
       writeBatch.push(mediaItem);
-
       if (!existingItem) added++;
-      if (!existingItem || isUrlStale(existingItem) || !existingItem.thumbnailUrl) {
-        thumbResolveQueue.push(mediaItem);
-      }
+      if (!existingItem || isUrlStale(existingItem) || !existingItem.thumbnailUrl) thumbResolveQueue.push(mediaItem);
 
       const flushThreshold = (existingCount + added) < 50 ? 8 : 30;
       if (writeBatch.length >= flushThreshold) {
@@ -1830,27 +1787,17 @@ async function runDeltaSync() {
     }
 
     if (data?.['@odata.nextLink']) url = data['@odata.nextLink'];
-    else {
-      newDeltaLink = data?.['@odata.deltaLink'] || null;
-      url = null;
-    }
+    else { newDeltaLink = data?.['@odata.deltaLink'] || null; url = null; }
   }
 
-  if (thumbResolveQueue.length) {
-    await maybeResolveThumbnailUrls(thumbResolveQueue, !lcEnabled);
-  }
+  if (thumbResolveQueue.length) await maybeResolveThumbnailUrls(thumbResolveQueue, !lcEnabled);
   if (writeBatch.length > 0) await dbPutMediaBatch(writeBatch);
   if (newDeltaLink) await dbSetMeta('deltaLink', newDeltaLink);
 
   allPhotos = [...existingMap.values()];
   updateUiWithCurrentPhotos(existingCount === 0 && allPhotos.length > 0);
 
-  await dbSetMeta('scan_state', {
-    scanned,
-    found: allPhotos.length,
-    updatedAt: new Date().toISOString(),
-    completed: true
-  });
+  await dbSetMeta('scan_state', { scanned, found: allPhotos.length, updatedAt: new Date().toISOString(), completed: true });
 
   if (isFirstScan) setScanDone(allPhotos.length, allPhotos.length + ' médias');
   else if (added > 0 || deleted > 0) {
@@ -1858,60 +1805,42 @@ async function runDeltaSync() {
     if (added > 0) parts.push(`+${added}`);
     if (deleted > 0) parts.push(`-${deleted}`);
     setScanDone(allPhotos.length, parts.join(' ') + ' · ' + allPhotos.length + ' total');
-  } else {
-    setScanDone(allPhotos.length, 'à jour');
-  }
+  } else setScanDone(allPhotos.length, 'à jour');
 
   if (lcEnabled) setTimeout(backgroundCacheThumbs, 1500);
+  refreshStorageStats();
   return allPhotos;
 }
 
 async function runBackgroundSync() {
   if (backgroundSyncRunning) return;
   backgroundSyncRunning = true;
-  try {
-    await runDeltaSync();
-  } catch (err) {
+  try { await runDeltaSync(); }
+  catch (err) {
     console.warn('Erreur sync:', err);
     setScanStatus('error', 'Sync interrompue', '', 0);
     setTimeout(() => setScanStatus('hidden'), 4000);
-  } finally {
-    backgroundSyncRunning = false;
-  }
+  } finally { backgroundSyncRunning = false; }
 }
 
 function startAutoSync() {
   if (autoSyncTimer) clearInterval(autoSyncTimer);
-  autoSyncTimer = setInterval(() => {
-    if (_currentToken && !backgroundSyncRunning) runBackgroundSync();
-  }, AUTO_SYNC_INTERVAL_MS);
+  autoSyncTimer = setInterval(() => { if (_currentToken && !backgroundSyncRunning) runBackgroundSync(); }, AUTO_SYNC_INTERVAL_MS);
 }
 
 function stopAutoSync() {
-  if (autoSyncTimer) {
-    clearInterval(autoSyncTimer);
-    autoSyncTimer = null;
-  }
+  if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
 }
 
 async function startApp() {
   if (startAppRunning) return;
   startAppRunning = true;
-  try {
-    await _startAppInner();
-  } finally {
-    startAppRunning = false;
-  }
+  try { await _startAppInner(); } finally { startAppRunning = false; }
 }
 
 async function _startAppInner() {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
-  if (!clientId) {
-    document.getElementById('splash').classList.add('hidden');
-    showConfigPanel();
-    return;
-  }
-
+  if (!clientId) { document.getElementById('splash').classList.add('hidden'); showConfigPanel(); return; }
   document.getElementById('splash').classList.add('hidden');
 
   try {
@@ -1921,9 +1850,7 @@ async function _startAppInner() {
       if (lcEnabled) await loadCachedThumbs();
       updateUiWithCurrentPhotos(true);
     }
-  } catch (err) {
-    console.warn('IndexedDB read error:', err);
-  }
+  } catch (err) { console.warn('IndexedDB read error:', err); }
 
   document.getElementById('btn-config').style.display = 'inline-flex';
   document.getElementById('map-layer-toggle').classList.add('visible');
@@ -1959,16 +1886,13 @@ function showConfigPanel() {
   document.getElementById('config-logout-wrap').style.display = hasAuth ? 'block' : 'none';
   document.getElementById('toggle-local-cache').checked = lcEnabled;
   updateCacheToggleSub();
-  if (lcEnabled) {
-    dbGetThumbIds().then(ids => updateCacheStatus(ids.size, allPhotos.length)).catch(() => {});
-  }
+  if (lcEnabled) dbGetThumbIds().then(ids => updateCacheStatus(ids.size, allPhotos.length)).catch(() => {});
+  refreshStorageStats();
   document.getElementById('config-panel').classList.add('open');
 }
 
 function updateCacheToggleSub() {
-  document.getElementById('cache-toggle-sub').textContent = lcEnabled
-    ? 'Activé — vignettes stockées hors-ligne'
-    : 'Désactivé — vignettes chargées à la volée';
+  document.getElementById('cache-toggle-sub').textContent = lcEnabled ? 'Activé — vignettes stockées hors-ligne' : 'Désactivé — vignettes chargées à la volée';
 }
 
 document.getElementById('toggle-local-cache').addEventListener('change', async (e) => {
@@ -1984,22 +1908,18 @@ document.getElementById('toggle-local-cache').addEventListener('change', async (
     await dbClearThumbs().catch(() => {});
     document.getElementById('cache-toggle-status').textContent = '';
     refreshCurrentViews();
+    refreshStorageStats();
     showToast('Cache local désactivé');
   }
 });
 
-document.getElementById('btn-config-cancel').addEventListener('click', () => {
-  document.getElementById('config-panel').classList.remove('open');
-});
+document.getElementById('btn-config-cancel').addEventListener('click', () => { document.getElementById('config-panel').classList.remove('open'); });
 
 document.getElementById('btn-config-logout').addEventListener('click', async () => {
   try {
     if (msalInstance) {
       const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0) {
-        await msalInstance.logoutRedirect({ account: accounts[0] }).catch(() => {});
-        return;
-      }
+      if (accounts.length > 0) { await msalInstance.logoutRedirect({ account: accounts[0] }).catch(() => {}); return; }
     }
   } finally {
     localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
@@ -2009,9 +1929,7 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
     await dbDeleteMeta('deltaLink').catch(() => {});
     revokeAllThumbUrls();
     stopAutoSync();
-    msalInstance = null;
-    allPhotos = [];
-    markers = [];
+    msalInstance = null; allPhotos = []; markers = [];
     clusterGroup.clearLayers();
     document.getElementById('config-panel').classList.remove('open');
     document.getElementById('filter-bar').classList.remove('visible');
@@ -2021,42 +1939,34 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
     document.getElementById('photo-panel').classList.remove('open');
     document.getElementById('splash').classList.remove('hidden');
     setScanStatus('hidden');
+    refreshStorageStats();
     showToast('Déconnecté avec succès');
   }
 });
 
 document.getElementById('btn-config').addEventListener('click', showConfigPanel);
-
 document.getElementById('btn-login').addEventListener('click', () => {
-  if (!localStorage.getItem(STORAGE_KEY_CLIENT_ID)) {
-    localStorage.setItem(STORAGE_KEY_CLIENT_ID, DEFAULT_CLIENT_ID);
-  }
+  if (!localStorage.getItem(STORAGE_KEY_CLIENT_ID)) localStorage.setItem(STORAGE_KEY_CLIENT_ID, DEFAULT_CLIENT_ID);
   startApp();
 });
-
 document.getElementById('btn-connect').addEventListener('click', () => {
   document.getElementById('config-panel').classList.remove('open');
   startApp();
 });
-
 document.getElementById('btn-full-rescan').addEventListener('click', async () => {
   document.getElementById('config-panel').classList.remove('open');
   await dbDeleteMeta('deltaLink').catch(() => {});
   await dbDeleteMeta('scan_state').catch(() => {});
   runBackgroundSync();
 });
-
 document.getElementById('config-panel').addEventListener('click', e => {
-  if (e.target === document.getElementById('config-panel')) {
-    document.getElementById('config-panel').classList.remove('open');
-  }
+  if (e.target === document.getElementById('config-panel')) document.getElementById('config-panel').classList.remove('open');
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
   const hashOrSearch = window.location.hash + window.location.search;
   const isAuthRedirectReturn = hashOrSearch.includes('code=') || hashOrSearch.includes('access_token') || hashOrSearch.includes('id_token') || hashOrSearch.includes('error=');
-
   try {
     const cached = await dbGetAllMedia();
     if (cached.length > 0) {
@@ -2066,30 +1976,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('btn-config').style.display = 'inline-flex';
       document.getElementById('map-layer-toggle').classList.add('visible');
       document.getElementById('splash').classList.add('hidden');
+      refreshStorageStats();
       if (clientId && !isAuthRedirectReturn) trySilentBackgroundSync(clientId);
     }
-  } catch (err) {
-    console.warn('IndexedDB preload error:', err);
-  }
-
+  } catch (err) { console.warn('IndexedDB preload error:', err); }
   if (clientId && isAuthRedirectReturn) startApp();
 });
 
 async function trySilentBackgroundSync(clientId) {
   try {
-    if (!msalInstance) {
-      await initMsal(clientId);
-      await msalInstance.handleRedirectPromise();
-    }
+    if (!msalInstance) { await initMsal(clientId); await msalInstance.handleRedirectPromise(); }
     const accounts = msalInstance.getAllAccounts();
     if (accounts.length === 0) return;
     const result = await msalInstance.acquireTokenSilent({ scopes: ['Files.Read', 'User.Read'], account: accounts[0] });
     _currentToken = result.accessToken;
     runBackgroundSync();
     startAutoSync();
-  } catch {
-    console.log('Synchronisation silencieuse ignorée — reconnexion nécessaire.');
-  }
+  } catch { console.log('Synchronisation silencieuse ignorée — reconnexion nécessaire.'); }
 }
 </script>
 </body>
