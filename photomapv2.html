@@ -975,9 +975,23 @@ clusterGroup = L.markerClusterGroup({
   iconCreateFunction(cluster) {
     const count = cluster.getChildCount();
     const children = cluster.getAllChildMarkers();
-    const firstPhoto = children[0]?._photoData;
-    const thumbSrc = firstPhoto ? getThumbSrc(firstPhoto) : FALLBACK_ICON;
-    const photoId = firstPhoto?.id || '';
+    /* Pick the first child that has a usable thumbnail (local blob or valid URL) */
+    let bestPhoto = null;
+    for (const child of children) {
+      const p = child._photoData;
+      if (!p) continue;
+      /* Local cache blob = best option */
+      if (lcEnabled && thumbBlobUrls.has(p.id)) { bestPhoto = p; break; }
+      /* Remote URL that's not fallback = acceptable */
+      if (p.thumbnailUrl && p.thumbnailUrl !== FALLBACK_ICON) {
+        if (!bestPhoto) bestPhoto = p;
+        /* If this one has a fresh URL, prefer it */
+        if (p.fetchedAt && (Date.now() - new Date(p.fetchedAt).getTime()) < THUMBNAIL_TTL_MS) { bestPhoto = p; break; }
+      }
+    }
+    if (!bestPhoto) bestPhoto = children[0]?._photoData;
+    const thumbSrc = bestPhoto ? getThumbSrc(bestPhoto) : FALLBACK_ICON;
+    const photoId = bestPhoto?.id || '';
     const sz = getMarkerSize();
     return L.divIcon({
       className: '',
