@@ -1000,7 +1000,7 @@ clusterGroup = L.markerClusterGroup({
           <div class="photo-marker">
             <img src="${thumbSrc}" loading="lazy"
               data-photo-id="${photoId}"
-              onerror="this.src='${FALLBACK_ICON}'"/>
+              onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${photoId}', this);"/>
             <div class="photo-marker-count">${count}</div>
           </div>
           <div class="photo-marker-tail"></div>
@@ -1409,86 +1409,62 @@ function showLightboxPhoto() {
   /* Step 1: show the thumbnail immediately (from local cache or remote URL) */
   const thumbSrc = getThumbSrc(photo);
 
-  /* The full-res URL — ORIGINAL logic */
-  const fullSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
-
   if (photo.mediaType === 'video') {
-    video.src = fullSrc;
     video.style.display = 'block';
-    /* If stale, refresh in background and update video src */
-    if (isUrlStale(photo) && _currentToken) {
+    video.src = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || '';
+    /* Always try to get a fresh URL for video */
+    if (_currentToken) {
       refreshMediaUrls(photo).then(() => {
         if (lightboxPhotos[lightboxIndex]?.id === currentId) {
-          video.src = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || '';
+          video.src = photo.downloadUrl || photo.webUrl || '';
         }
       }).catch(() => {});
     }
   } else {
-    /* Show thumbnail first */
+    /* Show thumbnail immediately */
     img.src = thumbSrc;
     img.style.display = 'block';
     img.onerror = () => { img.src = FALLBACK_ICON; };
 
-    /* Step 2: Load full-res in background */
-    if (fullSrc && fullSrc !== thumbSrc && fullSrc !== FALLBACK_ICON) {
-      hdLoader.classList.add('visible');
-      const hdImg = new Image();
-      hdImg.onload = () => {
-        if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
-        img.src = hdImg.src;
-        hdLoader.classList.remove('visible');
-        hdDone.classList.add('visible');
-        setTimeout(() => { if (lightboxPhotos[lightboxIndex]?.id === currentId) hdDone.classList.remove('visible'); }, 2000);
-      };
-      hdImg.onerror = () => {
-        if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
-        hdLoader.classList.remove('visible');
-        /* Full URL failed — probably stale. Refresh and retry. */
-        if (_currentToken) {
-          refreshMediaUrls(photo).then(() => {
-            if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
-            /* Update thumb with fresh URL */
-            img.src = getThumbSrc(photo);
-            /* Try HD again with fresh downloadUrl */
-            const freshFull = photo.downloadUrl || photo.thumbnailUrl;
-            if (freshFull) {
-              hdLoader.classList.add('visible');
-              const retry = new Image();
-              retry.onload = () => {
-                if (lightboxPhotos[lightboxIndex]?.id === currentId) {
-                  img.src = retry.src;
-                  hdLoader.classList.remove('visible');
-                  hdDone.classList.add('visible');
-                  setTimeout(() => hdDone.classList.remove('visible'), 2000);
-                }
-              };
-              retry.onerror = () => { hdLoader.classList.remove('visible'); };
-              retry.src = freshFull;
-            }
-          }).catch(() => {});
-        }
-      };
-      hdImg.src = fullSrc;
-    } else if (isUrlStale(photo) && _currentToken) {
-      /* thumbSrc === fullSrc or fallback — try refreshing */
+    /*
+     * Step 2: ALWAYS fetch fresh full-res URL from Graph API.
+     * This is the key fix: we don't try the stored downloadUrl first
+     * (it's almost certainly expired). Instead we call refreshMediaUrls
+     * which gets a fresh downloadUrl via authenticated Graph API call,
+     * then load that fresh URL as the HD image.
+     */
+    if (_currentToken) {
       hdLoader.classList.add('visible');
       refreshMediaUrls(photo).then(() => {
         if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
-        img.src = getThumbSrc(photo);
-        const freshFull = photo.downloadUrl || photo.thumbnailUrl;
-        if (freshFull) {
-          const hd = new Image();
-          hd.onload = () => {
-            if (lightboxPhotos[lightboxIndex]?.id === currentId) {
-              img.src = hd.src;
-              hdLoader.classList.remove('visible');
-              hdDone.classList.add('visible');
-              setTimeout(() => hdDone.classList.remove('visible'), 2000);
-            }
+
+        /* refreshMediaUrls has updated photo.thumbnailUrl and photo.downloadUrl with fresh values */
+        /* First update the displayed image to fresh thumbnail (in case we were showing fallback) */
+        const freshThumb = getThumbSrc(photo);
+        if (img.src === FALLBACK_ICON && freshThumb !== FALLBACK_ICON) {
+          img.src = freshThumb;
+        }
+
+        /* Now load the full-res image using the fresh downloadUrl */
+        const freshFullUrl = photo.downloadUrl;
+        if (freshFullUrl && freshFullUrl !== photo.thumbnailUrl) {
+          const hdImg = new Image();
+          hdImg.onload = () => {
+            if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
+            img.src = hdImg.src;
+            hdLoader.classList.remove('visible');
+            hdDone.classList.add('visible');
+            setTimeout(() => { if (lightboxPhotos[lightboxIndex]?.id === currentId) hdDone.classList.remove('visible'); }, 2500);
           };
-          hd.onerror = () => { hdLoader.classList.remove('visible'); };
-          hd.src = freshFull;
-        } else { hdLoader.classList.remove('visible'); }
+          hdImg.onerror = () => {
+            /* Full-res failed even with fresh URL — just show the thumbnail */
+            hdLoader.classList.remove('visible');
+          };
+          hdImg.src = freshFullUrl;
+        } else {
+          /* No separate full-res URL available, thumbnail is the best we have */
+          hdLoader.classList.remove('visible');
+        }
       }).catch(() => { hdLoader.classList.remove('visible'); });
     }
   }
