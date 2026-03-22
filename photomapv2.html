@@ -1390,83 +1390,45 @@ function showLightboxPhoto() {
   const img = document.getElementById('lightbox-img');
   const video = document.getElementById('lightbox-video');
   const openBtn = document.getElementById('lightbox-open-onedrive');
-  const hdLoader = document.getElementById('hd-loader');
-  const hdDone = document.getElementById('hd-done');
 
   img.style.display = 'none';
   video.style.display = 'none';
-  hdLoader.classList.remove('visible');
-  hdDone.classList.remove('visible');
 
   video.onloadedmetadata = null;
   img.onload = null;
   img.onerror = null;
+
   video.pause();
-  try { video.removeAttribute('src'); video.load(); } catch {}
+  video.removeAttribute('src');
+  video.load();
 
-  const currentId = photo.id;
+  const fullSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
 
-  /* Step 1: show the thumbnail immediately (from local cache or remote URL) */
-  const thumbSrc = getThumbSrc(photo);
+  /* If URL is stale, try refreshing in the background */
+  if (isUrlStale(photo) && msalInstance) {
+    getToken().then(token => { _currentToken = token; return refreshMediaUrls(photo); }).then(() => {
+      /* If the lightbox is still showing this photo, update src */
+      if (lightboxPhotos[lightboxIndex]?.id === photo.id) {
+        const currentSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
+        if (photo.mediaType === 'video') {
+          video.src = currentSrc;
+        } else {
+          img.src = currentSrc;
+        }
+      }
+    }).catch(() => { /* ignore refresh failures in lightbox */ });
+  }
 
   if (photo.mediaType === 'video') {
+    video.src = fullSrc;
     video.style.display = 'block';
-    video.src = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || '';
-    /* Always try to get a fresh URL for video */
-    if (_currentToken) {
-      refreshMediaUrls(photo).then(() => {
-        if (lightboxPhotos[lightboxIndex]?.id === currentId) {
-          video.src = photo.downloadUrl || photo.webUrl || '';
-        }
-      }).catch(() => {});
-    }
   } else {
-    /* Show thumbnail immediately */
-    img.src = thumbSrc;
+    img.src = fullSrc;
     img.style.display = 'block';
-    img.onerror = () => { img.src = FALLBACK_ICON; };
 
-    /*
-     * Step 2: ALWAYS fetch fresh full-res URL from Graph API.
-     * This is the key fix: we don't try the stored downloadUrl first
-     * (it's almost certainly expired). Instead we call refreshMediaUrls
-     * which gets a fresh downloadUrl via authenticated Graph API call,
-     * then load that fresh URL as the HD image.
-     */
-    if (_currentToken) {
-      hdLoader.classList.add('visible');
-      refreshMediaUrls(photo).then(() => {
-        if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
-
-        /* refreshMediaUrls has updated photo.thumbnailUrl and photo.downloadUrl with fresh values */
-        /* First update the displayed image to fresh thumbnail (in case we were showing fallback) */
-        const freshThumb = getThumbSrc(photo);
-        if (img.src === FALLBACK_ICON && freshThumb !== FALLBACK_ICON) {
-          img.src = freshThumb;
-        }
-
-        /* Now load the full-res image using the fresh downloadUrl */
-        const freshFullUrl = photo.downloadUrl;
-        if (freshFullUrl && freshFullUrl !== photo.thumbnailUrl) {
-          const hdImg = new Image();
-          hdImg.onload = () => {
-            if (lightboxPhotos[lightboxIndex]?.id !== currentId) return;
-            img.src = hdImg.src;
-            hdLoader.classList.remove('visible');
-            hdDone.classList.add('visible');
-            setTimeout(() => { if (lightboxPhotos[lightboxIndex]?.id === currentId) hdDone.classList.remove('visible'); }, 2500);
-          };
-          hdImg.onerror = () => {
-            /* Full-res failed even with fresh URL — just show the thumbnail */
-            hdLoader.classList.remove('visible');
-          };
-          hdImg.src = freshFullUrl;
-        } else {
-          /* No separate full-res URL available, thumbnail is the best we have */
-          hdLoader.classList.remove('visible');
-        }
-      }).catch(() => { hdLoader.classList.remove('visible'); });
-    }
+    img.onerror = () => {
+      img.src = photo.thumbnailUrl || FALLBACK_ICON;
+    };
   }
 
   document.getElementById('lightbox-name').textContent = photo.name;
