@@ -33,7 +33,6 @@
     --danger: #d13438;
     --shadow: rgba(0,0,0,0.08);
     --font-ui: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-    /* NEW: uniform marker size */
     --marker-size: 88px;
   }
 
@@ -167,7 +166,6 @@
 
   .leaflet-tile { filter: saturate(0.85) contrast(1.05); }
 
-  /* NEW: Map layer toggle */
   #map-layer-toggle {
     position: fixed;
     bottom: calc(80px + env(safe-area-inset-bottom, 0px));
@@ -230,7 +228,6 @@
   .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.4s ease; }
   #loading-count { font-size: 2rem; font-weight: 700; color: var(--accent); }
 
-  /* PANEL */
   #photo-panel {
     position: fixed; right: 0;
     top: calc(56px + env(safe-area-inset-top, 0px)); bottom: 0;
@@ -276,7 +273,6 @@
   }
   .thumb-card:hover .thumb-overlay { opacity: 1; }
 
-  /* LIGHTBOX */
   #lightbox {
     position: fixed; inset: 0; z-index: 3000;
     background: rgba(0,0,0,0.95); display: none;
@@ -294,7 +290,6 @@
     object-fit: contain; border-radius: 8px; box-shadow: 0 0 80px rgba(0,0,0,0.85);
   }
 
-  /* NEW: HD loading badge */
   .hd-badge {
     position: absolute; top: 16px; right: 16px;
     display: none; align-items: center; gap: 6px;
@@ -347,7 +342,6 @@
   }
   #lightbox-close:hover { background: rgba(255,255,255,0.2); }
 
-  /* MARKERS — CHANGED: uniform size via CSS var, forced object-fit cover */
   .photo-marker-wrap {
     display: flex; flex-direction: column; align-items: center; cursor: pointer;
     filter: drop-shadow(0 4px 14px rgba(0,0,0,0.35)); transition: transform 0.15s;
@@ -418,7 +412,6 @@
   .config-buttons { display: flex; flex-direction: column; gap: 12px; }
   .config-btn { width: 100%; padding: 14px 24px; border-radius: 28px; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; text-align: center; }
 
-  /* NEW: cache toggle in config */
   .config-toggle {
     display: flex; align-items: center; justify-content: space-between;
     padding: 14px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border);
@@ -443,9 +436,6 @@
   }
   #toast.show { opacity: 1; }
 
-  /* ==========================================
-     MOBILE / IPHONE OPTIMIZATION
-     ========================================== */
   @media (max-width: 600px) {
     :root { --marker-size: 80px; }
     .tagline { display: none; }
@@ -542,7 +532,6 @@
 
 <div id="map"></div>
 
-<!-- NEW: satellite toggle -->
 <button id="map-layer-toggle" title="Fond de carte">
   <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23365' width='44' height='44'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23fff' font-size='10'%3E🛰%3C/text%3E%3C/svg%3E" alt=""/>
   <div id="map-layer-label">Satellite</div>
@@ -570,11 +559,10 @@
   <button class="lightbox-nav" id="lightbox-prev" title="Précédent">‹</button>
   <button class="lightbox-nav" id="lightbox-next" title="Suivant">›</button>
 
-  <!-- NEW: wrap media + HD badge -->
   <div class="lightbox-media-wrap">
     <img id="lightbox-img" src="" alt="Média"/>
     <video id="lightbox-video" controls playsinline></video>
-    <div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div><span>HD</span></div>
+    <div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div><span>Chargement HD</span></div>
     <div class="hd-badge done" id="hd-done"><span>✓ HD</span></div>
   </div>
 
@@ -611,7 +599,6 @@
       <div id="config-connect-wrap">
         <button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button>
       </div>
-      <!-- NEW: cache toggle -->
       <div class="config-toggle">
         <div class="config-toggle-info">
           <div class="config-toggle-label">Cache local des vignettes</div>
@@ -636,36 +623,24 @@
 <div id="toast"></div>
 
 <script>
-/*
- * PhotoMap v3.0
- *
- * Based on the ORIGINAL working code with these additions:
- * 1. Uniform marker size (CSS var --marker-size, no dynamic getMarkerSize)
- * 2. worldCopyJump: true (globe wrapping)
- * 3. Satellite layer toggle
- * 4. Optional local thumbnail cache (IndexedDB blobs)
- * 5. HD lightbox (thumbnail first, then full-res)
- * 6. DB_VERSION 2 for new 'thumbs' store
- *
- * The ORIGINAL thumbnail display logic is preserved:
- * - thumbnailUrl from Graph API used directly in <img src>
- * - onerror → queueThumbnailRefresh → refreshMediaUrls (Graph API call) → update src
- * - This works because onerror triggers a fresh Graph API call with valid token
- */
-
 const STORAGE_KEY_CLIENT_ID = 'photomap_client_id';
 const DB_NAME = 'photomap_db';
-const DB_VERSION = 2; /* bumped for thumbs store */
+const DB_VERSION = 2;
 const STORE_MEDIA = 'media';
 const STORE_META = 'meta';
-const STORE_THUMBS = 'thumbs'; /* NEW */
-
+const STORE_THUMBS = 'thumbs';
 const DEFAULT_CLIENT_ID = '74655b12-46c1-4cdb-be1a-27655fa47677';
-
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'gif', 'bmp', 'tiff']);
 const VIDEO_EXTENSIONS = new Set(['mp4', 'mov', 'm4v', 'hevc', 'avi', 'webm', '3gp', 'mkv']);
-
 const THUMBNAIL_TTL_MS = 4 * 60 * 60 * 1000;
+const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
+const DELTA_BASE_URL = 'https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
+const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
+const LC_KEY = 'photomap_local_thumb_cache';
+const SPATIAL_CELL_SIZE = 0.0005;
+const GRAPH_RETRY_LIMIT = 4;
+const GRAPH_THUMB_CONCURRENCY = 6;
+const THUMB_CACHE_CONCURRENCY = 3;
 
 let msalInstance = null;
 let allPhotos = [];
@@ -675,29 +650,56 @@ let currentYear = 'all';
 let isLoading = false;
 let backgroundSyncRunning = false;
 let autoSyncTimer = null;
-const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
-
 let startAppRunning = false;
 let lightboxPhotos = [];
 let lightboxIndex = 0;
 let panelAllPhotos = [];
 let _dbInstance = null;
-
-/* NEW: local cache state */
-const LC_KEY = 'photomap_local_thumb_cache';
 let lcEnabled = localStorage.getItem(LC_KEY) === 'true';
-const thumbBlobUrls = new Map(); /* photoId → objectURL from cached blob */
-
-/* NEW: map layers */
 let currentLayerType = 'standard';
 let standardLayer, satelliteLayer;
+let _currentToken = null;
+let _thumbCacheRunning = false;
+let spatialIndex = {};
+let toastTimer = null;
+let _scanDoneTimer = null;
+let _refreshProcessing = false;
+let _visibleRefreshTimer = null;
+let yearFilterInitialized = false;
+let lastGeocodeTime = 0;
+let currentPanelRequestId = 0;
 
-/* ==========================================
-   IndexedDB — ORIGINAL + thumbs store
-   ========================================== */
+const thumbBlobUrls = new Map();
+const geocodeCache = {};
+const _refreshQueue = new Set();
+const _refreshInProgress = new Set();
+const _failedImgElements = new Map();
+const REFRESH_CONCURRENCY = 4;
+const REFRESH_DELAY_MS = 200;
 
-function openDb() {
-  if (_dbInstance) return Promise.resolve(_dbInstance);
+function safeDate(value) {
+  return value ? new Date(value) : null;
+}
+
+function revokeThumbUrl(id) {
+  const oldUrl = thumbBlobUrls.get(id);
+  if (oldUrl) {
+    try { URL.revokeObjectURL(oldUrl); } catch {}
+    thumbBlobUrls.delete(id);
+  }
+}
+
+function setThumbObjectUrl(id, blob) {
+  revokeThumbUrl(id);
+  thumbBlobUrls.set(id, URL.createObjectURL(blob));
+}
+
+function revokeAllThumbUrls() {
+  for (const [id] of thumbBlobUrls) revokeThumbUrl(id);
+}
+
+async function openDb() {
+  if (_dbInstance) return _dbInstance;
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (event) => {
@@ -709,7 +711,6 @@ function openDb() {
       if (!db.objectStoreNames.contains(STORE_META)) {
         db.createObjectStore(STORE_META, { keyPath: 'key' });
       }
-      /* NEW */
       if (!db.objectStoreNames.contains(STORE_THUMBS)) {
         db.createObjectStore(STORE_THUMBS, { keyPath: 'id' });
       }
@@ -724,10 +725,8 @@ function openDb() {
   });
 }
 
-/* --- ORIGINAL media/meta DB functions (unchanged) --- */
-
 async function dbPutMediaBatch(items) {
-  if (!items || items.length === 0) return;
+  if (!items?.length) return;
   const db = await openDb();
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_MEDIA, 'readwrite');
@@ -739,7 +738,7 @@ async function dbPutMediaBatch(items) {
         fetchedAt: item.fetchedAt || new Date().toISOString()
       });
     }
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
   });
@@ -751,9 +750,7 @@ async function dbGetAllMedia() {
     const tx = db.transaction(STORE_MEDIA, 'readonly');
     const request = tx.objectStore(STORE_MEDIA).getAll();
     request.onsuccess = () => {
-      resolve((request.result || []).map(item => ({
-        ...item, date: item.date ? new Date(item.date) : null
-      })));
+      resolve((request.result || []).map(item => ({ ...item, date: safeDate(item.date) })));
     };
     request.onerror = () => reject(request.error);
   });
@@ -764,7 +761,7 @@ async function dbClearMedia() {
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_MEDIA, 'readwrite');
     tx.objectStore(STORE_MEDIA).clear();
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);
   });
 }
@@ -774,7 +771,7 @@ async function dbSetMeta(key, value) {
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_META, 'readwrite');
     tx.objectStore(STORE_META).put({ key, value });
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);
   });
 }
@@ -794,7 +791,7 @@ async function dbDeleteMeta(key) {
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_META, 'readwrite');
     tx.objectStore(STORE_META).delete(key);
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);
   });
 }
@@ -804,47 +801,50 @@ async function dbDeleteMediaItem(id) {
   await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_MEDIA, 'readwrite');
     tx.objectStore(STORE_MEDIA).delete(id);
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);
   });
 }
 
-/* --- NEW: thumb blob store --- */
-
 async function dbPutThumb(id, blob) {
   const db = await openDb();
-  await new Promise((y, n) => {
+  await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_THUMBS, 'readwrite');
     tx.objectStore(STORE_THUMBS).put({ id, blob, savedAt: Date.now() });
-    tx.oncomplete = () => y(); tx.onerror = () => n(tx.error);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
   });
 }
 
 async function dbGetThumbIds() {
   const db = await openDb();
-  return new Promise((y, n) => {
+  return new Promise((resolve, reject) => {
     const r = db.transaction(STORE_THUMBS, 'readonly').objectStore(STORE_THUMBS).getAllKeys();
-    r.onsuccess = () => y(new Set(r.result || [])); r.onerror = () => n(r.error);
+    r.onsuccess = () => resolve(new Set(r.result || []));
+    r.onerror = () => reject(r.error);
   });
 }
 
 async function dbClearThumbs() {
   const db = await openDb();
-  await new Promise((y, n) => {
+  await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_THUMBS, 'readwrite');
-    tx.objectStore(STORE_THUMBS).clear(); tx.oncomplete = () => y(); tx.onerror = () => n(tx.error);
+    tx.objectStore(STORE_THUMBS).clear();
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
   });
 }
 
 async function dbDeleteThumb(id) {
   const db = await openDb();
-  await new Promise((y, n) => {
+  await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_THUMBS, 'readwrite');
-    tx.objectStore(STORE_THUMBS).delete(id); tx.oncomplete = () => y(); tx.onerror = () => n(tx.error);
+    tx.objectStore(STORE_THUMBS).delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
   });
 }
 
-/* Load all cached thumb blobs into objectURL map */
 async function loadCachedThumbs() {
   if (!lcEnabled) return;
   const db = await openDb();
@@ -855,31 +855,118 @@ async function loadCachedThumbs() {
       if (c) {
         const { id, blob } = c.value;
         if (blob && !thumbBlobUrls.has(id)) {
-          try { thumbBlobUrls.set(id, URL.createObjectURL(blob)); } catch {}
+          try { setThumbObjectUrl(id, blob); } catch {}
         }
         c.continue();
-      } else { resolve(); }
+      } else {
+        resolve();
+      }
     };
     r.onerror = () => reject(r.error);
   });
 }
 
-/*
- * Get the best available thumbnail src for display.
- * If local cache is enabled and we have a blob, use that.
- * Otherwise use the remote URL (which may be stale — onerror handles refresh).
- */
 function getThumbSrc(photo) {
   if (lcEnabled && thumbBlobUrls.has(photo.id)) return thumbBlobUrls.get(photo.id);
   return photo.thumbnailUrl || FALLBACK_ICON;
 }
 
-/*
- * Download a thumb blob using Graph API (authenticated).
- * 1. Call /thumbnails to get a FRESH signed URL
- * 2. Fetch that fresh URL immediately
- * 3. Store the blob in IndexedDB
- */
+async function initMsal(clientId) {
+  msalInstance = new msal.PublicClientApplication({
+    auth: {
+      clientId,
+      authority: 'https://login.microsoftonline.com/common',
+      redirectUri: window.location.origin + window.location.pathname
+    },
+    cache: { cacheLocation: 'localStorage' }
+  });
+  await msalInstance.initialize();
+}
+
+async function getToken() {
+  const accounts = msalInstance.getAllAccounts();
+  const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined };
+  try {
+    return (await msalInstance.acquireTokenSilent(request)).accessToken;
+  } catch {
+    await msalInstance.acquireTokenRedirect(request);
+    return null;
+  }
+}
+
+async function getTokenFresh() {
+  const accounts = msalInstance.getAllAccounts();
+  const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined, forceRefresh: true };
+  try {
+    return (await msalInstance.acquireTokenSilent(request)).accessToken;
+  } catch {
+    await msalInstance.acquireTokenRedirect(request);
+    return null;
+  }
+}
+
+async function graphGet(url, token, attempt = 0) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+
+  if (res.status === 401) {
+    if (attempt >= 1) throw new Error('Session expirée. Veuillez vous reconnecter.');
+    const freshToken = await getTokenFresh();
+    if (!freshToken) return null;
+    _currentToken = freshToken;
+    return graphGet(url, freshToken, attempt + 1);
+  }
+
+  if (res.status === 429) {
+    if (attempt >= GRAPH_RETRY_LIMIT) throw new Error('API Graph temporairement limitée. Réessayez plus tard.');
+    const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10);
+    await new Promise(r => setTimeout(r, Math.max(1, retryAfter) * 1000));
+    return graphGet(url, token, attempt + 1);
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erreur API Graph (${res.status}) : ${text.substring(0, 200)}`);
+  }
+
+  return res.json();
+}
+
+function isMediaFile(item) {
+  if (!item.file || !item.name) return false;
+  const ext = item.name.split('.').pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext);
+}
+
+async function getThumbnail(itemId) {
+  try {
+    const data = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/thumbnails`, _currentToken);
+    return data?.value?.[0]?.medium?.url || data?.value?.[0]?.large?.url || data?.value?.[0]?.small?.url || null;
+  } catch {
+    return null;
+  }
+}
+
+async function refreshMediaUrls(item) {
+  try {
+    const data = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${item.id}?$select=id,@microsoft.graph.downloadUrl,webUrl`, _currentToken);
+    const thumbnailUrl = await getThumbnail(item.id);
+    item.downloadUrl = data?.['@microsoft.graph.downloadUrl'] || thumbnailUrl || item.downloadUrl;
+    item.thumbnailUrl = thumbnailUrl || item.thumbnailUrl;
+    item.webUrl = data?.webUrl || item.webUrl;
+    item.fetchedAt = new Date().toISOString();
+    await dbPutMediaBatch([item]);
+    if (lcEnabled && thumbnailUrl) downloadAndCacheThumb(item).catch(() => {});
+  } catch (err) {
+    console.warn('Failed to refresh URLs for', item.id, err);
+  }
+}
+
+function isUrlStale(item) {
+  if (lcEnabled && thumbBlobUrls.has(item.id)) return false;
+  if (!item.fetchedAt) return true;
+  return (Date.now() - new Date(item.fetchedAt).getTime()) > THUMBNAIL_TTL_MS;
+}
+
 async function downloadAndCacheThumb(photo) {
   if (!_currentToken) return false;
   try {
@@ -889,15 +976,46 @@ async function downloadAndCacheThumb(photo) {
     if (!res.ok) return false;
     const blob = await res.blob();
     await dbPutThumb(photo.id, blob);
-    thumbBlobUrls.set(photo.id, URL.createObjectURL(blob));
+    setThumbObjectUrl(photo.id, blob);
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
-/* Background cache job */
-let _thumbCacheRunning = false;
+async function runWithConcurrency(items, limit, worker) {
+  if (!items.length) return [];
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  async function runner() {
+    while (true) {
+      const i = nextIndex++;
+      if (i >= items.length) return;
+      results[i] = await worker(items[i], i);
+    }
+  }
+
+  const runners = Array.from({ length: Math.min(limit, items.length) }, () => runner());
+  await Promise.all(runners);
+  return results;
+}
+
+async function maybeResolveThumbnailUrls(items, shouldResolve) {
+  if (!shouldResolve || !items.length) return items;
+  await runWithConcurrency(items, GRAPH_THUMB_CONCURRENCY, async (item) => {
+    const thumbnailUrl = await getThumbnail(item.id);
+    if (thumbnailUrl) {
+      item.thumbnailUrl = thumbnailUrl;
+      item.downloadUrl = item.downloadUrl || thumbnailUrl;
+      item.fetchedAt = new Date().toISOString();
+    }
+  });
+  return items;
+}
+
 async function backgroundCacheThumbs() {
-  if (!lcEnabled || _thumbCacheRunning || !_currentToken) return;
+  if (!lcEnabled || _thumbCacheRunning || !_currentToken || !allPhotos.length) return;
   _thumbCacheRunning = true;
   try {
     const haveIds = await dbGetThumbIds();
@@ -905,29 +1023,31 @@ async function backgroundCacheThumbs() {
     const total = allPhotos.length;
     let done = haveIds.size;
     updateCacheStatus(done, total);
-    for (let i = 0; i < need.length; i++) {
-      if (!lcEnabled) break;
-      if (await downloadAndCacheThumb(need[i])) done++;
-      if (i % 5 === 0) updateCacheStatus(done, total);
-      if (i % 10 === 9) await new Promise(r => setTimeout(r, 50));
-    }
+
+    await runWithConcurrency(need, THUMB_CACHE_CONCURRENCY, async (photo, index) => {
+      if (!lcEnabled) return;
+      if (await downloadAndCacheThumb(photo)) done++;
+      if (index % 4 === 0) updateCacheStatus(done, total);
+    });
+
     updateCacheStatus(done, total);
-  } catch (e) { console.warn('Cache error:', e); }
-  finally { _thumbCacheRunning = false; }
+    refreshCurrentViews();
+  } catch (e) {
+    console.warn('Cache error:', e);
+  } finally {
+    _thumbCacheRunning = false;
+  }
 }
 
 function updateCacheStatus(done, total) {
   const el = document.getElementById('cache-toggle-status');
   if (!el) return;
-  if (!lcEnabled || !total) { el.textContent = ''; return; }
-  el.textContent = done >= total
-    ? `✓ ${done} vignettes en cache`
-    : `⟳ ${done} / ${total} en cours…`;
+  if (!lcEnabled || !total) {
+    el.textContent = '';
+    return;
+  }
+  el.textContent = done >= total ? `✓ ${done} vignettes en cache` : `⟳ ${done} / ${total} en cours…`;
 }
-
-/* ==========================================
-   MAP SETUP — CHANGED: worldCopyJump + satellite
-   ========================================== */
 
 const map = L.map('map', {
   center: [20, 0],
@@ -935,14 +1055,13 @@ const map = L.map('map', {
   zoomControl: false,
   minZoom: 2,
   maxBoundsViscosity: 0,
-  worldCopyJump: true  /* NEW: globe wrapping */
+  worldCopyJump: true
 });
 
 standardLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap', maxZoom: 19, noWrap: false
 });
 
-/* NEW: satellite layer */
 satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   attribution: '© Esri', maxZoom: 19, noWrap: false
 });
@@ -950,19 +1069,21 @@ satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/servic
 standardLayer.addTo(map);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-/* NEW: layer toggle */
 document.getElementById('map-layer-toggle').addEventListener('click', () => {
   const label = document.getElementById('map-layer-label');
   if (currentLayerType === 'standard') {
-    map.removeLayer(standardLayer); satelliteLayer.addTo(map);
-    currentLayerType = 'satellite'; label.textContent = 'Plan';
+    map.removeLayer(standardLayer);
+    satelliteLayer.addTo(map);
+    currentLayerType = 'satellite';
+    label.textContent = 'Plan';
   } else {
-    map.removeLayer(satelliteLayer); standardLayer.addTo(map);
-    currentLayerType = 'standard'; label.textContent = 'Satellite';
+    map.removeLayer(satelliteLayer);
+    standardLayer.addTo(map);
+    currentLayerType = 'standard';
+    label.textContent = 'Satellite';
   }
 });
 
-/* CHANGED: marker size from CSS var instead of dynamic */
 function getMarkerSize() {
   return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--marker-size')) || 88;
 }
@@ -975,18 +1096,20 @@ clusterGroup = L.markerClusterGroup({
   iconCreateFunction(cluster) {
     const count = cluster.getChildCount();
     const children = cluster.getAllChildMarkers();
-    /* Pick the first child that has a usable thumbnail (local blob or valid URL) */
     let bestPhoto = null;
     for (const child of children) {
       const p = child._photoData;
       if (!p) continue;
-      /* Local cache blob = best option */
-      if (lcEnabled && thumbBlobUrls.has(p.id)) { bestPhoto = p; break; }
-      /* Remote URL that's not fallback = acceptable */
+      if (lcEnabled && thumbBlobUrls.has(p.id)) {
+        bestPhoto = p;
+        break;
+      }
       if (p.thumbnailUrl && p.thumbnailUrl !== FALLBACK_ICON) {
         if (!bestPhoto) bestPhoto = p;
-        /* If this one has a fresh URL, prefer it */
-        if (p.fetchedAt && (Date.now() - new Date(p.fetchedAt).getTime()) < THUMBNAIL_TTL_MS) { bestPhoto = p; break; }
+        if (p.fetchedAt && (Date.now() - new Date(p.fetchedAt).getTime()) < THUMBNAIL_TTL_MS) {
+          bestPhoto = p;
+          break;
+        }
       }
     }
     if (!bestPhoto) bestPhoto = children[0]?._photoData;
@@ -1000,7 +1123,7 @@ clusterGroup = L.markerClusterGroup({
           <div class="photo-marker">
             <img src="${thumbSrc}" loading="lazy"
               data-photo-id="${photoId}"
-              onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${photoId}', this);"/>
+              onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) window.queueThumbnailRefresh('${photoId}', this);"/>
             <div class="photo-marker-count">${count}</div>
           </div>
           <div class="photo-marker-tail"></div>
@@ -1013,14 +1136,10 @@ clusterGroup = L.markerClusterGroup({
 });
 map.addLayer(clusterGroup);
 
-/* ==========================================
-   UI HELPERS — ORIGINAL (unchanged)
-   ========================================== */
-
-let toastTimer = null;
 function showToast(msg, duration = 3000) {
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
+  t.textContent = msg;
+  t.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), duration);
 }
@@ -1042,8 +1161,14 @@ function setScanStatus(state, text, count, progress) {
   const textEl = document.getElementById('scan-status-text');
   const countEl = document.getElementById('scan-status-count');
   const fillEl = document.getElementById('scan-progress-fill');
-  if (state === 'hidden') { el.style.display = 'none'; el.classList.remove('visible', 'paused', 'done', 'error'); return; }
-  el.style.display = 'flex'; el.classList.add('visible'); el.classList.remove('paused', 'done', 'error');
+  if (state === 'hidden') {
+    el.style.display = 'none';
+    el.classList.remove('visible', 'paused', 'done', 'error');
+    return;
+  }
+  el.style.display = 'flex';
+  el.classList.add('visible');
+  el.classList.remove('paused', 'done', 'error');
   if (state === 'paused') el.classList.add('paused');
   if (state === 'done') el.classList.add('done');
   if (state === 'error') el.classList.add('error');
@@ -1052,120 +1177,40 @@ function setScanStatus(state, text, count, progress) {
   if (progress !== undefined) fillEl.style.width = Math.min(progress, 100) + '%';
 }
 
-let _scanDoneTimer = null;
 function setScanDone(count, detail) {
   setScanStatus('done', 'Terminé', detail || (count + ' médias'), 100);
   if (_scanDoneTimer) clearTimeout(_scanDoneTimer);
   _scanDoneTimer = setTimeout(() => setScanStatus('hidden'), 5000);
 }
 
-function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
-function isVideoByName(name = '') { const ext = name.split('.').pop()?.toLowerCase(); return VIDEO_EXTENSIONS.has(ext); }
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function isVideoByName(name = '') {
+  const ext = name.split('.').pop()?.toLowerCase();
+  return VIDEO_EXTENSIONS.has(ext);
+}
 
 function updateUiWithCurrentPhotos(fit = false) {
-  if (!allPhotos || allPhotos.length === 0) return;
+  if (!allPhotos?.length) return;
   buildYearFilter(allPhotos);
-  renderMarkers(currentYear === 'all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear));
-  updateStats(currentYear === 'all' ? allPhotos.length : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear).length);
+  const filtered = currentYear === 'all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
+  renderMarkers(filtered);
+  updateStats(filtered.length);
   if (fit && markers.length > 0) {
     const group = L.featureGroup(markers);
     map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 14 });
   }
   document.getElementById('btn-config').style.display = 'inline-flex';
-  document.getElementById('map-layer-toggle').classList.add('visible'); /* NEW */
+  document.getElementById('map-layer-toggle').classList.add('visible');
   setTimeout(refreshVisibleStaleThumbnails, 800);
 }
 
-/* ==========================================
-   AUTH — ORIGINAL (unchanged)
-   ========================================== */
-
-async function initMsal(clientId) {
-  msalInstance = new msal.PublicClientApplication({
-    auth: { clientId, authority: 'https://login.microsoftonline.com/common', redirectUri: window.location.origin + window.location.pathname },
-    cache: { cacheLocation: 'localStorage' }
-  });
-  await msalInstance.initialize();
-}
-
-async function getToken() {
-  const accounts = msalInstance.getAllAccounts();
-  const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined };
-  try { return (await msalInstance.acquireTokenSilent(request)).accessToken; }
-  catch { await msalInstance.acquireTokenRedirect(request); return null; }
-}
-
-async function getTokenFresh() {
-  const accounts = msalInstance.getAllAccounts();
-  const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined, forceRefresh: true };
-  try { return (await msalInstance.acquireTokenSilent(request)).accessToken; }
-  catch { await msalInstance.acquireTokenRedirect(request); return null; }
-}
-
-let _currentToken = null;
-
-async function graphGet(url, token, _retried = false) {
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (res.status === 401 && !_retried) {
-    const freshToken = await getTokenFresh();
-    if (freshToken) { _currentToken = freshToken; return graphGet(url, freshToken, true); }
-    return null;
-  }
-  if (res.status === 401) throw new Error('Session expirée. Veuillez vous reconnecter.');
-  if (res.status === 429) {
-    const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10);
-    await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return graphGet(url, token);
-  }
-  if (!res.ok) { const text = await res.text(); throw new Error(`Erreur API Graph (${res.status}) : ${text.substring(0, 200)}`); }
-  return res.json();
-}
-
-function isMediaFile(item) {
-  if (!item.file || !item.name) return false;
-  const ext = item.name.split('.').pop()?.toLowerCase();
-  return IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext);
-}
-
-async function getThumbnail(itemId) {
-  try {
-    const data = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${itemId}/thumbnails`, _currentToken);
-    return data.value?.[0]?.medium?.url || data.value?.[0]?.large?.url || data.value?.[0]?.small?.url || null;
-  } catch { return null; }
-}
-
-/* ORIGINAL: refresh stale URLs via Graph API */
-async function refreshMediaUrls(item) {
-  try {
-    const data = await graphGet(`https://graph.microsoft.com/v1.0/me/drive/items/${item.id}?$select=id,@microsoft.graph.downloadUrl,webUrl`, _currentToken);
-    const thumbnailUrl = await getThumbnail(item.id);
-    item.downloadUrl = data['@microsoft.graph.downloadUrl'] || thumbnailUrl || item.downloadUrl;
-    item.thumbnailUrl = thumbnailUrl || item.thumbnailUrl;
-    item.fetchedAt = new Date().toISOString();
-    await dbPutMediaBatch([item]);
-    /* NEW: also update local cache if enabled */
-    if (lcEnabled && thumbnailUrl) downloadAndCacheThumb(item).catch(() => {});
-  } catch (err) { console.warn('Failed to refresh URLs for', item.id, err); }
-}
-
-function isUrlStale(item) {
-  if (lcEnabled && thumbBlobUrls.has(item.id)) return false; /* local cache = not stale */
-  if (!item.fetchedAt) return true;
-  return (Date.now() - new Date(item.fetchedAt).getTime()) > THUMBNAIL_TTL_MS;
-}
-
-/* ==========================================
-   THUMBNAIL REFRESH QUEUE — ORIGINAL (unchanged)
-   ========================================== */
-const _refreshQueue = new Set();
-const _refreshInProgress = new Set();
-const _failedImgElements = new Map();
-let _refreshProcessing = false;
-const REFRESH_CONCURRENCY = 4;
-const REFRESH_DELAY_MS = 200;
-
 function queueThumbnailRefresh(photoId, imgElement) {
-  if (!_currentToken) return;
+  if (!_currentToken || !photoId) return;
   if (_refreshInProgress.has(photoId)) return;
   _refreshQueue.add(photoId);
   if (imgElement) {
@@ -1174,6 +1219,7 @@ function queueThumbnailRefresh(photoId, imgElement) {
   }
   scheduleRefreshProcessing();
 }
+window.queueThumbnailRefresh = queueThumbnailRefresh;
 
 function scheduleRefreshProcessing() {
   if (_refreshProcessing) return;
@@ -1182,33 +1228,51 @@ function scheduleRefreshProcessing() {
 }
 
 async function processRefreshQueue() {
-  if (_refreshQueue.size === 0) { _refreshProcessing = false; return; }
+  if (_refreshQueue.size === 0) {
+    _refreshProcessing = false;
+    return;
+  }
+
   const bounds = map.getBounds();
-  const priorityIds = [], normalIds = [];
+  const priorityIds = [];
+  const normalIds = [];
   for (const id of _refreshQueue) {
     const photo = allPhotos.find(p => p.id === id);
     if (photo && bounds.contains([photo.lat, photo.lng])) priorityIds.push(id);
     else normalIds.push(id);
   }
+
   const batch = [...priorityIds, ...normalIds].slice(0, REFRESH_CONCURRENCY);
   const promises = batch.map(async (id) => {
-    _refreshQueue.delete(id); _refreshInProgress.add(id);
+    _refreshQueue.delete(id);
+    _refreshInProgress.add(id);
     const photo = allPhotos.find(p => p.id === id);
-    if (!photo) { _refreshInProgress.delete(id); return; }
+    if (!photo) {
+      _refreshInProgress.delete(id);
+      return;
+    }
     try {
       await refreshMediaUrls(photo);
       const newSrc = getThumbSrc(photo);
       const imgSet = _failedImgElements.get(id);
       if (imgSet) {
         for (const img of imgSet) {
-          if (img.isConnected) { img.onerror = null; img.src = newSrc; img.onerror = function() { this.src = FALLBACK_ICON; }; }
+          if (img.isConnected) {
+            img.onerror = null;
+            img.src = newSrc;
+            img.onerror = function() { this.src = FALLBACK_ICON; };
+          }
         }
         _failedImgElements.delete(id);
       }
       updateMarkerThumb(id, newSrc);
-    } catch (err) { console.warn('Thumbnail refresh failed for', id, err); }
-    finally { _refreshInProgress.delete(id); }
+    } catch (err) {
+      console.warn('Thumbnail refresh failed for', id, err);
+    } finally {
+      _refreshInProgress.delete(id);
+    }
   });
+
   await Promise.allSettled(promises);
   if (_refreshQueue.size > 0) setTimeout(processRefreshQueue, REFRESH_DELAY_MS);
   else _refreshProcessing = false;
@@ -1216,11 +1280,15 @@ async function processRefreshQueue() {
 
 function updateMarkerThumb(photoId, newSrc) {
   for (const m of markers) {
-    if (m._photoData && m._photoData.id === photoId) {
+    if (m._photoData?.id === photoId) {
       const el = m.getElement?.();
       if (el) {
         const img = el.querySelector('img');
-        if (img) { img.onerror = null; img.src = newSrc; img.onerror = function() { this.src = FALLBACK_ICON; }; }
+        if (img) {
+          img.onerror = null;
+          img.src = newSrc;
+          img.onerror = function() { this.src = FALLBACK_ICON; };
+        }
       }
       break;
     }
@@ -1237,24 +1305,18 @@ function refreshVisibleStaleThumbnails() {
     if (!photo) continue;
     if (!bounds.contains([photo.lat, photo.lng])) continue;
     if (_refreshInProgress.has(photo.id) || _refreshQueue.has(photo.id)) continue;
-    if (isUrlStale(photo)) { _refreshQueue.add(photo.id); queued++; }
+    if (isUrlStale(photo)) {
+      _refreshQueue.add(photo.id);
+      queued++;
+    }
   }
   if (queued > 0) scheduleRefreshProcessing();
 }
 
-let _visibleRefreshTimer = null;
 map.on('moveend', () => {
   if (_visibleRefreshTimer) clearTimeout(_visibleRefreshTimer);
   _visibleRefreshTimer = setTimeout(refreshVisibleStaleThumbnails, 500);
 });
-
-const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
-
-/* ==========================================
-   SPATIAL INDEX — ORIGINAL (unchanged)
-   ========================================== */
-let spatialIndex = {};
-const SPATIAL_CELL_SIZE = 0.0005;
 
 function buildSpatialIndex(photos) {
   spatialIndex = {};
@@ -1283,15 +1345,10 @@ function getNearbyPhotos(lat, lng, filteredSet) {
   return result;
 }
 
-/* ==========================================
-   MARKERS — CHANGED: uniform size, use getThumbSrc
-   ========================================== */
-
 function createMarker(photo, filteredIdSet) {
-  const thumbSrc = getThumbSrc(photo); /* CHANGED: uses local cache if available */
-  const size = getMarkerSize(); /* CHANGED: uniform */
+  const thumbSrc = getThumbSrc(photo);
+  const size = getMarkerSize();
   const photoId = photo.id;
-
   const isolatedCount = getNearbyPhotos(photo.lat, photo.lng, filteredIdSet).length;
   const countBadge = isolatedCount > 1 ? `<div class="photo-marker-count">${isolatedCount}</div>` : '';
 
@@ -1302,7 +1359,7 @@ function createMarker(photo, filteredIdSet) {
         <div class="photo-marker">
           <img src="${thumbSrc}" loading="lazy"
             data-photo-id="${photoId}"
-            onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) queueThumbnailRefresh('${photoId}', this);"/>
+            onerror="this.src='${FALLBACK_ICON}'; if(window.queueThumbnailRefresh) window.queueThumbnailRefresh('${photoId}', this);"/>
           ${countBadge}
         </div>
         <div class="photo-marker-tail"></div>
@@ -1327,7 +1384,7 @@ function renderMarkers(filtered) {
   markers = [];
   buildSpatialIndex(allPhotos);
   const filteredIdSet = new Set(filtered.map(p => p.id));
-  filtered.forEach(photo => { markers.push(createMarker(photo, filteredIdSet)); });
+  filtered.forEach(photo => markers.push(createMarker(photo, filteredIdSet)));
   clusterGroup.addLayers(markers);
   clusterGroup.on('clusterclick', e => {
     const photos = e.layer.getAllChildMarkers().map(m => m._photoData);
@@ -1335,24 +1392,30 @@ function renderMarkers(filtered) {
   });
 }
 
-/* ==========================================
-   PANEL — CHANGED: uses getThumbSrc
-   ========================================== */
-
 function openPanel(photos, lat, lng) {
   const panel = document.getElementById('photo-panel');
   panelAllPhotos = [...photos].sort((a, b) => (b.date || 0) - (a.date || 0));
+
   const dates = panelAllPhotos.filter(p => p.date).map(p => p.date);
   const dateRange = document.getElementById('panel-date-range');
   if (dates.length) {
-    const min = new Date(Math.min(...dates)), max = new Date(Math.max(...dates));
+    const min = new Date(Math.min(...dates));
+    const max = new Date(Math.max(...dates));
     const fmt = d => d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
-    dateRange.textContent = min.getFullYear() === max.getFullYear() && min.getMonth() === max.getMonth() ? fmt(min) : `${fmt(min)} — ${fmt(max)}`;
-  } else dateRange.textContent = '';
+    dateRange.textContent = (min.getFullYear() === max.getFullYear() && min.getMonth() === max.getMonth()) ? fmt(min) : `${fmt(min)} — ${fmt(max)}`;
+  } else {
+    dateRange.textContent = '';
+  }
+
   document.getElementById('panel-count').textContent = `${panelAllPhotos.length} média${panelAllPhotos.length > 1 ? 's' : ''}`;
   const locName = document.getElementById('panel-location-name');
+  const requestId = ++currentPanelRequestId;
   locName.textContent = 'Chargement…';
-  reverseGeocode(lat, lng).then(name => { locName.textContent = name; });
+  reverseGeocode(lat, lng).then(name => {
+    if (requestId === currentPanelRequestId && panel.classList.contains('open')) {
+      locName.textContent = name;
+    }
+  });
   renderPanelPhotos();
   panel.classList.add('open');
 }
@@ -1365,25 +1428,59 @@ function renderPanelPhotos() {
     card.className = 'thumb-card';
     const dateStr = photo.date ? photo.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     const mediaEl = document.createElement('img');
-    mediaEl.src = getThumbSrc(photo); /* CHANGED */
-    mediaEl.loading = 'lazy'; mediaEl.decoding = 'async'; mediaEl.alt = photo.name;
+    mediaEl.src = getThumbSrc(photo);
+    mediaEl.loading = 'lazy';
+    mediaEl.decoding = 'async';
+    mediaEl.alt = photo.name;
     mediaEl.dataset.photoId = photo.id;
-    mediaEl.onerror = function() { this.src = FALLBACK_ICON; queueThumbnailRefresh(photo.id, this); };
+    mediaEl.onerror = function() {
+      this.src = FALLBACK_ICON;
+      queueThumbnailRefresh(photo.id, this);
+    };
     const overlay = document.createElement('div');
     overlay.className = 'thumb-overlay';
     overlay.innerHTML = `${escapeHtml(photo.name)}<br>${dateStr}`;
-    card.appendChild(mediaEl); card.appendChild(overlay);
-    card.addEventListener('click', () => { lightboxPhotos = panelAllPhotos; lightboxIndex = idx; showLightboxPhoto(); });
+    card.appendChild(mediaEl);
+    card.appendChild(overlay);
+    card.addEventListener('click', () => {
+      lightboxPhotos = panelAllPhotos;
+      lightboxIndex = idx;
+      showLightboxPhoto();
+    });
     grid.appendChild(card);
   });
 }
 
-/* ==========================================
-   LIGHTBOX — CHANGED: shows thumb first, then loads HD
-   ========================================== */
+function setHdState(mode) {
+  const loader = document.getElementById('hd-loader');
+  const done = document.getElementById('hd-done');
+  loader.classList.remove('visible');
+  done.classList.remove('visible');
+  if (mode === 'loading') loader.classList.add('visible');
+  if (mode === 'done') done.classList.add('visible');
+}
 
-function showLightboxPhoto() {
-  if (lightboxPhotos.length === 0) return;
+function scheduleHdDoneHide() {
+  setTimeout(() => {
+    const done = document.getElementById('hd-done');
+    done.classList.remove('visible');
+  }, 1200);
+}
+
+async function ensureFreshMediaUrl(photo) {
+  if (!isUrlStale(photo) && (photo.downloadUrl || photo.webUrl || photo.thumbnailUrl)) {
+    return photo.downloadUrl || photo.webUrl || photo.thumbnailUrl;
+  }
+  if (!msalInstance) return photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
+  const token = await getToken();
+  if (!token) return photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
+  _currentToken = token;
+  await refreshMediaUrls(photo);
+  return photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
+}
+
+async function showLightboxPhoto() {
+  if (!lightboxPhotos.length) return;
 
   const photo = lightboxPhotos[lightboxIndex];
   const lb = document.getElementById('lightbox');
@@ -1393,43 +1490,16 @@ function showLightboxPhoto() {
 
   img.style.display = 'none';
   video.style.display = 'none';
-
-  video.onloadedmetadata = null;
   img.onload = null;
   img.onerror = null;
-
+  video.onloadeddata = null;
+  video.onerror = null;
   video.pause();
   video.removeAttribute('src');
   video.load();
 
-  const fullSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
-
-  /* If URL is stale, try refreshing in the background */
-  if (isUrlStale(photo) && msalInstance) {
-    getToken().then(token => { _currentToken = token; return refreshMediaUrls(photo); }).then(() => {
-      /* If the lightbox is still showing this photo, update src */
-      if (lightboxPhotos[lightboxIndex]?.id === photo.id) {
-        const currentSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || FALLBACK_ICON;
-        if (photo.mediaType === 'video') {
-          video.src = currentSrc;
-        } else {
-          img.src = currentSrc;
-        }
-      }
-    }).catch(() => { /* ignore refresh failures in lightbox */ });
-  }
-
-  if (photo.mediaType === 'video') {
-    video.src = fullSrc;
-    video.style.display = 'block';
-  } else {
-    img.src = fullSrc;
-    img.style.display = 'block';
-
-    img.onerror = () => {
-      img.src = photo.thumbnailUrl || FALLBACK_ICON;
-    };
-  }
+  const lowSrc = getThumbSrc(photo);
+  const initialSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || lowSrc || FALLBACK_ICON;
 
   document.getElementById('lightbox-name').textContent = photo.name;
   const dateStr = photo.date ? photo.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
@@ -1437,25 +1507,102 @@ function showLightboxPhoto() {
   document.getElementById('lightbox-meta').textContent = [dateStr, coords].filter(Boolean).join('  ·  ');
 
   const oneDriveUrl = photo.webUrl || photo.downloadUrl;
-  if (oneDriveUrl) { openBtn.dataset.webUrl = oneDriveUrl; openBtn.style.display = 'inline-flex'; }
-  else { delete openBtn.dataset.webUrl; openBtn.style.display = 'none'; }
+  if (oneDriveUrl) {
+    openBtn.dataset.webUrl = oneDriveUrl;
+    openBtn.style.display = 'inline-flex';
+  } else {
+    delete openBtn.dataset.webUrl;
+    openBtn.style.display = 'none';
+  }
 
   document.getElementById('lightbox-prev').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
   document.getElementById('lightbox-next').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
 
   lb.classList.add('open');
+  setHdState('hidden');
+
+  if (photo.mediaType === 'video') {
+    video.src = initialSrc;
+    video.style.display = 'block';
+    if (isUrlStale(photo)) {
+      setHdState('loading');
+      try {
+        const freshSrc = await ensureFreshMediaUrl(photo);
+        if (lightboxPhotos[lightboxIndex]?.id !== photo.id) return;
+        video.src = freshSrc;
+        setHdState('done');
+        scheduleHdDoneHide();
+      } catch {
+        setHdState('hidden');
+      }
+    }
+  } else {
+    img.src = lowSrc;
+    img.style.display = 'block';
+    setHdState('loading');
+    img.onerror = function() {
+      this.src = FALLBACK_ICON;
+      setHdState('hidden');
+    };
+    try {
+      const freshSrc = await ensureFreshMediaUrl(photo) || initialSrc;
+      if (lightboxPhotos[lightboxIndex]?.id !== photo.id) return;
+      const hdImg = new Image();
+      hdImg.onload = () => {
+        if (lightboxPhotos[lightboxIndex]?.id !== photo.id) return;
+        img.src = freshSrc;
+        setHdState('done');
+        scheduleHdDoneHide();
+      };
+      hdImg.onerror = () => {
+        setHdState('hidden');
+      };
+      hdImg.src = freshSrc;
+    } catch {
+      setHdState('hidden');
+    }
+  }
 }
 
-/* ==========================================
-   EVENT LISTENERS — ORIGINAL (unchanged)
-   ========================================== */
+function refreshCurrentViews() {
+  const filtered = currentYear === 'all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
+  renderMarkers(filtered);
+  if (document.getElementById('photo-panel').classList.contains('open')) renderPanelPhotos();
+}
 
-document.getElementById('panel-close').addEventListener('click', () => { document.getElementById('photo-panel').classList.remove('open'); });
-map.on('click', () => { document.getElementById('photo-panel').classList.remove('open'); });
-document.getElementById('lightbox-close').addEventListener('click', () => { document.getElementById('lightbox').classList.remove('open'); });
-document.getElementById('lightbox-prev').addEventListener('click', (e) => { e.stopPropagation(); lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; showLightboxPhoto(); });
-document.getElementById('lightbox-next').addEventListener('click', (e) => { e.stopPropagation(); lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; showLightboxPhoto(); });
-document.getElementById('lightbox').addEventListener('click', e => { if (e.target === document.getElementById('lightbox')) document.getElementById('lightbox').classList.remove('open'); });
+document.getElementById('panel-close').addEventListener('click', () => {
+  currentPanelRequestId++;
+  document.getElementById('photo-panel').classList.remove('open');
+});
+
+map.on('click', () => {
+  currentPanelRequestId++;
+  document.getElementById('photo-panel').classList.remove('open');
+});
+
+document.getElementById('lightbox-close').addEventListener('click', () => {
+  document.getElementById('lightbox').classList.remove('open');
+  setHdState('hidden');
+});
+
+document.getElementById('lightbox-prev').addEventListener('click', (e) => {
+  e.stopPropagation();
+  lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
+  showLightboxPhoto();
+});
+
+document.getElementById('lightbox-next').addEventListener('click', (e) => {
+  e.stopPropagation();
+  lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
+  showLightboxPhoto();
+});
+
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('lightbox')) {
+    document.getElementById('lightbox').classList.remove('open');
+    setHdState('hidden');
+  }
+});
 
 document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -1469,40 +1616,60 @@ document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) 
 document.addEventListener('keydown', e => {
   const lb = document.getElementById('lightbox');
   if (!lb.classList.contains('open')) return;
-  if (e.key === 'Escape') lb.classList.remove('open');
-  if (e.key === 'ArrowLeft') { lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; showLightboxPhoto(); }
-  if (e.key === 'ArrowRight') { lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; showLightboxPhoto(); }
+  if (e.key === 'Escape') {
+    lb.classList.remove('open');
+    setHdState('hidden');
+  }
+  if (e.key === 'ArrowLeft') {
+    lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
+    showLightboxPhoto();
+  }
+  if (e.key === 'ArrowRight') {
+    lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
+    showLightboxPhoto();
+  }
 });
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('photo-panel').classList.remove('open'); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    currentPanelRequestId++;
+    document.getElementById('photo-panel').classList.remove('open');
+  }
+});
 
-/* ==========================================
-   TOUCH SWIPE — ORIGINAL (unchanged)
-   ========================================== */
 (function() {
   let touchStartX = 0, touchStartY = 0;
   const SWIPE_THRESHOLD = 50;
   const lb = document.getElementById('lightbox');
-  lb.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, { passive: true });
-  lb.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].screenX - touchStartX, dy = e.changedTouches[0].screenY - touchStartY;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
-      if (dx < 0) { lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; }
-      else { lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; }
-      showLightboxPhoto();
-    } else if (dy > SWIPE_THRESHOLD * 1.5 && Math.abs(dy) > Math.abs(dx)) { lb.classList.remove('open'); }
+  lb.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
   }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
+      if (dx < 0) lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
+      else lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
+      showLightboxPhoto();
+    } else if (dy > SWIPE_THRESHOLD * 1.5 && Math.abs(dy) > Math.abs(dx)) {
+      lb.classList.remove('open');
+      setHdState('hidden');
+    }
+  }, { passive: true });
+
   const panelHeader = document.querySelector('.panel-header');
   let panelTouchStartY = 0;
-  panelHeader.addEventListener('touchstart', e => { panelTouchStartY = e.changedTouches[0].screenY; }, { passive: true });
-  panelHeader.addEventListener('touchend', e => { if (e.changedTouches[0].screenY - panelTouchStartY > 60) document.getElementById('photo-panel').classList.remove('open'); }, { passive: true });
+  panelHeader.addEventListener('touchstart', e => {
+    panelTouchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+  panelHeader.addEventListener('touchend', e => {
+    if (e.changedTouches[0].screenY - panelTouchStartY > 60) {
+      currentPanelRequestId++;
+      document.getElementById('photo-panel').classList.remove('open');
+    }
+  }, { passive: true });
 })();
-
-/* ==========================================
-   GEOCODING — ORIGINAL (unchanged)
-   ========================================== */
-const geocodeCache = {};
-let lastGeocodeTime = 0;
 
 async function reverseGeocode(lat, lng, _retries = 0) {
   const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
@@ -1512,8 +1679,14 @@ async function reverseGeocode(lat, lng, _retries = 0) {
   if (wait > 0) await new Promise(r => setTimeout(r, wait));
   lastGeocodeTime = Date.now();
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`, { headers: { 'User-Agent': 'PhotoMap/1.0' } });
-    if (res.status === 429) { if (_retries < 3) { await new Promise(r => setTimeout(r, (2 ** _retries) * 1500)); return reverseGeocode(lat, lng, _retries + 1); } throw new Error('Rate limit'); }
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`);
+    if (res.status === 429) {
+      if (_retries < 3) {
+        await new Promise(r => setTimeout(r, (2 ** _retries) * 1500));
+        return reverseGeocode(lat, lng, _retries + 1);
+      }
+      throw new Error('Rate limit');
+    }
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     const addr = data.address || {};
@@ -1522,13 +1695,10 @@ async function reverseGeocode(lat, lng, _retries = 0) {
     const result = country && name !== country ? `${name}, ${country}` : name;
     geocodeCache[key] = result;
     return result;
-  } catch { return `${lat.toFixed(3)}°, ${lng.toFixed(3)}°`; }
+  } catch {
+    return `${lat.toFixed(3)}°, ${lng.toFixed(3)}°`;
+  }
 }
-
-/* ==========================================
-   YEAR FILTER — ORIGINAL (unchanged)
-   ========================================== */
-let yearFilterInitialized = false;
 
 function buildYearFilter(photos) {
   const years = [...new Set(photos.filter(p => p.date).map(p => p.date.getFullYear()))].sort((a, b) => b - a);
@@ -1537,7 +1707,8 @@ function buildYearFilter(photos) {
   years.forEach(y => {
     const btn = document.createElement('button');
     btn.className = 'year-btn' + (currentYear == y ? ' active' : '');
-    btn.dataset.year = y; btn.textContent = y;
+    btn.dataset.year = y;
+    btn.textContent = y;
     bar.appendChild(btn);
   });
   bar.classList.add('visible');
@@ -1558,6 +1729,7 @@ function applyFilter() {
   const filtered = currentYear === 'all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
   renderMarkers(filtered);
   updateStats(filtered.length);
+  currentPanelRequestId++;
   document.getElementById('photo-panel').classList.remove('open');
 }
 
@@ -1567,10 +1739,24 @@ function updateStats(count) {
   el.style.display = 'block';
 }
 
-/* ==========================================
-   DELTA SYNC — ORIGINAL + cache thumb on new items
-   ========================================== */
-const DELTA_BASE_URL = 'https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
+function normalizeMediaItemFromGraph(item, existingItem = null) {
+  const lat = item.location?.latitude;
+  const lng = item.location?.longitude;
+  if (lat == null || lng == null || (lat === 0 && lng === 0)) return null;
+  const date = item.photo?.takenDateTime || item.createdDateTime;
+  return {
+    id: item.id,
+    name: item.name,
+    lat: Number(lat),
+    lng: Number(lng),
+    date: safeDate(date),
+    thumbnailUrl: existingItem?.thumbnailUrl || null,
+    downloadUrl: item['@microsoft.graph.downloadUrl'] || existingItem?.downloadUrl || null,
+    webUrl: item.webUrl || existingItem?.webUrl || null,
+    mediaType: isVideoByName(item.name) ? 'video' : 'image',
+    fetchedAt: existingItem?.fetchedAt || new Date().toISOString()
+  };
+}
 
 async function runDeltaSync() {
   _currentToken = await getToken();
@@ -1587,17 +1773,22 @@ async function runDeltaSync() {
   if (isFirstScan) setScanStatus('scanning', 'Premier scan…', '', 2);
   else setScanStatus('scanning', 'Synchronisation…', existingCount + ' en cache', 2);
 
-  let scanned = 0, added = 0, deleted = 0, newDeltaLink = null;
-  const batch = [];
+  let scanned = 0;
+  let added = 0;
+  let deleted = 0;
+  let newDeltaLink = null;
+  const writeBatch = [];
+  const thumbResolveQueue = [];
 
   while (url) {
     const data = await graphGet(url, _currentToken);
-    const items = data.value || [];
+    const items = data?.value || [];
 
     for (const item of items) {
       scanned++;
       if (scanned % 50 === 0) {
-        setScanStatus('scanning',
+        setScanStatus(
+          'scanning',
           isFirstScan ? `Analyse… ${scanned} fichiers` : `Synchro… ${scanned} changements`,
           isFirstScan ? (existingCount + added) + ' trouvés' : (added > 0 ? `+${added} nouveaux` : 'vérification…'),
           Math.min(5 + scanned * 0.005, 95)
@@ -1608,77 +1799,58 @@ async function runDeltaSync() {
         if (existingMap.has(item.id)) {
           existingMap.delete(item.id);
           await dbDeleteMediaItem(item.id);
-          if (lcEnabled) dbDeleteThumb(item.id).catch(() => {}); /* NEW */
+          if (lcEnabled) dbDeleteThumb(item.id).catch(() => {});
+          revokeThumbUrl(item.id);
           deleted++;
         }
         continue;
       }
 
-      if (item.folder) continue;
-      if (!isMediaFile(item)) continue;
+      if (item.folder || !isMediaFile(item)) continue;
 
-      if (!isFirstScan && existingMap.has(item.id)) {
-        const lat = item.location?.latitude, lng = item.location?.longitude;
-        if (lat != null && lng != null && !(lat === 0 && lng === 0)) {
-          const thumbnailUrl = await getThumbnail(item.id);
-          const date = item.photo?.takenDateTime || item.createdDateTime;
-          const updated = {
-            id: item.id, name: item.name, lat: Number(lat), lng: Number(lng),
-            date: date ? new Date(date) : null, thumbnailUrl,
-            downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
-            webUrl: item.webUrl || null, mediaType: isVideoByName(item.name) ? 'video' : 'image',
-            fetchedAt: new Date().toISOString()
-          };
-          existingMap.set(item.id, updated);
-          batch.push(updated);
-          if (lcEnabled && thumbnailUrl) downloadAndCacheThumb(updated).catch(() => {}); /* NEW */
-        }
-        continue;
-      }
-
-      if (isFirstScan && existingMap.has(item.id)) continue;
-
-      const lat = item.location?.latitude, lng = item.location?.longitude;
-      if (lat == null || lng == null) continue;
-      if (lat === 0 && lng === 0) continue;
-
-      const thumbnailUrl = await getThumbnail(item.id);
-      const date = item.photo?.takenDateTime || item.createdDateTime;
-
-      const mediaItem = {
-        id: item.id, name: item.name, lat: Number(lat), lng: Number(lng),
-        date: date ? new Date(date) : null, thumbnailUrl,
-        downloadUrl: item['@microsoft.graph.downloadUrl'] || thumbnailUrl,
-        webUrl: item.webUrl || null, mediaType: isVideoByName(item.name) ? 'video' : 'image',
-        fetchedAt: new Date().toISOString()
-      };
+      const existingItem = existingMap.get(item.id) || null;
+      const mediaItem = normalizeMediaItemFromGraph(item, existingItem);
+      if (!mediaItem) continue;
 
       existingMap.set(item.id, mediaItem);
-      batch.push(mediaItem);
-      added++;
+      writeBatch.push(mediaItem);
 
-      if (lcEnabled && thumbnailUrl) downloadAndCacheThumb(mediaItem).catch(() => {}); /* NEW */
+      if (!existingItem) added++;
+      if (!existingItem || isUrlStale(existingItem) || !existingItem.thumbnailUrl) {
+        thumbResolveQueue.push(mediaItem);
+      }
 
-      const flushThreshold = (existingCount + added) < 50 ? 5 : 25;
-      if (batch.length >= flushThreshold) {
-        await dbPutMediaBatch(batch);
-        batch.length = 0;
+      const flushThreshold = (existingCount + added) < 50 ? 8 : 30;
+      if (writeBatch.length >= flushThreshold) {
+        await maybeResolveThumbnailUrls(thumbResolveQueue.splice(0, thumbResolveQueue.length), !lcEnabled);
+        await dbPutMediaBatch(writeBatch.splice(0, writeBatch.length));
         allPhotos = [...existingMap.values()];
         updateUiWithCurrentPhotos(existingCount === 0 && added <= flushThreshold);
       }
     }
 
-    if (data['@odata.nextLink']) url = data['@odata.nextLink'];
-    else { newDeltaLink = data['@odata.deltaLink'] || null; url = null; }
+    if (data?.['@odata.nextLink']) url = data['@odata.nextLink'];
+    else {
+      newDeltaLink = data?.['@odata.deltaLink'] || null;
+      url = null;
+    }
   }
 
-  if (batch.length > 0) await dbPutMediaBatch(batch);
+  if (thumbResolveQueue.length) {
+    await maybeResolveThumbnailUrls(thumbResolveQueue, !lcEnabled);
+  }
+  if (writeBatch.length > 0) await dbPutMediaBatch(writeBatch);
   if (newDeltaLink) await dbSetMeta('deltaLink', newDeltaLink);
 
   allPhotos = [...existingMap.values()];
   updateUiWithCurrentPhotos(existingCount === 0 && allPhotos.length > 0);
 
-  await dbSetMeta('scan_state', { scanned, found: allPhotos.length, updatedAt: new Date().toISOString(), completed: true });
+  await dbSetMeta('scan_state', {
+    scanned,
+    found: allPhotos.length,
+    updatedAt: new Date().toISOString(),
+    completed: true
+  });
 
   if (isFirstScan) setScanDone(allPhotos.length, allPhotos.length + ' médias');
   else if (added > 0 || deleted > 0) {
@@ -1686,60 +1858,75 @@ async function runDeltaSync() {
     if (added > 0) parts.push(`+${added}`);
     if (deleted > 0) parts.push(`-${deleted}`);
     setScanDone(allPhotos.length, parts.join(' ') + ' · ' + allPhotos.length + ' total');
-  } else setScanDone(allPhotos.length, 'à jour');
+  } else {
+    setScanDone(allPhotos.length, 'à jour');
+  }
 
-  /* NEW: background cache remaining thumbs */
-  if (lcEnabled) setTimeout(backgroundCacheThumbs, 2000);
-
+  if (lcEnabled) setTimeout(backgroundCacheThumbs, 1500);
   return allPhotos;
 }
 
 async function runBackgroundSync() {
   if (backgroundSyncRunning) return;
   backgroundSyncRunning = true;
-  try { await runDeltaSync(); }
-  catch (err) {
+  try {
+    await runDeltaSync();
+  } catch (err) {
     console.warn('Erreur sync:', err);
     setScanStatus('error', 'Sync interrompue', '', 0);
     setTimeout(() => setScanStatus('hidden'), 4000);
-  } finally { backgroundSyncRunning = false; }
+  } finally {
+    backgroundSyncRunning = false;
+  }
 }
 
 function startAutoSync() {
   if (autoSyncTimer) clearInterval(autoSyncTimer);
-  autoSyncTimer = setInterval(() => { if (_currentToken && !backgroundSyncRunning) runBackgroundSync(); }, AUTO_SYNC_INTERVAL_MS);
+  autoSyncTimer = setInterval(() => {
+    if (_currentToken && !backgroundSyncRunning) runBackgroundSync();
+  }, AUTO_SYNC_INTERVAL_MS);
 }
 
-function stopAutoSync() { if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; } }
-
-/* ==========================================
-   APP STARTUP — ORIGINAL + load cached thumbs
-   ========================================== */
+function stopAutoSync() {
+  if (autoSyncTimer) {
+    clearInterval(autoSyncTimer);
+    autoSyncTimer = null;
+  }
+}
 
 async function startApp() {
   if (startAppRunning) return;
   startAppRunning = true;
-  try { await _startAppInner(); } finally { startAppRunning = false; }
+  try {
+    await _startAppInner();
+  } finally {
+    startAppRunning = false;
+  }
 }
 
 async function _startAppInner() {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
-  if (!clientId) { document.getElementById('splash').classList.add('hidden'); showConfigPanel(); return; }
+  if (!clientId) {
+    document.getElementById('splash').classList.add('hidden');
+    showConfigPanel();
+    return;
+  }
 
   document.getElementById('splash').classList.add('hidden');
 
-  let cached = [];
   try {
-    cached = await dbGetAllMedia();
+    const cached = await dbGetAllMedia();
     if (cached.length > 0) {
       allPhotos = cached;
-      if (lcEnabled) await loadCachedThumbs(); /* NEW */
+      if (lcEnabled) await loadCachedThumbs();
       updateUiWithCurrentPhotos(true);
     }
-  } catch (err) { console.warn('IndexedDB read error:', err); }
+  } catch (err) {
+    console.warn('IndexedDB read error:', err);
+  }
 
   document.getElementById('btn-config').style.display = 'inline-flex';
-  document.getElementById('map-layer-toggle').classList.add('visible'); /* NEW */
+  document.getElementById('map-layer-toggle').classList.add('visible');
 
   setScanStatus('scanning', 'Connexion à Microsoft…', '', 0);
   try {
@@ -1766,17 +1953,12 @@ async function _startAppInner() {
   }
 }
 
-/* ==========================================
-   CONFIG PANEL — ORIGINAL + cache toggle
-   ========================================== */
-
 function showConfigPanel() {
   const hasAuth = msalInstance && msalInstance.getAllAccounts().length > 0;
   document.getElementById('config-rescan-wrap').style.display = hasAuth ? 'block' : 'none';
   document.getElementById('config-logout-wrap').style.display = hasAuth ? 'block' : 'none';
   document.getElementById('toggle-local-cache').checked = lcEnabled;
   updateCacheToggleSub();
-  /* NEW: show cache count */
   if (lcEnabled) {
     dbGetThumbIds().then(ids => updateCacheStatus(ids.size, allPhotos.length)).catch(() => {});
   }
@@ -1789,7 +1971,6 @@ function updateCacheToggleSub() {
     : 'Désactivé — vignettes chargées à la volée';
 }
 
-/* NEW: cache toggle handler */
 document.getElementById('toggle-local-cache').addEventListener('change', async (e) => {
   lcEnabled = e.target.checked;
   localStorage.setItem(LC_KEY, lcEnabled ? 'true' : 'false');
@@ -1799,38 +1980,44 @@ document.getElementById('toggle-local-cache').addEventListener('change', async (
     updateCacheStatus(0, allPhotos.length);
     backgroundCacheThumbs();
   } else {
-    for (const [, url] of thumbBlobUrls) { try { URL.revokeObjectURL(url); } catch {} }
-    thumbBlobUrls.clear();
+    revokeAllThumbUrls();
     await dbClearThumbs().catch(() => {});
     document.getElementById('cache-toggle-status').textContent = '';
+    refreshCurrentViews();
     showToast('Cache local désactivé');
   }
 });
 
-document.getElementById('btn-config-cancel').addEventListener('click', () => { document.getElementById('config-panel').classList.remove('open'); });
+document.getElementById('btn-config-cancel').addEventListener('click', () => {
+  document.getElementById('config-panel').classList.remove('open');
+});
 
 document.getElementById('btn-config-logout').addEventListener('click', async () => {
   try {
     if (msalInstance) {
       const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0) { await msalInstance.logoutRedirect({ account: accounts[0] }).catch(() => {}); return; }
+      if (accounts.length > 0) {
+        await msalInstance.logoutRedirect({ account: accounts[0] }).catch(() => {});
+        return;
+      }
     }
   } finally {
     localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
     await dbClearMedia().catch(() => {});
-    await dbClearThumbs().catch(() => {}); /* NEW */
+    await dbClearThumbs().catch(() => {});
     await dbDeleteMeta('scan_state').catch(() => {});
     await dbDeleteMeta('deltaLink').catch(() => {});
-    for (const [, url] of thumbBlobUrls) { try { URL.revokeObjectURL(url); } catch {} }
-    thumbBlobUrls.clear();
+    revokeAllThumbUrls();
     stopAutoSync();
-    msalInstance = null; allPhotos = []; markers = [];
+    msalInstance = null;
+    allPhotos = [];
+    markers = [];
     clusterGroup.clearLayers();
     document.getElementById('config-panel').classList.remove('open');
     document.getElementById('filter-bar').classList.remove('visible');
     document.getElementById('stats-pill').style.display = 'none';
     document.getElementById('btn-config').style.display = 'none';
-    document.getElementById('map-layer-toggle').classList.remove('visible'); /* NEW */
+    document.getElementById('map-layer-toggle').classList.remove('visible');
     document.getElementById('photo-panel').classList.remove('open');
     document.getElementById('splash').classList.remove('hidden');
     setScanStatus('hidden');
@@ -1841,7 +2028,9 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
 document.getElementById('btn-config').addEventListener('click', showConfigPanel);
 
 document.getElementById('btn-login').addEventListener('click', () => {
-  if (!localStorage.getItem(STORAGE_KEY_CLIENT_ID)) localStorage.setItem(STORAGE_KEY_CLIENT_ID, DEFAULT_CLIENT_ID);
+  if (!localStorage.getItem(STORAGE_KEY_CLIENT_ID)) {
+    localStorage.setItem(STORAGE_KEY_CLIENT_ID, DEFAULT_CLIENT_ID);
+  }
   startApp();
 });
 
@@ -1858,12 +2047,10 @@ document.getElementById('btn-full-rescan').addEventListener('click', async () =>
 });
 
 document.getElementById('config-panel').addEventListener('click', e => {
-  if (e.target === document.getElementById('config-panel')) document.getElementById('config-panel').classList.remove('open');
+  if (e.target === document.getElementById('config-panel')) {
+    document.getElementById('config-panel').classList.remove('open');
+  }
 });
-
-/* ==========================================
-   INIT — ORIGINAL + load cached thumbs
-   ========================================== */
 
 document.addEventListener('DOMContentLoaded', async () => {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
@@ -1874,27 +2061,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cached = await dbGetAllMedia();
     if (cached.length > 0) {
       allPhotos = cached;
-      if (lcEnabled) await loadCachedThumbs(); /* NEW */
+      if (lcEnabled) await loadCachedThumbs();
       updateUiWithCurrentPhotos(true);
       document.getElementById('btn-config').style.display = 'inline-flex';
-      document.getElementById('map-layer-toggle').classList.add('visible'); /* NEW */
+      document.getElementById('map-layer-toggle').classList.add('visible');
       document.getElementById('splash').classList.add('hidden');
       if (clientId && !isAuthRedirectReturn) trySilentBackgroundSync(clientId);
     }
-  } catch (err) { console.warn('IndexedDB preload error:', err); }
+  } catch (err) {
+    console.warn('IndexedDB preload error:', err);
+  }
 
   if (clientId && isAuthRedirectReturn) startApp();
 });
 
 async function trySilentBackgroundSync(clientId) {
   try {
-    if (!msalInstance) { await initMsal(clientId); await msalInstance.handleRedirectPromise(); }
+    if (!msalInstance) {
+      await initMsal(clientId);
+      await msalInstance.handleRedirectPromise();
+    }
     const accounts = msalInstance.getAllAccounts();
     if (accounts.length === 0) return;
     const result = await msalInstance.acquireTokenSilent({ scopes: ['Files.Read', 'User.Read'], account: accounts[0] });
     _currentToken = result.accessToken;
     runBackgroundSync();
-    startAutoSync(); /* NEW: also start auto sync on silent reconnect */
+    startAutoSync();
   } catch {
     console.log('Synchronisation silencieuse ignorée — reconnexion nécessaire.');
   }
