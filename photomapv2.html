@@ -627,6 +627,7 @@
       <div class="storage-stats">
         <div class="storage-stats-title">Stockage local</div>
         <div class="storage-stats-lines" id="storage-stats-lines">Calcul en cours…</div>
+        <div id="cache-toggle-status" style="margin-top:6px; font-size:0.74rem; color:var(--accent); font-weight:500;"></div>
       </div>
       <div id="config-rescan-wrap" style="display:none">
         <button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button>
@@ -1110,7 +1111,7 @@ async function backgroundCacheThumbs() {
 function updateCacheStatus(done, total) {
   const el = document.getElementById('cache-toggle-status');
   if (!el) return;
-  if (!lcEnabled || !total) { el.textContent = ''; return; }
+  if (!total) { el.textContent = ''; return; }
   el.textContent = done >= total ? `✓ ${done} vignettes en cache` : `⟳ ${done} / ${total} en cours…`;
 }
 
