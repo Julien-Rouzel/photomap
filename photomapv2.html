@@ -193,6 +193,8 @@
     transition: opacity 0.6s, visibility 0.6s;
   }
   #splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  #splash.hidden .splash-globe { animation-play-state: paused; }
+  #splash.hidden .splash-globe::before { animation-play-state: paused; }
 
   .splash-globe {
     width: 120px; height: 120px; border: 2px solid var(--accent); border-radius: 50%;
@@ -696,6 +698,34 @@ const _failedImgElements = new Map();
 const REFRESH_CONCURRENCY = 4;
 const REFRESH_DELAY_MS = 200;
 
+// Cached DOM references for hot paths
+const DOM = {};
+document.addEventListener('DOMContentLoaded', () => {
+  DOM.toast = document.getElementById('toast');
+  DOM.scanStatus = document.getElementById('scan-status');
+  DOM.scanStatusText = document.getElementById('scan-status-text');
+  DOM.scanStatusCount = document.getElementById('scan-status-count');
+  DOM.scanProgressFill = document.getElementById('scan-progress-fill');
+  DOM.lightbox = document.getElementById('lightbox');
+  DOM.lightboxImg = document.getElementById('lightbox-img');
+  DOM.lightboxVideo = document.getElementById('lightbox-video');
+  DOM.lightboxName = document.getElementById('lightbox-name');
+  DOM.lightboxMeta = document.getElementById('lightbox-meta');
+  DOM.lightboxOpenOnedrive = document.getElementById('lightbox-open-onedrive');
+  DOM.lightboxPrev = document.getElementById('lightbox-prev');
+  DOM.lightboxNext = document.getElementById('lightbox-next');
+  DOM.hdLoader = document.getElementById('hd-loader');
+  DOM.hdDone = document.getElementById('hd-done');
+  DOM.photoPanel = document.getElementById('photo-panel');
+  DOM.panelPhotos = document.getElementById('panel-photos');
+  DOM.panelLocationName = document.getElementById('panel-location-name');
+  DOM.panelDateRange = document.getElementById('panel-date-range');
+  DOM.panelCount = document.getElementById('panel-count');
+  DOM.splash = document.getElementById('splash');
+  DOM.btnConfig = document.getElementById('btn-config');
+  DOM.mapLayerToggle = document.getElementById('map-layer-toggle');
+});
+
 function safeDate(value) {
   return value ? new Date(value) : null;
 }
@@ -893,8 +923,8 @@ async function estimateLocalStorageUsage() {
 }
 
 function formatBytes(bytes) {
-  if (!bytes) return '0 o';
-  const units = ['o', 'Ko', 'Mo', 'Go'];
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
   let value = bytes;
   let unitIndex = 0;
   while (value >= 1024 && unitIndex < units.length - 1) {
@@ -973,16 +1003,9 @@ async function initMsal(clientId) {
   await msalInstance.initialize();
 }
 
-async function getToken() {
+async function getToken(forceRefresh = false) {
   const accounts = msalInstance.getAllAccounts();
-  const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined };
-  try { return (await msalInstance.acquireTokenSilent(request)).accessToken; }
-  catch { await msalInstance.acquireTokenRedirect(request); return null; }
-}
-
-async function getTokenFresh() {
-  const accounts = msalInstance.getAllAccounts();
-  const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined, forceRefresh: true };
+  const request = { scopes: ['Files.Read', 'User.Read'], account: accounts[0] || undefined, forceRefresh };
   try { return (await msalInstance.acquireTokenSilent(request)).accessToken; }
   catch { await msalInstance.acquireTokenRedirect(request); return null; }
 }
@@ -991,7 +1014,7 @@ async function graphGet(url, token, attempt = 0) {
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) {
     if (attempt >= 1) throw new Error('Session expired. Please sign in again.');
-    const freshToken = await getTokenFresh();
+    const freshToken = await getToken(true);
     if (!freshToken) return null;
     _currentToken = freshToken;
     return graphGet(url, freshToken, attempt + 1);
@@ -1175,32 +1198,20 @@ clusterGroup = L.markerClusterGroup({
   iconCreateFunction(cluster) {
     const count = cluster.getChildCount();
     const children = cluster.getAllChildMarkers();
+    // Single-pass priority: cached blob > fresh URL > any URL > any photo
     let bestPhoto = null;
-
+    let bestPriority = -1;
     for (const child of children) {
       const p = child._photoData;
       if (!p) continue;
-      if (lcEnabled && thumbBlobUrls.has(p.id)) { bestPhoto = p; break; }
-    }
-    if (!bestPhoto) {
-      for (const child of children) {
-        const p = child._photoData;
-        if (!p || p.thumbnailBroken) continue;
-        if (p.thumbnailUrl && !isUrlStale(p) && p.thumbnailUrl !== FALLBACK_ICON) { bestPhoto = p; break; }
-      }
-    }
-    if (!bestPhoto) {
-      for (const child of children) {
-        const p = child._photoData;
-        if (!p || p.thumbnailBroken) continue;
-        if (p.thumbnailUrl && p.thumbnailUrl !== FALLBACK_ICON) { bestPhoto = p; break; }
-      }
-    }
-    if (!bestPhoto) {
-      for (const child of children) {
-        const p = child._photoData;
-        if (p && !p.thumbnailBroken) { bestPhoto = p; break; }
-      }
+      let priority;
+      if (thumbBlobUrls.has(p.id)) priority = 3;
+      else if (!p.thumbnailBroken && p.thumbnailUrl && !isUrlStale(p)) priority = 2;
+      else if (!p.thumbnailBroken && p.thumbnailUrl) priority = 1;
+      else if (!p.thumbnailBroken) priority = 0;
+      else continue;
+      if (priority > bestPriority) { bestPhoto = p; bestPriority = priority; }
+      if (bestPriority === 3) break; // can't do better
     }
     if (!bestPhoto) bestPhoto = children[0]?._photoData;
 
@@ -1228,7 +1239,7 @@ clusterGroup = L.markerClusterGroup({
 map.addLayer(clusterGroup);
 
 function showToast(msg, duration = 3000) {
-  const t = document.getElementById('toast');
+  const t = DOM.toast || document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   if (toastTimer) clearTimeout(toastTimer);
@@ -1236,10 +1247,10 @@ function showToast(msg, duration = 3000) {
 }
 
 function setScanStatus(state, text, count, progress) {
-  const el = document.getElementById('scan-status');
-  const textEl = document.getElementById('scan-status-text');
-  const countEl = document.getElementById('scan-status-count');
-  const fillEl = document.getElementById('scan-progress-fill');
+  const el = DOM.scanStatus || document.getElementById('scan-status');
+  const textEl = DOM.scanStatusText || document.getElementById('scan-status-text');
+  const countEl = DOM.scanStatusCount || document.getElementById('scan-status-count');
+  const fillEl = DOM.scanProgressFill || document.getElementById('scan-progress-fill');
   if (state === 'hidden') {
     el.style.display = 'none';
     el.classList.remove('visible', 'paused', 'done', 'error');
@@ -1465,8 +1476,8 @@ function openPanel(photos, lat, lng) {
     const fmt = d => d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     dateRange.textContent = (min.getFullYear() === max.getFullYear() && min.getMonth() === max.getMonth()) ? fmt(min) : `${fmt(min)} — ${fmt(max)}`;
   } else dateRange.textContent = '';
-  document.getElementById('panel-count').textContent = `${panelAllPhotos.length} media`;
-  const locName = document.getElementById('panel-location-name');
+  (DOM.panelCount || document.getElementById('panel-count')).textContent = `${panelAllPhotos.length} media`;
+  const locName = DOM.panelLocationName || document.getElementById('panel-location-name');
   const requestId = ++currentPanelRequestId;
   locName.textContent = 'Loading…';
   reverseGeocode(lat, lng).then(name => {
@@ -1477,15 +1488,29 @@ function openPanel(photos, lat, lng) {
 }
 
 function renderPanelPhotos() {
-  const grid = document.getElementById('panel-photos');
+  const grid = DOM.panelPhotos || document.getElementById('panel-photos');
   grid.innerHTML = '';
+  const observer = new IntersectionObserver((entries, obs) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const img = entry.target.querySelector('img[data-lazy-src]');
+      if (img) { img.src = img.dataset.lazySrc; delete img.dataset.lazySrc; }
+      obs.unobserve(entry.target);
+    }
+  }, { root: grid, rootMargin: '120px' });
   panelAllPhotos.forEach((photo, idx) => {
     const card = document.createElement('div');
     card.className = 'thumb-card';
     const dateStr = photo.date ? photo.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    const thumbSrc = getThumbSrc(photo);
     const mediaEl = document.createElement('img');
-    mediaEl.src = getThumbSrc(photo);
-    mediaEl.loading = 'lazy';
+    if (idx < 12) {
+      mediaEl.src = thumbSrc; // load first 12 immediately (visible)
+    } else {
+      mediaEl.src = getFallbackIcon(photo); // placeholder
+      mediaEl.dataset.lazySrc = thumbSrc;
+      observer.observe(card);
+    }
     mediaEl.decoding = 'async';
     mediaEl.alt = photo.name;
     mediaEl.dataset.photoId = photo.id;
@@ -1507,8 +1532,8 @@ function renderPanelPhotos() {
 }
 
 function setHdState(mode) {
-  const loader = document.getElementById('hd-loader');
-  const done = document.getElementById('hd-done');
+  const loader = DOM.hdLoader || document.getElementById('hd-loader');
+  const done = DOM.hdDone || document.getElementById('hd-done');
   loader.classList.remove('visible');
   done.classList.remove('visible');
   if (mode === 'loading') loader.classList.add('visible');
@@ -1532,25 +1557,25 @@ async function ensureFreshMediaUrl(photo) {
 async function showLightboxPhoto() {
   if (!lightboxPhotos.length) return;
   const photo = lightboxPhotos[lightboxIndex];
-  const lb = document.getElementById('lightbox');
-  const img = document.getElementById('lightbox-img');
-  const video = document.getElementById('lightbox-video');
-  const openBtn = document.getElementById('lightbox-open-onedrive');
+  const lb = DOM.lightbox || document.getElementById('lightbox');
+  const img = DOM.lightboxImg || document.getElementById('lightbox-img');
+  const video = DOM.lightboxVideo || document.getElementById('lightbox-video');
+  const openBtn = DOM.lightboxOpenOnedrive || document.getElementById('lightbox-open-onedrive');
   img.style.display = 'none';
   video.style.display = 'none';
   img.onload = null; img.onerror = null; video.onloadeddata = null; video.onerror = null;
   video.pause(); video.removeAttribute('src'); video.load();
   const lowSrc = getThumbSrc(photo);
   const initialSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || lowSrc || FALLBACK_ICON;
-  document.getElementById('lightbox-name').textContent = photo.name;
+  (DOM.lightboxName || document.getElementById('lightbox-name')).textContent = photo.name;
   const dateStr = photo.date ? photo.date.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
   const coords = `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`;
-  document.getElementById('lightbox-meta').textContent = [dateStr, coords].filter(Boolean).join('  ·  ');
+  (DOM.lightboxMeta || document.getElementById('lightbox-meta')).textContent = [dateStr, coords].filter(Boolean).join('  ·  ');
   const oneDriveUrl = photo.webUrl || photo.downloadUrl;
   if (oneDriveUrl) { openBtn.dataset.webUrl = oneDriveUrl; openBtn.style.display = 'inline-flex'; }
   else { delete openBtn.dataset.webUrl; openBtn.style.display = 'none'; }
-  document.getElementById('lightbox-prev').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
-  document.getElementById('lightbox-next').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
+  (DOM.lightboxPrev || document.getElementById('lightbox-prev')).style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
+  (DOM.lightboxNext || document.getElementById('lightbox-next')).style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
   lb.classList.add('open');
   setHdState('hidden');
 
@@ -1627,15 +1652,20 @@ document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) 
 });
 
 document.addEventListener('keydown', e => {
-  const lb = document.getElementById('lightbox');
-  if (!lb.classList.contains('open')) return;
-  if (e.key === 'Escape') { lb.classList.remove('open'); setHdState('hidden'); }
-  if (e.key === 'ArrowLeft') { lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; showLightboxPhoto(); }
-  if (e.key === 'ArrowRight') { lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; showLightboxPhoto(); }
-});
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { currentPanelRequestId++; document.getElementById('photo-panel').classList.remove('open'); }
+  if (e.key === 'Escape') {
+    const lb = DOM.lightbox || document.getElementById('lightbox');
+    if (lb.classList.contains('open')) { lb.classList.remove('open'); setHdState('hidden'); return; }
+    currentPanelRequestId++;
+    (DOM.photoPanel || document.getElementById('photo-panel')).classList.remove('open');
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const lb = DOM.lightbox || document.getElementById('lightbox');
+    if (!lb.classList.contains('open')) return;
+    lightboxIndex = e.key === 'ArrowLeft'
+      ? (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length
+      : (lightboxIndex + 1) % lightboxPhotos.length;
+    showLightboxPhoto();
+  }
 });
 
 (function() {
@@ -1675,7 +1705,7 @@ async function reverseGeocode(lat, lng, _retries = 0) {
   if (wait > 0) await new Promise(r => setTimeout(r, wait));
   lastGeocodeTime = Date.now();
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=fr`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
     if (res.status === 429) {
       if (_retries < 3) {
         await new Promise(r => setTimeout(r, (2 ** _retries) * 1500));
@@ -1869,28 +1899,29 @@ async function _startAppInner() {
   if (!clientId) { document.getElementById('splash').classList.add('hidden'); showConfigPanel(); return; }
   document.getElementById('splash').classList.add('hidden');
 
-  try {
-    const cached = await dbGetAllMedia();
-    if (cached.length > 0) {
-      allPhotos = cached;
-      if (lcEnabled) await loadCachedThumbs();
-      updateUiWithCurrentPhotos(true);
-    }
-  } catch (err) { console.warn('IndexedDB read error:', err); }
-
-  document.getElementById('btn-config').style.display = 'inline-flex';
-  document.getElementById('map-layer-toggle').classList.add('visible');
-
   setScanStatus('scanning', 'Connecting to Microsoft…', '', 0);
   try {
-    try {
-      await initMsal(clientId);
-      const redirectResult = await msalInstance.handleRedirectPromise();
-      if (redirectResult) setScanStatus('scanning', 'Authentication successful', '', 3);
-    } catch (msalErr) {
-      msalInstance = null;
-      throw new Error('Auth init failed: ' + (msalErr.message || String(msalErr)));
-    }
+    // Phase 1: load cached data and init MSAL in parallel
+    await Promise.all([
+      dbGetAllMedia().then(async (cached) => {
+        if (cached.length > 0) {
+          allPhotos = cached;
+          await loadCachedThumbs();
+          updateUiWithCurrentPhotos(true);
+        }
+      }).catch(err => console.warn('IndexedDB read error:', err)),
+
+      initMsal(clientId).then(async () => {
+        const redirectResult = await msalInstance.handleRedirectPromise();
+        if (redirectResult) setScanStatus('scanning', 'Authentication successful', '', 3);
+      }).catch(msalErr => {
+        msalInstance = null;
+        throw new Error('Auth init failed: ' + (msalErr.message || String(msalErr)));
+      })
+    ]);
+
+    document.getElementById('btn-config').style.display = 'inline-flex';
+    document.getElementById('map-layer-toggle').classList.add('visible');
 
     setScanStatus('scanning', 'Authenticating…', '', 3);
     const token = await getToken();
@@ -1970,10 +2001,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const hashOrSearch = window.location.hash + window.location.search;
   const isAuthRedirectReturn = hashOrSearch.includes('code=') || hashOrSearch.includes('access_token') || hashOrSearch.includes('id_token') || hashOrSearch.includes('error=');
   try {
-    const cached = await dbGetAllMedia();
-    if (cached.length > 0) {
+    const [cached] = await Promise.all([
+      dbGetAllMedia(),
+      clientId && !isAuthRedirectReturn ? initMsal(clientId).catch(() => null) : Promise.resolve()
+    ]);
+    if (cached && cached.length > 0) {
       allPhotos = cached;
-      if (lcEnabled) await loadCachedThumbs();
+      await loadCachedThumbs();
       updateUiWithCurrentPhotos(true);
       document.getElementById('btn-config').style.display = 'inline-flex';
       document.getElementById('map-layer-toggle').classList.add('visible');
