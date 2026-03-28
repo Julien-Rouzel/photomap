@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>PhotoMap — Vos souvenirs sur la planète</title>
+<title>PhotoMap — Your memories on the planet</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -498,6 +498,7 @@
     .year-btn { font-size: 0.82rem; padding: 6px 14px; min-height: 34px; }
     .lightbox-nav { display: none !important; }
     #lightbox-close { top: max(16px, env(safe-area-inset-top, 10px)); right: 16px; width: 48px; height: 48px; font-size: 1.5rem; }
+    .hd-badge { top: max(16px, env(safe-area-inset-top, 10px)); left: 16px; padding: 0; width: 48px; height: 48px; justify-content: center; border-radius: 50%; }
     .lightbox-info { padding: 60px 20px calc(22px + env(safe-area-inset-bottom, 0px)); }
     .lightbox-info strong { font-size: 0.95rem; }
     #lightbox-meta { font-size: 0.82rem; }
@@ -542,7 +543,7 @@
 
 <div id="topbar">
   <div class="logo">Photo<span>Map</span></div>
-  <div class="tagline">Vos souvenirs sur la planète</div>
+  <div class="tagline">Your memories on the planet</div>
   <div id="topbar-right">
     <div id="stats-pill"></div>
     <div id="scan-status" style="display:none">
@@ -551,66 +552,66 @@
       <span id="scan-status-count"></span>
       <div id="scan-progress-bar"><div id="scan-progress-fill"></div></div>
     </div>
-    <button class="btn btn-ghost" id="btn-config" style="display:none" title="Configuration">⚙</button>
+    <button class="btn btn-ghost" id="btn-config" style="display:none" title="Settings">⚙</button>
   </div>
 </div>
 
 <div id="map"></div>
 
-<button id="map-layer-toggle" title="Fond de carte">
+<button id="map-layer-toggle" title="Map layer">
   <img src="" alt=""/>
   <div id="map-layer-label">Satellite</div>
 </button>
 
 <div id="filter-bar">
-  <span class="filter-label">Année</span>
-  <button class="year-btn active" data-year="all">Toutes</button>
+  <span class="filter-label">Year</span>
+  <button class="year-btn active" data-year="all">All</button>
 </div>
 
 <div id="photo-panel">
   <div class="panel-header">
     <div>
-      <div class="panel-location" id="panel-location-name">Lieu</div>
+      <div class="panel-location" id="panel-location-name">Location</div>
       <div class="panel-date" id="panel-date-range"></div>
       <div class="panel-count" id="panel-count"></div>
     </div>
-    <button class="btn-close" id="panel-close" title="Fermer">✕</button>
+    <button class="btn-close" id="panel-close" title="Close">✕</button>
   </div>
   <div id="panel-photos"></div>
 </div>
 
 <div id="lightbox">
-  <button id="lightbox-close" title="Fermer">✕</button>
-  <button class="lightbox-nav" id="lightbox-prev" title="Précédent">‹</button>
-  <button class="lightbox-nav" id="lightbox-next" title="Suivant">›</button>
+  <button id="lightbox-close" title="Close">✕</button>
+  <button class="lightbox-nav" id="lightbox-prev" title="Previous">‹</button>
+  <button class="lightbox-nav" id="lightbox-next" title="Next">›</button>
 
   <div class="lightbox-media-wrap">
-    <img id="lightbox-img" src="" alt="Média"/>
+    <img id="lightbox-img" src="" alt="Media"/>
     <video id="lightbox-video" controls playsinline></video>
-    <div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div><span>Chargement HD</span></div>
-    <div class="hd-badge done" id="hd-done"><span>✓ HD</span></div>
+    <div class="hd-badge" id="hd-loader"><div class="hd-spinner"></div></div>
+    <div class="hd-badge done" id="hd-done"><span>✓</span></div>
   </div>
 
   <div class="lightbox-info">
     <strong id="lightbox-name"></strong>
     <span id="lightbox-meta"></span>
     <div id="lightbox-actions">
-      <button id="lightbox-open-onedrive" type="button">↗ Ouvrir dans OneDrive</button>
+      <button id="lightbox-open-onedrive" type="button">↗ Open in OneDrive</button>
     </div>
   </div>
 </div>
 
 <div id="splash">
   <div class="splash-globe"><div class="globe-icon">🌍</div></div>
-  <div class="splash-title">Vos photos,<br><span>sur la planète</span></div>
-  <div class="splash-sub">Connectez votre OneDrive pour visualiser toutes vos photos et vidéos géolocalisées sur une mappemonde interactive.</div>
-  <button class="btn btn-primary btn-lg" id="btn-login">Connecter OneDrive</button>
-  <div class="splash-note">Vos données restent privées — tout est traité localement dans votre navigateur. Aucune photo n'est envoyée à un serveur tiers.</div>
+  <div class="splash-title">Your photos,<br><span>on the planet</span></div>
+  <div class="splash-sub">Connect your OneDrive to visualize all your geolocated photos and videos on an interactive world map.</div>
+  <button class="btn btn-primary btn-lg" id="btn-login">Connect OneDrive</button>
+  <div class="splash-note">Your data stays private — everything is processed locally in your browser. No photo is sent to a third-party server.</div>
 </div>
 
 <div id="loading-overlay">
   <div id="loading-count">0</div>
-  <div class="loading-msg" id="loading-msg">Connexion à OneDrive…</div>
+  <div class="loading-msg" id="loading-msg">Connecting to OneDrive…</div>
   <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill"></div></div>
 </div>
 
@@ -622,15 +623,15 @@
     </div>
     <div class="config-buttons">
       <div id="config-connect-wrap">
-        <button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button>
+        <button class="btn btn-primary config-btn" id="btn-connect">Connect to OneDrive</button>
       </div>
       <div class="storage-stats">
-        <div class="storage-stats-title">Stockage local</div>
-        <div class="storage-stats-lines" id="storage-stats-lines">Calcul en cours…</div>
+        <div class="storage-stats-title">Local storage</div>
+        <div class="storage-stats-lines" id="storage-stats-lines">Calculating…</div>
         <div id="cache-toggle-status" style="margin-top:6px; font-size:0.74rem; color:var(--accent); font-weight:500;"></div>
       </div>
       <div id="config-rescan-wrap" style="display:none">
-        <button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Rescan complet</button>
+        <button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Full rescan</button>
       </div>
       <div id="config-logout-wrap" style="display:none">
         <button class="btn btn-danger config-btn" id="btn-config-logout">Disconnect &amp; Delete</button>
@@ -906,12 +907,12 @@ function formatBytes(bytes) {
 async function refreshStorageStats() {
   const el = document.getElementById('storage-stats-lines');
   if (!el) return;
-  el.textContent = 'Calcul en cours…';
+  el.textContent = 'Calculating…';
   try {
     const stats = await estimateLocalStorageUsage();
-    el.innerHTML = `Photos et métadonnées : ${formatBytes(stats.mediaBytes)}<br>Vignettes locales : ${formatBytes(stats.thumbBytes)} (${stats.thumbCount})<br>Total local : ${formatBytes(stats.totalBytes)}`;
+    el.innerHTML = `Photos &amp; metadata: ${formatBytes(stats.mediaBytes)}<br>Local thumbnails: ${formatBytes(stats.thumbBytes)} (${stats.thumbCount})<br>Total: ${formatBytes(stats.totalBytes)}`;
   } catch {
-    el.textContent = 'Impossible de calculer le stockage local.';
+    el.textContent = 'Unable to calculate local storage.';
   }
 }
 
@@ -989,21 +990,21 @@ async function getTokenFresh() {
 async function graphGet(url, token, attempt = 0) {
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) {
-    if (attempt >= 1) throw new Error('Session expirée. Veuillez vous reconnecter.');
+    if (attempt >= 1) throw new Error('Session expired. Please sign in again.');
     const freshToken = await getTokenFresh();
     if (!freshToken) return null;
     _currentToken = freshToken;
     return graphGet(url, freshToken, attempt + 1);
   }
   if (res.status === 429) {
-    if (attempt >= GRAPH_RETRY_LIMIT) throw new Error('API Graph temporairement limitée. Réessayez plus tard.');
+    if (attempt >= GRAPH_RETRY_LIMIT) throw new Error('Graph API temporarily rate-limited. Please try again later.');
     const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10);
     await new Promise(r => setTimeout(r, Math.max(1, retryAfter) * 1000));
     return graphGet(url, token, attempt + 1);
   }
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Erreur API Graph (${res.status}) : ${text.substring(0, 200)}`);
+    throw new Error(`Graph API error (${res.status}): ${text.substring(0, 200)}`);
   }
   return res.json();
 }
@@ -1112,7 +1113,7 @@ function updateCacheStatus(done, total) {
   const el = document.getElementById('cache-toggle-status');
   if (!el) return;
   if (!total) { el.textContent = ''; return; }
-  el.textContent = done >= total ? `✓ ${done} vignettes en cache` : `⟳ ${done} / ${total} en cours…`;
+  el.textContent = done >= total ? `✓ ${done} thumbnails cached` : `⟳ ${done} / ${total} caching…`;
 }
 
 const map = L.map('map', {
@@ -1151,7 +1152,7 @@ document.getElementById('map-layer-toggle').addEventListener('click', () => {
     map.removeLayer(standardLayer);
     satelliteLayer.addTo(map);
     currentLayerType = 'satellite';
-    label.textContent = 'Plan';
+    label.textContent = 'Map';
     img.src = LAYER_IMG_PLAN;
   } else {
     map.removeLayer(satelliteLayer);
@@ -1256,7 +1257,7 @@ function setScanStatus(state, text, count, progress) {
 }
 
 function setScanDone(count, detail) {
-  setScanStatus('done', 'Terminé', detail || (count + ' médias'), 100);
+  setScanStatus('done', 'Done', detail || (count + ' media'), 100);
   if (_scanDoneTimer) clearTimeout(_scanDoneTimer);
   _scanDoneTimer = setTimeout(() => setScanStatus('hidden'), 5000);
 }
@@ -1461,13 +1462,13 @@ function openPanel(photos, lat, lng) {
   if (dates.length) {
     const min = new Date(Math.min(...dates));
     const max = new Date(Math.max(...dates));
-    const fmt = d => d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+    const fmt = d => d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     dateRange.textContent = (min.getFullYear() === max.getFullYear() && min.getMonth() === max.getMonth()) ? fmt(min) : `${fmt(min)} — ${fmt(max)}`;
   } else dateRange.textContent = '';
-  document.getElementById('panel-count').textContent = `${panelAllPhotos.length} média${panelAllPhotos.length > 1 ? 's' : ''}`;
+  document.getElementById('panel-count').textContent = `${panelAllPhotos.length} media`;
   const locName = document.getElementById('panel-location-name');
   const requestId = ++currentPanelRequestId;
-  locName.textContent = 'Chargement…';
+  locName.textContent = 'Loading…';
   reverseGeocode(lat, lng).then(name => {
     if (requestId === currentPanelRequestId && panel.classList.contains('open')) locName.textContent = name;
   });
@@ -1481,7 +1482,7 @@ function renderPanelPhotos() {
   panelAllPhotos.forEach((photo, idx) => {
     const card = document.createElement('div');
     card.className = 'thumb-card';
-    const dateStr = photo.date ? photo.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    const dateStr = photo.date ? photo.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     const mediaEl = document.createElement('img');
     mediaEl.src = getThumbSrc(photo);
     mediaEl.loading = 'lazy';
@@ -1497,7 +1498,7 @@ function renderPanelPhotos() {
     if (photo.mediaType === 'video') {
       const badge = document.createElement('div');
       badge.className = 'video-badge';
-      badge.innerHTML = '▶ vidéo';
+      badge.innerHTML = '▶ video';
       card.appendChild(badge);
     }
     card.addEventListener('click', () => { lightboxPhotos = panelAllPhotos; lightboxIndex = idx; showLightboxPhoto(); });
@@ -1542,7 +1543,7 @@ async function showLightboxPhoto() {
   const lowSrc = getThumbSrc(photo);
   const initialSrc = photo.downloadUrl || photo.webUrl || photo.thumbnailUrl || lowSrc || FALLBACK_ICON;
   document.getElementById('lightbox-name').textContent = photo.name;
-  const dateStr = photo.date ? photo.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const dateStr = photo.date ? photo.date.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
   const coords = `${photo.lat.toFixed(4)}, ${photo.lng.toFixed(4)}`;
   document.getElementById('lightbox-meta').textContent = [dateStr, coords].filter(Boolean).join('  ·  ');
   const oneDriveUrl = photo.webUrl || photo.downloadUrl;
@@ -1685,7 +1686,7 @@ async function reverseGeocode(lat, lng, _retries = 0) {
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     const addr = data.address || {};
-    const name = addr.city || addr.town || addr.village || addr.county || addr.state || addr.country || 'Lieu inconnu';
+    const name = addr.city || addr.town || addr.village || addr.county || addr.state || addr.country || 'Unknown location';
     const country = addr.country || '';
     const result = country && name !== country ? `${name}, ${country}` : name;
     geocodeCache[key] = result;
@@ -1696,7 +1697,7 @@ async function reverseGeocode(lat, lng, _retries = 0) {
 function buildYearFilter(photos) {
   const years = [...new Set(photos.filter(p => p.date).map(p => p.date.getFullYear()))].sort((a, b) => b - a);
   const bar = document.getElementById('filter-bar');
-  bar.innerHTML = `<span class="filter-label">Année</span><button class="year-btn${currentYear === 'all' ? ' active' : ''}" data-year="all">Toutes</button>`;
+  bar.innerHTML = `<span class="filter-label">Year</span><button class="year-btn${currentYear === 'all' ? ' active' : ''}" data-year="all">All</button>`;
   years.forEach(y => {
     const btn = document.createElement('button');
     btn.className = 'year-btn' + (currentYear == y ? ' active' : '');
@@ -1728,7 +1729,7 @@ function applyFilter() {
 
 function updateStats(count) {
   const el = document.getElementById('stats-pill');
-  el.textContent = `${count} média${count > 1 ? 's' : ''} géolocalisé${count > 1 ? 's' : ''}`;
+  el.textContent = `${count} geolocated media`;
   el.style.display = 'block';
 }
 
@@ -1764,8 +1765,8 @@ async function runDeltaSync() {
   let url = deltaLink || DELTA_BASE_URL;
   const isFirstScan = !deltaLink;
 
-  if (isFirstScan) setScanStatus('scanning', 'Premier scan…', '', 2);
-  else setScanStatus('scanning', 'Synchronisation…', existingCount + ' en cache', 2);
+  if (isFirstScan) setScanStatus('scanning', 'First scan…', '', 2);
+  else setScanStatus('scanning', 'Syncing…', existingCount + ' cached', 2);
 
   let scanned = 0, added = 0, deleted = 0, newDeltaLink = null;
   const writeBatch = [];
@@ -1778,7 +1779,7 @@ async function runDeltaSync() {
     for (const item of items) {
       scanned++;
       if (scanned % 50 === 0) {
-        setScanStatus('scanning', isFirstScan ? `Analyse… ${scanned} fichiers` : `Synchro… ${scanned} changements`, isFirstScan ? (existingCount + added) + ' trouvés' : (added > 0 ? `+${added} nouveaux` : 'vérification…'), Math.min(5 + scanned * 0.005, 95));
+        setScanStatus('scanning', isFirstScan ? `Scanning… ${scanned} files` : `Syncing… ${scanned} changes`, isFirstScan ? (existingCount + added) + ' found' : (added > 0 ? `+${added} new` : 'checking…'), Math.min(5 + scanned * 0.005, 95));
       }
 
       if (item.deleted) {
@@ -1824,13 +1825,13 @@ async function runDeltaSync() {
 
   await dbSetMeta('scan_state', { scanned, found: allPhotos.length, updatedAt: new Date().toISOString(), completed: true });
 
-  if (isFirstScan) setScanDone(allPhotos.length, allPhotos.length + ' médias');
+  if (isFirstScan) setScanDone(allPhotos.length, allPhotos.length + ' media');
   else if (added > 0 || deleted > 0) {
     const parts = [];
     if (added > 0) parts.push(`+${added}`);
     if (deleted > 0) parts.push(`-${deleted}`);
     setScanDone(allPhotos.length, parts.join(' ') + ' · ' + allPhotos.length + ' total');
-  } else setScanDone(allPhotos.length, 'à jour');
+  } else setScanDone(allPhotos.length, 'up to date');
 
   if (lcEnabled) setTimeout(backgroundCacheThumbs, 1500);
   refreshStorageStats();
@@ -1843,7 +1844,7 @@ async function runBackgroundSync() {
   try { await runDeltaSync(); }
   catch (err) {
     console.warn('Erreur sync:', err);
-    setScanStatus('error', 'Sync interrompue', '', 0);
+    setScanStatus('error', 'Sync interrupted', '', 0);
     setTimeout(() => setScanStatus('hidden'), 4000);
   } finally { backgroundSyncRunning = false; }
 }
@@ -1880,18 +1881,18 @@ async function _startAppInner() {
   document.getElementById('btn-config').style.display = 'inline-flex';
   document.getElementById('map-layer-toggle').classList.add('visible');
 
-  setScanStatus('scanning', 'Connexion à Microsoft…', '', 0);
+  setScanStatus('scanning', 'Connecting to Microsoft…', '', 0);
   try {
     try {
       await initMsal(clientId);
       const redirectResult = await msalInstance.handleRedirectPromise();
-      if (redirectResult) setScanStatus('scanning', 'Authentification réussie', '', 3);
+      if (redirectResult) setScanStatus('scanning', 'Authentication successful', '', 3);
     } catch (msalErr) {
       msalInstance = null;
       throw new Error('Auth init failed: ' + (msalErr.message || String(msalErr)));
     }
 
-    setScanStatus('scanning', 'Authentification…', '', 3);
+    setScanStatus('scanning', 'Authenticating…', '', 3);
     const token = await getToken();
     if (!token) return;
     _currentToken = token;
@@ -1899,9 +1900,9 @@ async function _startAppInner() {
     startAutoSync();
   } catch (err) {
     console.error('PhotoMap error:', err);
-    setScanStatus('error', 'Erreur de connexion', '', 0);
+    setScanStatus('error', 'Connection error', '', 0);
     setTimeout(() => setScanStatus('hidden'), 6000);
-    showToast('Erreur : ' + (err.message || String(err)), 8000);
+    showToast('Error: ' + (err.message || String(err)), 8000);
   }
 }
 
@@ -1941,7 +1942,7 @@ document.getElementById('btn-config-logout').addEventListener('click', async () 
     document.getElementById('splash').classList.remove('hidden');
     setScanStatus('hidden');
     refreshStorageStats();
-    showToast('Déconnecté avec succès');
+    showToast('Successfully disconnected');
   }
 });
 
