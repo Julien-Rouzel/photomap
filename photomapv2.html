@@ -1624,8 +1624,16 @@ document.getElementById('lightbox-full-quality').addEventListener('click', async
   btn.classList.add('loading');
   btn.textContent = '⏳ Chargement…';
   try {
-    const freshUrl = await ensureFreshMediaUrl(photo);
-    if (freshUrl && freshUrl !== FALLBACK_ICON) {
+    // Toujours forcer un rafraîchissement : le downloadUrl expire en ~1h
+    const token = _currentToken || await getToken();
+    if (!token) { showToast('Non connecté à OneDrive'); return; }
+    _currentToken = token;
+    const data = await graphGet(
+      `https://graph.microsoft.com/v1.0/me/drive/items/${photoId}?$select=id,@microsoft.graph.downloadUrl,webUrl`,
+      token
+    );
+    const freshUrl = data?.['@microsoft.graph.downloadUrl'] || data?.webUrl;
+    if (freshUrl) {
       window.open(freshUrl, '_blank', 'noopener');
     } else {
       showToast('URL indisponible pour ce média');
