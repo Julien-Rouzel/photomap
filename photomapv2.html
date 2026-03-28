@@ -312,7 +312,7 @@
   .lightbox-info strong { display: block; font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
 
   #lightbox-actions { margin-top: 10px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-  #lightbox-open-onedrive, #lightbox-full-quality {
+  #lightbox-open-onedrive {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     font-size: 0.88rem; font-weight: 600;
     background: rgba(255,255,255,0.15); color: #fff;
@@ -321,9 +321,18 @@
     letter-spacing: 0.01em; transition: background 0.15s, border-color 0.15s; min-width: 0;
     cursor: pointer;
   }
-  #lightbox-open-onedrive:hover, #lightbox-full-quality:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
-  #lightbox-full-quality { background: rgba(255,255,255,0.08); }
-  #lightbox-full-quality.loading { opacity: 0.6; pointer-events: none; }
+  #lightbox-open-onedrive:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
+  #lightbox-full-quality {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 0.74rem; font-weight: 500;
+    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.75);
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 20px;
+    padding: 7px 14px; backdrop-filter: blur(12px);
+    letter-spacing: 0.01em; transition: background 0.15s, border-color 0.15s; min-width: 0;
+    cursor: pointer;
+  }
+  #lightbox-full-quality:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.4); color: #fff; }
+  #lightbox-full-quality.loading { opacity: 0.5; pointer-events: none; }
 
   .lightbox-nav {
     position: fixed; top: 50%; transform: translateY(-50%);
@@ -496,7 +505,8 @@
     .lightbox-info strong { font-size: 0.95rem; }
     #lightbox-meta { font-size: 0.82rem; gap: 8px; }
     #lightbox-actions { margin-top: 10px; }
-    #lightbox-open-onedrive, #lightbox-full-quality { font-size: 0.82rem; padding: 10px 18px; }
+    #lightbox-open-onedrive { font-size: 0.82rem; padding: 10px 18px; }
+    #lightbox-full-quality { font-size: 0.7rem; padding: 6px 12px; }
     #splash { gap: 22px; padding: 28px; }
     .splash-globe { width: 90px; height: 90px; }
     .globe-icon { font-size: 2.4rem; }
@@ -1538,6 +1548,7 @@ async function showLightboxPhoto() {
   else { delete openBtn.dataset.webUrl; openBtn.style.display = 'none'; }
   const fqBtn = document.getElementById('lightbox-full-quality');
   fqBtn.dataset.photoId = photo.id;
+  fqBtn.dataset.state = '';
   fqBtn.classList.remove('loading');
   fqBtn.style.display = photo.mediaType !== 'video' ? 'inline-flex' : 'none';
   fqBtn.textContent = '⬇ Qualité originale';
@@ -1621,10 +1632,11 @@ document.getElementById('lightbox-full-quality').addEventListener('click', async
   if (!photoId) return;
   const photo = allPhotos.find(p => p.id === photoId);
   if (!photo) return;
+  // Si on est déjà en full quality, ne rien faire
+  if (btn.dataset.state === 'loaded') return;
   btn.classList.add('loading');
   btn.textContent = '⏳ Chargement…';
   try {
-    // Toujours forcer un rafraîchissement : le downloadUrl expire en ~1h
     const token = _currentToken || await getToken();
     if (!token) { showToast('Non connecté à OneDrive'); return; }
     _currentToken = token;
@@ -1632,17 +1644,32 @@ document.getElementById('lightbox-full-quality').addEventListener('click', async
       `https://graph.microsoft.com/v1.0/me/drive/items/${photoId}?$select=id,@microsoft.graph.downloadUrl,webUrl`,
       token
     );
-    const freshUrl = data?.['@microsoft.graph.downloadUrl'] || data?.webUrl;
-    if (freshUrl) {
-      window.open(freshUrl, '_blank', 'noopener');
-    } else {
-      showToast('URL indisponible pour ce média');
-    }
+    const freshUrl = data?.['@microsoft.graph.downloadUrl'];
+    if (!freshUrl) { showToast('URL indisponible pour ce média'); return; }
+    // Vérifier qu'on est toujours sur la même photo
+    if (lightboxPhotos[lightboxIndex]?.id !== photoId) return;
+    const img = document.getElementById('lightbox-img');
+    setHdState('loading');
+    const fullImg = new Image();
+    fullImg.onload = () => {
+      if (lightboxPhotos[lightboxIndex]?.id !== photoId) return;
+      img.src = freshUrl;
+      setHdState('done');
+      scheduleHdDoneHide();
+      btn.textContent = '✓ Qualité originale';
+      btn.dataset.state = 'loaded';
+    };
+    fullImg.onerror = () => {
+      setHdState('hidden');
+      showToast('Impossible de charger la qualité originale');
+      btn.textContent = '⬇ Qualité originale';
+    };
+    fullImg.src = freshUrl;
   } catch {
     showToast('Impossible de récupérer la qualité originale');
+    btn.textContent = '⬇ Qualité originale';
   } finally {
     btn.classList.remove('loading');
-    btn.textContent = '⬇ Qualité originale';
   }
 });
 
