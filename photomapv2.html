@@ -322,17 +322,6 @@
     cursor: pointer;
   }
   #lightbox-open-onedrive:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
-  #lightbox-full-quality {
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    font-size: 0.74rem; font-weight: 500;
-    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.75);
-    border: 1px solid rgba(255,255,255,0.2); border-radius: 20px;
-    padding: 7px 14px; backdrop-filter: blur(12px);
-    letter-spacing: 0.01em; transition: background 0.15s, border-color 0.15s; min-width: 0;
-    cursor: pointer;
-  }
-  #lightbox-full-quality:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.4); color: #fff; }
-  #lightbox-full-quality.loading { opacity: 0.5; pointer-events: none; }
 
   .lightbox-nav {
     position: fixed; top: 50%; transform: translateY(-50%);
@@ -505,8 +494,7 @@
     .lightbox-info strong { font-size: 0.95rem; }
     #lightbox-meta { font-size: 0.82rem; gap: 8px; }
     #lightbox-actions { margin-top: 10px; }
-    #lightbox-open-onedrive { font-size: 0.82rem; padding: 10px 18px; }
-    #lightbox-full-quality { font-size: 0.7rem; padding: 6px 12px; }
+    #lightbox-open-onedrive { font-size: 0.82rem; padding: 10px 20px; }
     #splash { gap: 22px; padding: 28px; }
     .splash-globe { width: 90px; height: 90px; }
     .globe-icon { font-size: 2.4rem; }
@@ -562,7 +550,7 @@
 <div id="map"></div>
 
 <button id="map-layer-toggle" title="Fond de carte">
-  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a2f5a'/%3E%3Cpath d='M14 40l12-10 9 6 15-14v26H14z' fill='%2339a96b'/%3E%3Cpath d='M40 17l5 2 2 5-5-2z' fill='%23ffffff' opacity='.95'/%3E%3Ccircle cx='46' cy='18' r='3' fill='%23ffffff'/%3E%3Cpath d='M12 44h40' stroke='%23ffffff' stroke-opacity='.5' stroke-width='2'/%3E%3C/svg%3E" alt=""/>
+  <img src="" alt=""/>
   <div id="map-layer-label">Satellite</div>
 </button>
 
@@ -599,7 +587,6 @@
     <strong id="lightbox-name"></strong>
     <span id="lightbox-meta"></span>
     <div id="lightbox-actions">
-      <button id="lightbox-full-quality" type="button">⬇ Qualité originale</button>
       <button id="lightbox-open-onedrive" type="button">↗ Ouvrir dans OneDrive</button>
     </div>
   </div>
@@ -628,17 +615,6 @@
     <div class="config-buttons">
       <div id="config-connect-wrap">
         <button class="btn btn-primary config-btn" id="btn-connect">Connexion à OneDrive</button>
-      </div>
-      <div class="config-toggle">
-        <div class="config-toggle-info">
-          <div class="config-toggle-label">Cache local des vignettes</div>
-          <div class="config-toggle-sub" id="cache-toggle-sub">Chargement instantané hors-ligne</div>
-          <div class="config-toggle-status" id="cache-toggle-status"></div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-local-cache">
-          <span class="toggle-slider"></span>
-        </label>
       </div>
       <div class="storage-stats">
         <div class="storage-stats-title">Stockage local</div>
@@ -671,7 +647,6 @@ const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 const DELTA_BASE_URL = 'https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
 const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
 const FALLBACK_ICON_VIDEO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E🎥%3C/text%3E%3C/svg%3E";
-const LC_KEY = 'photomap_local_thumb_cache';
 const SPATIAL_CELL_SIZE = 0.0005;
 const GRAPH_RETRY_LIMIT = 4;
 const GRAPH_THUMB_CONCURRENCY = 6;
@@ -689,7 +664,7 @@ let lightboxPhotos = [];
 let lightboxIndex = 0;
 let panelAllPhotos = [];
 let _dbInstance = null;
-let lcEnabled = localStorage.getItem(LC_KEY) === 'true';
+const lcEnabled = true;
 let currentLayerType = 'standard';
 let standardLayer, satelliteLayer;
 let _currentToken = null;
@@ -1113,7 +1088,6 @@ async function backgroundCacheThumbs() {
     let done = haveIds.size;
     updateCacheStatus(done, total);
     await runWithConcurrency(need, THUMB_CACHE_CONCURRENCY, async (photo, index) => {
-      if (!lcEnabled) return;
       if (await downloadAndCacheThumb(photo)) done++;
       if (index % 4 === 0) updateCacheStatus(done, total);
     });
@@ -1151,18 +1125,30 @@ satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/servic
 
 standardLayer.addTo(map);
 
+const LAYER_IMG_SATELLITE = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/120px-The_Earth_seen_from_Apollo_17.jpg";
+const LAYER_IMG_PLAN = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23eae6df'/%3E%3Crect x='0' y='0' width='26' height='22' fill='%23ddd9d1'/%3E%3Crect x='30' y='0' width='34' height='22' fill='%23ddd9d1'/%3E%3Crect x='0' y='26' width='26' height='14' fill='%23ddd9d1'/%3E%3Crect x='30' y='26' width='34' height='14' fill='%23ddd9d1'/%3E%3Crect x='0' y='44' width='26' height='20' fill='%23ddd9d1'/%3E%3Crect x='30' y='44' width='34' height='20' fill='%23ddd9d1'/%3E%3Crect x='0' y='22' width='64' height='4' fill='%23ffffff'/%3E%3Crect x='26' y='0' width='4' height='64' fill='%23ffffff'/%3E%3Crect x='46' y='0' width='2' height='22' fill='%23f0ece6'/%3E%3Crect x='46' y='26' width='2' height='14' fill='%23f0ece6'/%3E%3Crect x='46' y='44' width='2' height='20' fill='%23f0ece6'/%3E%3Crect x='0' y='36' width='26' height='2' fill='%23f0ece6'/%3E%3C/svg%3E";
+
+(function() {
+  const toggleImg = document.querySelector('#map-layer-toggle img');
+  toggleImg.src = LAYER_IMG_SATELLITE;
+  toggleImg.onerror = function() { this.src = LAYER_IMG_PLAN; };
+})();
+
 document.getElementById('map-layer-toggle').addEventListener('click', () => {
   const label = document.getElementById('map-layer-label');
+  const img = document.querySelector('#map-layer-toggle img');
   if (currentLayerType === 'standard') {
     map.removeLayer(standardLayer);
     satelliteLayer.addTo(map);
     currentLayerType = 'satellite';
     label.textContent = 'Plan';
+    img.src = LAYER_IMG_PLAN;
   } else {
     map.removeLayer(satelliteLayer);
     standardLayer.addTo(map);
     currentLayerType = 'standard';
     label.textContent = 'Satellite';
+    img.src = LAYER_IMG_SATELLITE;
   }
 });
 
@@ -1546,12 +1532,6 @@ async function showLightboxPhoto() {
   const oneDriveUrl = photo.webUrl || photo.downloadUrl;
   if (oneDriveUrl) { openBtn.dataset.webUrl = oneDriveUrl; openBtn.style.display = 'inline-flex'; }
   else { delete openBtn.dataset.webUrl; openBtn.style.display = 'none'; }
-  const fqBtn = document.getElementById('lightbox-full-quality');
-  fqBtn.dataset.photoId = photo.id;
-  fqBtn.dataset.state = '';
-  fqBtn.classList.remove('loading');
-  fqBtn.style.display = photo.mediaType !== 'video' ? 'inline-flex' : 'none';
-  fqBtn.textContent = '⬇ Qualité originale';
   document.getElementById('lightbox-prev').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
   document.getElementById('lightbox-next').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
   lb.classList.add('open');
@@ -1623,54 +1603,6 @@ document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) 
   const webUrl = e.currentTarget.dataset.webUrl;
   if (!webUrl) return;
   window.open(webUrl, '_blank', 'noopener');
-});
-
-document.getElementById('lightbox-full-quality').addEventListener('click', async (e) => {
-  e.stopPropagation();
-  const btn = e.currentTarget;
-  const photoId = btn.dataset.photoId;
-  if (!photoId) return;
-  const photo = allPhotos.find(p => p.id === photoId);
-  if (!photo) return;
-  // Si on est déjà en full quality, ne rien faire
-  if (btn.dataset.state === 'loaded') return;
-  btn.classList.add('loading');
-  btn.textContent = '⏳ Chargement…';
-  try {
-    const token = _currentToken || await getToken();
-    if (!token) { showToast('Non connecté à OneDrive'); return; }
-    _currentToken = token;
-    const data = await graphGet(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${photoId}?$select=id,@microsoft.graph.downloadUrl,webUrl`,
-      token
-    );
-    const freshUrl = data?.['@microsoft.graph.downloadUrl'];
-    if (!freshUrl) { showToast('URL indisponible pour ce média'); return; }
-    // Vérifier qu'on est toujours sur la même photo
-    if (lightboxPhotos[lightboxIndex]?.id !== photoId) return;
-    const img = document.getElementById('lightbox-img');
-    setHdState('loading');
-    const fullImg = new Image();
-    fullImg.onload = () => {
-      if (lightboxPhotos[lightboxIndex]?.id !== photoId) return;
-      img.src = freshUrl;
-      setHdState('done');
-      scheduleHdDoneHide();
-      btn.textContent = '✓ Qualité originale';
-      btn.dataset.state = 'loaded';
-    };
-    fullImg.onerror = () => {
-      setHdState('hidden');
-      showToast('Impossible de charger la qualité originale');
-      btn.textContent = '⬇ Qualité originale';
-    };
-    fullImg.src = freshUrl;
-  } catch {
-    showToast('Impossible de récupérer la qualité originale');
-    btn.textContent = '⬇ Qualité originale';
-  } finally {
-    btn.classList.remove('loading');
-  }
 });
 
 document.addEventListener('keydown', e => {
@@ -1957,34 +1889,10 @@ function showConfigPanel() {
   const hasAuth = msalInstance && msalInstance.getAllAccounts().length > 0;
   document.getElementById('config-rescan-wrap').style.display = hasAuth ? 'block' : 'none';
   document.getElementById('config-logout-wrap').style.display = hasAuth ? 'block' : 'none';
-  document.getElementById('toggle-local-cache').checked = lcEnabled;
-  updateCacheToggleSub();
-  if (lcEnabled) dbGetThumbIds().then(ids => updateCacheStatus(ids.size, allPhotos.length)).catch(() => {});
+  dbGetThumbIds().then(ids => updateCacheStatus(ids.size, allPhotos.length)).catch(() => {});
   refreshStorageStats();
   document.getElementById('config-panel').classList.add('open');
 }
-
-function updateCacheToggleSub() {
-  document.getElementById('cache-toggle-sub').textContent = lcEnabled ? 'Activé — vignettes stockées hors-ligne' : 'Désactivé — vignettes chargées à la volée';
-}
-
-document.getElementById('toggle-local-cache').addEventListener('change', async (e) => {
-  lcEnabled = e.target.checked;
-  localStorage.setItem(LC_KEY, lcEnabled ? 'true' : 'false');
-  updateCacheToggleSub();
-  if (lcEnabled) {
-    showToast('Cache local activé — téléchargement en cours…', 4000);
-    updateCacheStatus(0, allPhotos.length);
-    backgroundCacheThumbs();
-  } else {
-    revokeAllThumbUrls();
-    await dbClearThumbs().catch(() => {});
-    document.getElementById('cache-toggle-status').textContent = '';
-    refreshCurrentViews();
-    refreshStorageStats();
-    showToast('Cache local désactivé');
-  }
-});
 
 document.getElementById('btn-config-cancel').addEventListener('click', () => { document.getElementById('config-panel').classList.remove('open'); });
 
