@@ -292,7 +292,7 @@
   }
 
   .hd-badge {
-    position: absolute; top: 16px; right: 16px;
+    position: absolute; top: 16px; left: 16px;
     display: none; align-items: center; gap: 6px;
     background: rgba(0,0,0,0.6); color: #fff;
     padding: 6px 14px; border-radius: 20px;
@@ -425,15 +425,17 @@
 
   .config-toggle {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border);
+    padding: 16px 20px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border);
+    min-height: 72px;
   }
   .config-toggle-info { flex: 1; min-width: 0; }
   .config-toggle-label { font-size: 0.88rem; font-weight: 500; color: var(--text); }
   .config-toggle-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
   .config-toggle-status { font-size: 0.68rem; color: var(--accent); margin-top: 3px; font-weight: 500; }
   .storage-stats {
-    margin-top: 0; padding: 14px 16px; border-radius: 16px;
+    margin-top: 0; padding: 16px 20px; border-radius: 16px;
     background: var(--surface); border: 1px solid var(--border);
+    min-height: 72px; display: flex; flex-direction: column; justify-content: center;
   }
   .storage-stats-title { font-size: 0.82rem; font-weight: 600; color: var(--text); }
   .storage-stats-lines { margin-top: 6px; font-size: 0.74rem; color: var(--text-secondary); line-height: 1.55; }
@@ -486,9 +488,7 @@
     #lightbox { padding: 0; gap: 0; }
     .lightbox-media-wrap { width: 100vw; height: 70dvh; }
     #lightbox-img, #lightbox-video { border-radius: 0; box-shadow: none; }
-    .lightbox-nav { top: auto; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: none; width: 56px; height: 56px; font-size: 2rem; }
-    #lightbox-prev { left: 20px; }
-    #lightbox-next { right: 20px; }
+    .lightbox-nav { display: none !important; }
     #lightbox-close { top: max(16px, env(safe-area-inset-top, 10px)); right: 16px; width: 48px; height: 48px; font-size: 1.5rem; }
     .lightbox-info { padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px)); width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); }
     .lightbox-info strong { font-size: 0.95rem; }
@@ -655,6 +655,7 @@ const THUMBNAIL_TTL_MS = 4 * 60 * 60 * 1000;
 const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 const DELTA_BASE_URL = 'https://graph.microsoft.com/v1.0/me/drive/root/delta?$select=id,name,webUrl,file,folder,photo,location,createdDateTime,lastModifiedDateTime,@microsoft.graph.downloadUrl&$top=200';
 const FALLBACK_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E📷%3C/text%3E%3C/svg%3E";
+const FALLBACK_ICON_VIDEO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='4' fill='%23f0f0f0'/%3E%3Ctext x='24' y='30' text-anchor='middle' font-size='20'%3E🎥%3C/text%3E%3C/svg%3E";
 const LC_KEY = 'photomap_local_thumb_cache';
 const SPATIAL_CELL_SIZE = 0.0005;
 const GRAPH_RETRY_LIMIT = 4;
@@ -936,10 +937,14 @@ async function loadCachedThumbs() {
   });
 }
 
+function getFallbackIcon(photo) {
+  return photo.mediaType === 'video' ? FALLBACK_ICON_VIDEO : FALLBACK_ICON;
+}
+
 function getThumbSrc(photo) {
   if (lcEnabled && thumbBlobUrls.has(photo.id)) return thumbBlobUrls.get(photo.id);
-  if (photo.thumbnailBroken) return FALLBACK_ICON;
-  return photo.thumbnailUrl || FALLBACK_ICON;
+  if (photo.thumbnailBroken) return getFallbackIcon(photo);
+  return photo.thumbnailUrl || getFallbackIcon(photo);
 }
 
 function markThumbnailBroken(photoId) {
@@ -954,7 +959,8 @@ function markThumbnailHealthy(photoId) {
 
 function handleThumbnailError(photoId, imgElement) {
   markThumbnailBroken(photoId);
-  if (imgElement) imgElement.src = FALLBACK_ICON;
+  const photo = allPhotos.find(p => p.id === photoId);
+  if (imgElement) imgElement.src = photo ? getFallbackIcon(photo) : FALLBACK_ICON;
   if (window.queueThumbnailRefresh) window.queueThumbnailRefresh(photoId, imgElement);
 }
 window.handleThumbnailError = handleThumbnailError;
@@ -1194,7 +1200,7 @@ clusterGroup = L.markerClusterGroup({
       html: `
         <div class="photo-marker-wrap">
           <div class="photo-marker">
-            <img src="${thumbSrc}" loading="lazy"
+            <img src="${thumbSrc}"
               data-photo-id="${photoId}"
               onerror="window.handleThumbnailError && window.handleThumbnailError('${photoId}', this);"/>
             <div class="photo-marker-count">${count}</div>
@@ -1267,7 +1273,7 @@ function updateUiWithCurrentPhotos(fit = false) {
   }
   document.getElementById('btn-config').style.display = 'inline-flex';
   document.getElementById('map-layer-toggle').classList.add('visible');
-  setTimeout(refreshVisibleStaleThumbnails, 800);
+  setTimeout(refreshVisibleStaleThumbnails, 200);
 }
 
 function queueThumbnailRefresh(photoId, imgElement) {
@@ -1361,7 +1367,7 @@ function refreshVisibleStaleThumbnails() {
 
 map.on('moveend', () => {
   if (_visibleRefreshTimer) clearTimeout(_visibleRefreshTimer);
-  _visibleRefreshTimer = setTimeout(refreshVisibleStaleThumbnails, 500);
+  _visibleRefreshTimer = setTimeout(refreshVisibleStaleThumbnails, 100);
 });
 
 function buildSpatialIndex(photos) {
@@ -1402,7 +1408,7 @@ function createMarker(photo, filteredIdSet) {
     html: `
       <div class="photo-marker-wrap">
         <div class="photo-marker">
-          <img src="${thumbSrc}" loading="lazy"
+          <img src="${thumbSrc}"
             data-photo-id="${photoId}"
             onerror="window.handleThumbnailError && window.handleThumbnailError('${photoId}', this);"/>
           ${countBadge}
@@ -1595,9 +1601,7 @@ document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) 
   e.stopPropagation();
   const webUrl = e.currentTarget.dataset.webUrl;
   if (!webUrl) return;
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if (isMobile) window.location.href = webUrl;
-  else window.open(webUrl, '_blank', 'noopener');
+  window.open(webUrl, '_blank', 'noopener');
 });
 
 document.addEventListener('keydown', e => {
