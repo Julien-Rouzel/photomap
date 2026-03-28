@@ -311,8 +311,8 @@
   .lightbox-info { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.82rem; flex-shrink: 0; }
   .lightbox-info strong { display: block; font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
 
-  #lightbox-actions { margin-top: 10px; display: flex; justify-content: center; gap: 10px; }
-  #lightbox-open-onedrive {
+  #lightbox-actions { margin-top: 10px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  #lightbox-open-onedrive, #lightbox-full-quality {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     font-size: 0.88rem; font-weight: 600;
     background: rgba(255,255,255,0.15); color: #fff;
@@ -321,7 +321,9 @@
     letter-spacing: 0.01em; transition: background 0.15s, border-color 0.15s; min-width: 0;
     cursor: pointer;
   }
-  #lightbox-open-onedrive:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
+  #lightbox-open-onedrive:hover, #lightbox-full-quality:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
+  #lightbox-full-quality { background: rgba(255,255,255,0.08); }
+  #lightbox-full-quality.loading { opacity: 0.6; pointer-events: none; }
 
   .lightbox-nav {
     position: fixed; top: 50%; transform: translateY(-50%);
@@ -494,7 +496,7 @@
     .lightbox-info strong { font-size: 0.95rem; }
     #lightbox-meta { font-size: 0.82rem; gap: 8px; }
     #lightbox-actions { margin-top: 10px; }
-    #lightbox-open-onedrive { min-width: 190px; font-size: 0.82rem; padding: 10px 20px; }
+    #lightbox-open-onedrive, #lightbox-full-quality { font-size: 0.82rem; padding: 10px 18px; }
     #splash { gap: 22px; padding: 28px; }
     .splash-globe { width: 90px; height: 90px; }
     .globe-icon { font-size: 2.4rem; }
@@ -504,7 +506,9 @@
     .splash-note { font-size: 0.75rem; max-width: 300px; }
     .config-box { padding: 24px 22px 28px; max-width: 100%; width: 94%; border-radius: 24px; }
     .config-box h2 { font-size: 1.35rem; }
-    .config-btn { font-size: 0.95rem; min-height: 68px; padding: 15px 20px; }
+    .config-btn { font-size: 0.95rem; min-height: 68px; padding: 15px 20px; border-radius: 16px; }
+    .config-toggle { min-height: 68px; }
+    .storage-stats { min-height: 68px; }
     .progress-bar-wrap { width: 240px; }
     .loading-msg { font-size: 0.9rem; }
     #loading-count { font-size: 1.8rem; }
@@ -585,6 +589,7 @@
     <strong id="lightbox-name"></strong>
     <span id="lightbox-meta"></span>
     <div id="lightbox-actions">
+      <button id="lightbox-full-quality" type="button">⬇ Qualité originale</button>
       <button id="lightbox-open-onedrive" type="button">↗ Ouvrir dans OneDrive</button>
     </div>
   </div>
@@ -1531,6 +1536,11 @@ async function showLightboxPhoto() {
   const oneDriveUrl = photo.webUrl || photo.downloadUrl;
   if (oneDriveUrl) { openBtn.dataset.webUrl = oneDriveUrl; openBtn.style.display = 'inline-flex'; }
   else { delete openBtn.dataset.webUrl; openBtn.style.display = 'none'; }
+  const fqBtn = document.getElementById('lightbox-full-quality');
+  fqBtn.dataset.photoId = photo.id;
+  fqBtn.classList.remove('loading');
+  fqBtn.style.display = photo.mediaType !== 'video' ? 'inline-flex' : 'none';
+  fqBtn.textContent = '⬇ Qualité originale';
   document.getElementById('lightbox-prev').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
   document.getElementById('lightbox-next').style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
   lb.classList.add('open');
@@ -1602,6 +1612,30 @@ document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) 
   const webUrl = e.currentTarget.dataset.webUrl;
   if (!webUrl) return;
   window.open(webUrl, '_blank', 'noopener');
+});
+
+document.getElementById('lightbox-full-quality').addEventListener('click', async (e) => {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  const photoId = btn.dataset.photoId;
+  if (!photoId) return;
+  const photo = allPhotos.find(p => p.id === photoId);
+  if (!photo) return;
+  btn.classList.add('loading');
+  btn.textContent = '⏳ Chargement…';
+  try {
+    const freshUrl = await ensureFreshMediaUrl(photo);
+    if (freshUrl && freshUrl !== FALLBACK_ICON) {
+      window.open(freshUrl, '_blank', 'noopener');
+    } else {
+      showToast('URL indisponible pour ce média');
+    }
+  } catch {
+    showToast('Impossible de récupérer la qualité originale');
+  } finally {
+    btn.classList.remove('loading');
+    btn.textContent = '⬇ Qualité originale';
+  }
 });
 
 document.addEventListener('keydown', e => {
