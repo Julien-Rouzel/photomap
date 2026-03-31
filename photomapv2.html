@@ -218,6 +218,7 @@
   #btn-login:hover { box-shadow: 0 6px 24px rgba(0,120,212,0.45); transform: translateY(-1px); }
   .splash-note { font-size: 0.72rem; color: var(--muted); text-align: center; max-width: 320px; line-height: 1.5; }
 
+  .splash-logo { font-size: 1.8rem; letter-spacing: -0.02em; }
   #splash-connect { display: contents; }
   #splash-loading { display: none; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 300px; }
   #splash.loading-mode #splash-connect { display: none; }
@@ -228,8 +229,8 @@
   .splash-load-bar-fill::after { content: ''; position: absolute; top: 0; left: -60%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent); animation: barShimmer 1.8s ease-in-out infinite; }
   @keyframes barShimmer { 0% { left: -60%; } 100% { left: 160%; } }
   .splash-load-pct { font-size: 0.78rem; font-weight: 600; color: var(--accent); align-self: flex-end; margin-top: -10px; }
-  .splash-loading-status { font-size: 0.84rem; color: var(--text); font-weight: 500; text-align: center; min-height: 1.2em; transition: opacity 0.4s; }
-  .splash-loading-hint { font-size: 0.73rem; color: var(--text-secondary); text-align: center; min-height: 1.1em; transition: opacity 0.4s; }
+  .splash-loading-status { font-size: 0.84rem; color: var(--text); font-weight: 500; text-align: center; height: 1.3em; overflow: hidden; transition: opacity 0.3s; }
+  .splash-loading-hint { font-size: 0.73rem; color: var(--text-secondary); text-align: center; height: 1.2em; overflow: hidden; transition: opacity 0.3s; }
   .splash-loading-stat { font-size: 0.72rem; color: var(--accent); text-align: center; font-weight: 500; min-height: 1em; }
   #splash-settings-btn { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); background: none; border: 1px solid var(--border); border-radius: 20px; padding: 7px 16px; cursor: pointer; margin-top: 4px; }
   #splash-settings-btn:hover { background: var(--surface); }
@@ -623,6 +624,7 @@
 </div>
 
 <div id="splash">
+  <div class="logo splash-logo">Photo<span>Map</span></div>
   <div class="splash-globe"><div class="globe-icon">🌍</div></div>
   <div id="splash-connect">
     <div class="splash-title">Your photos,<br><span>on the planet</span></div>
@@ -2049,24 +2051,27 @@ let _splashMsgTimer = null;
 let _splashMsgs = [];
 let _splashMsgIdx = 0;
 
+function _fadeSwapText(el, newText) {
+  if (!el) return;
+  el.style.transition = 'opacity 0.25s';
+  el.style.opacity = '0';
+  setTimeout(() => { el.textContent = newText; el.style.opacity = '1'; }, 270);
+}
+
 function _rotateSplashHint() {
   if (!_splashMsgs.length) return;
   _splashMsgIdx = (_splashMsgIdx + 1) % _splashMsgs.length;
-  const el = document.getElementById('splash-load-hint');
-  if (el) { el.style.opacity = '0'; setTimeout(() => { el.textContent = _splashMsgs[_splashMsgIdx]; el.style.opacity = '1'; }, 220); }
+  _fadeSwapText(document.getElementById('splash-load-hint'), _splashMsgs[_splashMsgIdx]);
 }
 
 function setSplashLoading(status, targetPct, hints) {
-  const statusEl = document.getElementById('splash-load-status');
-  if (statusEl && status) statusEl.textContent = status;
+  if (status) _fadeSwapText(document.getElementById('splash-load-status'), status);
 
-  // Rotate hint messages
   if (_splashMsgTimer) { clearInterval(_splashMsgTimer); _splashMsgTimer = null; }
   if (hints) {
     _splashMsgs = Array.isArray(hints) ? hints : [hints];
     _splashMsgIdx = 0;
-    const hintEl = document.getElementById('splash-load-hint');
-    if (hintEl) hintEl.textContent = _splashMsgs[0];
+    _fadeSwapText(document.getElementById('splash-load-hint'), _splashMsgs[0]);
     if (_splashMsgs.length > 1) _splashMsgTimer = setInterval(_rotateSplashHint, 2400);
   }
 
