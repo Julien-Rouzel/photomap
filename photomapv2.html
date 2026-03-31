@@ -655,6 +655,9 @@
         <div class="storage-stats-title">Local storage</div>
         <div class="storage-stats-lines" id="storage-stats-lines">Calculating…</div>
         <div id="cache-toggle-status" style="margin-top:6px; font-size:0.74rem; color:var(--accent); font-weight:500;"></div>
+        <div id="cache-broken-status" style="margin-top:4px; font-size:0.74rem; color:var(--danger, #c0392b); display:none;">
+          <span id="cache-broken-count"></span> — <button id="btn-retry-broken" style="background:none;border:none;color:var(--danger,#c0392b);text-decoration:underline;cursor:pointer;font-size:0.74rem;padding:0;">Retry</button>
+        </div>
       </div>
       <div id="config-rescan-wrap" style="display:none">
         <button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Full rescan</button>
@@ -1071,14 +1074,23 @@ async function downloadAndCacheThumb(photo) {
   if (!_currentToken) return false;
   try {
     const freshUrl = await getThumbnail(photo.id);
-    if (!freshUrl) return false;
+    if (!freshUrl) {
+      console.warn('[thumb] No thumbnail URL for:', photo.name || photo.id);
+      return false;
+    }
     const res = await fetch(freshUrl);
-    if (!res.ok) return false;
+    if (!res.ok) {
+      console.warn('[thumb] Fetch failed (' + res.status + ') for:', photo.name || photo.id);
+      return false;
+    }
     const blob = await res.blob();
     await dbPutThumb(photo.id, blob);
     setThumbObjectUrl(photo.id, blob);
     return true;
-  } catch { return false; }
+  } catch (err) {
+    console.warn('[thumb] Error for:', photo.name || photo.id, err);
+    return false;
+  }
 }
 
 async function runWithConcurrency(items, limit, worker) {
@@ -1120,12 +1132,22 @@ async function backgroundCacheThumbs() {
     const total = allPhotos.length;
     let done = haveIds.size;
     updateCacheStatus(done, total);
-    await runWithConcurrency(need, THUMB_CACHE_CONCURRENCY, async (photo, index) => {
+    const failed = [];
+    await runWithConcurrency(need, THUMB_CACHE_CONCURRENCY, async (photo) => {
       if (await downloadAndCacheThumb(photo)) done++;
+      else failed.push(photo);
       updateCacheStatus(done, total);
     });
     localStorage.setItem('thumbCacheDone', total);
+    if (failed.length) {
+      const failedIds = failed.map(p => p.id);
+      localStorage.setItem('thumbCacheFailed', JSON.stringify(failedIds));
+      console.warn('[thumb] ' + failed.length + ' thumbnails could not be cached:', failed.map(p => p.name || p.id));
+    } else {
+      localStorage.removeItem('thumbCacheFailed');
+    }
     updateCacheStatus(done, total);
+    updateBrokenStatus();
     refreshCurrentViews();
     refreshStorageStats();
   } catch (e) {
@@ -1140,6 +1162,29 @@ function updateCacheStatus(done, total) {
   const cachedTotal = parseInt(localStorage.getItem('thumbCacheDone') || '0');
   const allDone = done >= total || (cachedTotal >= total);
   el.textContent = allDone ? `✓ ${done} thumbnails cached` : `⟳ ${done} / ${total} caching…`;
+  updateBrokenStatus();
+}
+
+function updateBrokenStatus() {
+  const el = document.getElementById('cache-broken-status');
+  const countEl = document.getElementById('cache-broken-count');
+  if (!el || !countEl) return;
+  const raw = localStorage.getItem('thumbCacheFailed');
+  if (!raw) { el.style.display = 'none'; return; }
+  try {
+    const ids = JSON.parse(raw);
+    if (!ids.length) { el.style.display = 'none'; return; }
+    const photos = ids.map(id => allPhotos.find(p => p.id === id)).filter(Boolean);
+    const names = photos.map(p => p.name || p.id).join(', ');
+    countEl.textContent = ids.length + ' thumbnail' + (ids.length > 1 ? 's' : '') + ' could not be cached: ' + names;
+    el.style.display = 'block';
+    const retryBtn = document.getElementById('btn-retry-broken');
+    if (retryBtn) retryBtn.onclick = async () => {
+      localStorage.removeItem('thumbCacheFailed');
+      el.style.display = 'none';
+      await backgroundCacheThumbs();
+    };
+  } catch { el.style.display = 'none'; }
 }
 
 const map = L.map('map', {
@@ -1938,6 +1983,7 @@ function showConfigPanel() {
   document.getElementById('config-logout-wrap').style.display = hasAuth ? 'block' : 'none';
   dbGetThumbIds().then(ids => updateCacheStatus(ids.size, allPhotos.length)).catch(() => {});
   refreshStorageStats();
+  updateBrokenStatus();
   document.getElementById('config-panel').classList.add('open');
 }
 
