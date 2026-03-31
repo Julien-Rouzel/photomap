@@ -1873,8 +1873,8 @@ async function _startAppInner() {
     const cached = await dbGetAllMedia();
     if (cached.length > 0) {
       allPhotos = cached;
-      if (lcEnabled) await loadCachedThumbs();
       updateUiWithCurrentPhotos(true);
+      loadCachedThumbs().then(() => updateUiWithCurrentPhotos(false)).catch(() => {});
     }
   } catch (err) { console.warn('IndexedDB read error:', err); }
 
@@ -1973,12 +1973,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cached = await dbGetAllMedia();
     if (cached.length > 0) {
       allPhotos = cached;
-      if (lcEnabled) await loadCachedThumbs();
       updateUiWithCurrentPhotos(true);
       document.getElementById('btn-config').style.display = 'inline-flex';
       document.getElementById('map-layer-toggle').classList.add('visible');
       document.getElementById('splash').classList.add('hidden');
       refreshStorageStats();
+      loadCachedThumbs().then(() => updateUiWithCurrentPhotos(false)).catch(() => {});
       if (clientId && !isAuthRedirectReturn) trySilentBackgroundSync(clientId);
     }
   } catch (err) { console.warn('IndexedDB preload error:', err); }
@@ -1994,7 +1994,14 @@ async function trySilentBackgroundSync(clientId) {
     _currentToken = result.accessToken;
     runBackgroundSync();
     startAutoSync();
-  } catch { console.log('Synchronisation silencieuse ignorée — reconnexion nécessaire.'); }
+  } catch {
+    setScanStatus('scanning', 'Session expirée — appuyez pour reconnecter', '', 0);
+    const statusEl = document.getElementById('scan-status');
+    if (statusEl) {
+      statusEl.style.cursor = 'pointer';
+      statusEl.onclick = () => { statusEl.style.cursor = ''; statusEl.onclick = null; startApp(); };
+    }
+  }
 }
 </script>
 </body>
