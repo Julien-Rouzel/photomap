@@ -224,12 +224,17 @@
   #splash.loading-mode #splash-loading { display: flex; }
   .splash-loading-title { font-size: 1.5rem; font-weight: 700; color: var(--text); text-align: center; }
   .splash-load-bar-wrap { width: 100%; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; position: relative; }
-  .splash-load-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; width: 0%; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+  .splash-load-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; width: 0%; transition: width 0.5s ease-out; position: relative; overflow: hidden; }
+  .splash-load-bar-fill::after { content: ''; position: absolute; top: 0; left: -60%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent); animation: barShimmer 1.8s ease-in-out infinite; }
+  @keyframes barShimmer { 0% { left: -60%; } 100% { left: 160%; } }
   .splash-load-pct { font-size: 0.78rem; font-weight: 600; color: var(--accent); align-self: flex-end; margin-top: -10px; }
-  .splash-loading-status { font-size: 0.82rem; color: var(--text-secondary); text-align: center; min-height: 1.2em; }
-  .splash-loading-hint { font-size: 0.72rem; color: var(--muted); text-align: center; font-style: italic; min-height: 1em; }
+  .splash-loading-status { font-size: 0.84rem; color: var(--text); font-weight: 500; text-align: center; min-height: 1.2em; transition: opacity 0.4s; }
+  .splash-loading-hint { font-size: 0.73rem; color: var(--text-secondary); text-align: center; min-height: 1.1em; transition: opacity 0.4s; }
+  .splash-loading-stat { font-size: 0.72rem; color: var(--accent); text-align: center; font-weight: 500; min-height: 1em; }
   #splash-settings-btn { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); background: none; border: 1px solid var(--border); border-radius: 20px; padding: 7px 16px; cursor: pointer; margin-top: 4px; }
   #splash-settings-btn:hover { background: var(--surface); }
+  #splash.loading-mode .splash-globe { animation: spinGlobe 12s linear infinite, globePulse 2.5s ease-in-out infinite; }
+  @keyframes globePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(0,120,212,0); } 50% { box-shadow: 0 0 0 10px rgba(0,120,212,0.12); } }
 
   #loading-overlay {
     position: fixed; inset: 0; z-index: 1900;
@@ -630,7 +635,8 @@
     <div class="splash-load-bar-wrap"><div class="splash-load-bar-fill" id="splash-load-bar"></div></div>
     <div class="splash-load-pct" id="splash-load-pct">0%</div>
     <div class="splash-loading-status" id="splash-load-status">Opening database…</div>
-    <div class="splash-loading-hint" id="splash-load-hint"></div>
+    <div class="splash-loading-hint" id="splash-load-hint"> </div>
+    <div class="splash-loading-stat" id="splash-load-stat"></div>
     <button id="splash-settings-btn">⚙ Settings</button>
   </div>
 </div>
@@ -655,6 +661,9 @@
         <div class="storage-stats-title">Local storage</div>
         <div class="storage-stats-lines" id="storage-stats-lines">Calculating…</div>
         <div id="cache-toggle-status" style="margin-top:6px; font-size:0.74rem; color:var(--accent); font-weight:500;"></div>
+        <div id="cache-broken-status" style="margin-top:4px; font-size:0.74rem; color:var(--danger, #c0392b); display:none;">
+          <span id="cache-broken-count"></span> — <button id="btn-retry-broken" style="background:none;border:none;color:var(--danger,#c0392b);text-decoration:underline;cursor:pointer;font-size:0.74rem;padding:0;">Retry</button>
+        </div>
       </div>
       <div id="config-rescan-wrap" style="display:none">
         <button class="btn btn-ghost config-btn" id="btn-full-rescan">↺ Full rescan</button>
@@ -1071,14 +1080,23 @@ async function downloadAndCacheThumb(photo) {
   if (!_currentToken) return false;
   try {
     const freshUrl = await getThumbnail(photo.id);
-    if (!freshUrl) return false;
+    if (!freshUrl) {
+      console.warn('[thumb] No thumbnail URL for:', photo.name || photo.id);
+      return false;
+    }
     const res = await fetch(freshUrl);
-    if (!res.ok) return false;
+    if (!res.ok) {
+      console.warn('[thumb] Fetch failed (' + res.status + ') for:', photo.name || photo.id);
+      return false;
+    }
     const blob = await res.blob();
     await dbPutThumb(photo.id, blob);
     setThumbObjectUrl(photo.id, blob);
     return true;
-  } catch { return false; }
+  } catch (err) {
+    console.warn('[thumb] Error for:', photo.name || photo.id, err);
+    return false;
+  }
 }
 
 async function runWithConcurrency(items, limit, worker) {
@@ -1120,12 +1138,22 @@ async function backgroundCacheThumbs() {
     const total = allPhotos.length;
     let done = haveIds.size;
     updateCacheStatus(done, total);
-    await runWithConcurrency(need, THUMB_CACHE_CONCURRENCY, async (photo, index) => {
+    const failed = [];
+    await runWithConcurrency(need, THUMB_CACHE_CONCURRENCY, async (photo) => {
       if (await downloadAndCacheThumb(photo)) done++;
+      else failed.push(photo);
       updateCacheStatus(done, total);
     });
     localStorage.setItem('thumbCacheDone', total);
+    if (failed.length) {
+      const failedIds = failed.map(p => p.id);
+      localStorage.setItem('thumbCacheFailed', JSON.stringify(failedIds));
+      console.warn('[thumb] ' + failed.length + ' thumbnails could not be cached:', failed.map(p => p.name || p.id));
+    } else {
+      localStorage.removeItem('thumbCacheFailed');
+    }
     updateCacheStatus(done, total);
+    updateBrokenStatus();
     refreshCurrentViews();
     refreshStorageStats();
   } catch (e) {
@@ -1139,7 +1167,30 @@ function updateCacheStatus(done, total) {
   if (!total) { el.textContent = ''; return; }
   const cachedTotal = parseInt(localStorage.getItem('thumbCacheDone') || '0');
   const allDone = done >= total || (cachedTotal >= total);
-  el.textContent = allDone ? `✓ ${Math.max(done, cachedTotal)} thumbnails cached` : `⟳ ${done} / ${total} caching…`;
+  el.textContent = allDone ? `✓ ${done} thumbnails cached` : `⟳ ${done} / ${total} caching…`;
+  updateBrokenStatus();
+}
+
+function updateBrokenStatus() {
+  const el = document.getElementById('cache-broken-status');
+  const countEl = document.getElementById('cache-broken-count');
+  if (!el || !countEl) return;
+  const raw = localStorage.getItem('thumbCacheFailed');
+  if (!raw) { el.style.display = 'none'; return; }
+  try {
+    const ids = JSON.parse(raw);
+    if (!ids.length) { el.style.display = 'none'; return; }
+    const photos = ids.map(id => allPhotos.find(p => p.id === id)).filter(Boolean);
+    const names = photos.map(p => p.name || p.id).join(', ');
+    countEl.textContent = ids.length + ' thumbnail' + (ids.length > 1 ? 's' : '') + ' could not be cached: ' + names;
+    el.style.display = 'block';
+    const retryBtn = document.getElementById('btn-retry-broken');
+    if (retryBtn) retryBtn.onclick = async () => {
+      localStorage.removeItem('thumbCacheFailed');
+      el.style.display = 'none';
+      await backgroundCacheThumbs();
+    };
+  } catch { el.style.display = 'none'; }
 }
 
 const map = L.map('map', {
@@ -1938,6 +1989,7 @@ function showConfigPanel() {
   document.getElementById('config-logout-wrap').style.display = hasAuth ? 'block' : 'none';
   dbGetThumbIds().then(ids => updateCacheStatus(ids.size, allPhotos.length)).catch(() => {});
   refreshStorageStats();
+  updateBrokenStatus();
   document.getElementById('config-panel').classList.add('open');
 }
 
@@ -1993,32 +2045,72 @@ document.getElementById('config-panel').addEventListener('click', e => {
 
 let _splashPct = 0;
 let _splashPctTimer = null;
-function setSplashLoading(status, targetPct, hint) {
-  const bar = document.getElementById('splash-load-bar');
+let _splashMsgTimer = null;
+let _splashMsgs = [];
+let _splashMsgIdx = 0;
+
+function _rotateSplashHint() {
+  if (!_splashMsgs.length) return;
+  _splashMsgIdx = (_splashMsgIdx + 1) % _splashMsgs.length;
+  const el = document.getElementById('splash-load-hint');
+  if (el) { el.style.opacity = '0'; setTimeout(() => { el.textContent = _splashMsgs[_splashMsgIdx]; el.style.opacity = '1'; }, 220); }
+}
+
+function setSplashLoading(status, targetPct, hints) {
   const statusEl = document.getElementById('splash-load-status');
-  const pctEl = document.getElementById('splash-load-pct');
-  const hintEl = document.getElementById('splash-load-hint');
   if (statusEl && status) statusEl.textContent = status;
-  if (hintEl && hint !== undefined) hintEl.textContent = hint;
-  if (!bar || targetPct === undefined) return;
+
+  // Rotate hint messages
+  if (_splashMsgTimer) { clearInterval(_splashMsgTimer); _splashMsgTimer = null; }
+  if (hints) {
+    _splashMsgs = Array.isArray(hints) ? hints : [hints];
+    _splashMsgIdx = 0;
+    const hintEl = document.getElementById('splash-load-hint');
+    if (hintEl) hintEl.textContent = _splashMsgs[0];
+    if (_splashMsgs.length > 1) _splashMsgTimer = setInterval(_rotateSplashHint, 2400);
+  }
+
+  if (targetPct === undefined) return;
   if (_splashPctTimer) clearInterval(_splashPctTimer);
-  const target = Math.min(targetPct, 99);
+  const fastTarget = Math.min(targetPct, 99);
+
+  // Single interval: fast phase (1%/60ms) then slow drift (0.15%/60ms)
   _splashPctTimer = setInterval(() => {
-    if (_splashPct < target) {
-      _splashPct = Math.min(_splashPct + 1, target);
-      bar.style.width = _splashPct + '%';
-      if (pctEl) pctEl.textContent = _splashPct + '%';
-    } else {
-      clearInterval(_splashPctTimer); _splashPctTimer = null;
+    const bar = document.getElementById('splash-load-bar');
+    const pctEl = document.getElementById('splash-load-pct');
+    if (_splashPct < fastTarget) {
+      _splashPct = Math.min(_splashPct + 1, fastTarget);
+    } else if (_splashPct < 99) {
+      _splashPct = Math.min(_splashPct + 0.15, 99);
     }
+    if (bar) bar.style.width = _splashPct + '%';
+    if (pctEl) pctEl.textContent = Math.floor(_splashPct) + '%';
   }, 60);
 }
+
 function finishSplashLoading() {
   if (_splashPctTimer) { clearInterval(_splashPctTimer); _splashPctTimer = null; }
+  if (_splashMsgTimer) { clearInterval(_splashMsgTimer); _splashMsgTimer = null; }
   const bar = document.getElementById('splash-load-bar');
   const pctEl = document.getElementById('splash-load-pct');
+  const statusEl = document.getElementById('splash-load-status');
+  const hintEl = document.getElementById('splash-load-hint');
+  _splashPct = 100;
   if (bar) bar.style.width = '100%';
   if (pctEl) pctEl.textContent = '100%';
+  if (statusEl) statusEl.textContent = 'Ready!';
+  if (hintEl) hintEl.textContent = '';
+}
+
+function setSplashStat(text) {
+  const el = document.getElementById('splash-load-stat');
+  if (el) el.textContent = text;
+}
+
+function computeSplashStats(photos) {
+  const years = photos.map(p => { const d = p.date ? new Date(p.date) : null; return d && !isNaN(d) ? d.getFullYear() : null; }).filter(Boolean);
+  if (!years.length) return photos.length.toLocaleString() + ' photos';
+  return photos.length.toLocaleString() + ' photos  ·  ' + Math.min(...years) + ' → ' + Math.max(...years);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -2028,26 +2120,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (clientId && !isAuthRedirectReturn) {
     document.getElementById('splash').classList.add('loading-mode');
-    setSplashLoading('Opening your photo library…', 12, 'Connecting to local storage…');
-    document.getElementById('splash-settings-btn').addEventListener('click', () => {
-      showConfigPanel();
-    });
+    setSplashLoading('Opening your photo library…', 12, [
+      'Connecting to local storage…',
+      'Waking up your memories…',
+      'Reading your adventures…',
+    ]);
+    document.getElementById('splash-settings-btn').addEventListener('click', showConfigPanel);
   }
 
   try {
     const cached = await dbGetAllMedia();
     if (cached.length > 0) {
-      setSplashLoading('Organizing ' + cached.length.toLocaleString() + ' memories…', 38, 'Building your world map…');
+      const stat = computeSplashStats(cached);
+      setSplashStat(stat);
+      setSplashLoading('Organizing ' + cached.length.toLocaleString() + ' memories…', 38, [
+        'Building your world map…',
+        'Plotting ' + cached.length.toLocaleString() + ' locations…',
+        'Grouping nearby photos…',
+        'Calculating clusters…',
+      ]);
       allPhotos = cached;
       updateUiWithCurrentPhotos(true);
       document.getElementById('btn-config').style.display = 'inline-flex';
       document.getElementById('map-layer-toggle').classList.add('visible');
-      setSplashLoading('Loading thumbnails…', 72, 'Almost there…');
+      setSplashLoading('Loading thumbnails…', 72, [
+        'Almost there…',
+        'Preparing ' + cached.length.toLocaleString() + ' previews…',
+        'Your map is coming together…',
+        'Just a few more seconds…',
+      ]);
       refreshStorageStats();
       loadCachedThumbs().then(() => {
         finishSplashLoading();
         updateUiWithCurrentPhotos(false);
-        setTimeout(() => document.getElementById('splash').classList.add('hidden'), 300);
+        setTimeout(() => document.getElementById('splash').classList.add('hidden'), 400);
       }).catch(() => { document.getElementById('splash').classList.add('hidden'); });
       if (clientId && !isAuthRedirectReturn) trySilentBackgroundSync(clientId);
     }
