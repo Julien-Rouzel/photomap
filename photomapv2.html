@@ -219,17 +219,17 @@
   .splash-note { font-size: 0.72rem; color: var(--muted); text-align: center; max-width: 320px; line-height: 1.5; }
 
   #splash-connect { display: contents; }
-  #splash-loading { display: none; flex-direction: column; align-items: center; gap: 18px; width: 100%; max-width: 300px; }
+  #splash-loading { display: none; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 300px; }
   #splash.loading-mode #splash-connect { display: none; }
   #splash.loading-mode #splash-loading { display: flex; }
   .splash-loading-title { font-size: 1.5rem; font-weight: 700; color: var(--text); text-align: center; }
-  .splash-load-bar-wrap { width: 100%; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
-  .splash-load-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.4s ease; }
-  .splash-load-bar-fill.indeterminate { width: 40%; animation: indeterminate 1.4s ease-in-out infinite; }
-  @keyframes indeterminate { 0% { transform: translateX(-100%); width: 40%; } 60% { width: 60%; } 100% { transform: translateX(280%); width: 40%; } }
-  .splash-loading-status { font-size: 0.85rem; color: var(--text-secondary); text-align: center; }
-  #btn-skip-loading { font-size: 0.82rem; color: var(--accent); background: none; border: 1px solid var(--border-accent); border-radius: 20px; padding: 8px 20px; cursor: pointer; margin-top: 4px; }
-  #btn-skip-loading:hover { background: rgba(0,120,212,0.06); }
+  .splash-load-bar-wrap { width: 100%; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; position: relative; }
+  .splash-load-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; width: 0%; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+  .splash-load-pct { font-size: 0.78rem; font-weight: 600; color: var(--accent); align-self: flex-end; margin-top: -10px; }
+  .splash-loading-status { font-size: 0.82rem; color: var(--text-secondary); text-align: center; min-height: 1.2em; }
+  .splash-loading-hint { font-size: 0.72rem; color: var(--muted); text-align: center; font-style: italic; min-height: 1em; }
+  #splash-settings-btn { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); background: none; border: 1px solid var(--border); border-radius: 20px; padding: 7px 16px; cursor: pointer; margin-top: 4px; }
+  #splash-settings-btn:hover { background: var(--surface); }
 
   #loading-overlay {
     position: fixed; inset: 0; z-index: 1900;
@@ -525,7 +525,7 @@
     .splash-sub { font-size: 0.9rem; padding: 0 12px; max-width: 320px; }
     #btn-login { padding: 14px 36px; font-size: 0.95rem; }
     .splash-note { font-size: 0.75rem; max-width: 300px; }
-    #splash-loading { max-width: 260px; }
+    #splash-loading { max-width: 260px; gap: 12px; }
     .splash-loading-title { font-size: 1.3rem; }
     .config-box { padding: 24px 22px 28px; max-width: 100%; width: 94%; border-radius: 24px; }
     .config-box h2 { font-size: 1.35rem; }
@@ -628,8 +628,10 @@
   <div id="splash-loading">
     <div class="splash-loading-title">Loading your map…</div>
     <div class="splash-load-bar-wrap"><div class="splash-load-bar-fill" id="splash-load-bar"></div></div>
+    <div class="splash-load-pct" id="splash-load-pct">0%</div>
     <div class="splash-loading-status" id="splash-load-status">Opening database…</div>
-    <button id="btn-skip-loading">Open map now →</button>
+    <div class="splash-loading-hint" id="splash-load-hint"></div>
+    <button id="splash-settings-btn">⚙ Settings</button>
   </div>
 </div>
 
@@ -1120,8 +1122,9 @@ async function backgroundCacheThumbs() {
     updateCacheStatus(done, total);
     await runWithConcurrency(need, THUMB_CACHE_CONCURRENCY, async (photo, index) => {
       if (await downloadAndCacheThumb(photo)) done++;
-      if (index % 4 === 0) updateCacheStatus(done, total);
+      updateCacheStatus(done, total);
     });
+    localStorage.setItem('thumbCacheDone', total);
     updateCacheStatus(done, total);
     refreshCurrentViews();
     refreshStorageStats();
@@ -1134,7 +1137,9 @@ function updateCacheStatus(done, total) {
   const el = document.getElementById('cache-toggle-status');
   if (!el) return;
   if (!total) { el.textContent = ''; return; }
-  el.textContent = done >= total ? `✓ ${done} thumbnails cached` : `⟳ ${done} / ${total} caching…`;
+  const cachedTotal = parseInt(localStorage.getItem('thumbCacheDone') || '0');
+  const allDone = done >= total || (cachedTotal >= total);
+  el.textContent = allDone ? `✓ ${Math.max(done, cachedTotal)} thumbnails cached` : `⟳ ${done} / ${total} caching…`;
 }
 
 const map = L.map('map', {
@@ -1986,18 +1991,32 @@ document.getElementById('config-panel').addEventListener('click', e => {
   if (e.target === document.getElementById('config-panel')) document.getElementById('config-panel').classList.remove('open');
 });
 
-function setSplashLoading(status, progress) {
+let _splashPct = 0;
+let _splashPctTimer = null;
+function setSplashLoading(status, targetPct, hint) {
   const bar = document.getElementById('splash-load-bar');
   const statusEl = document.getElementById('splash-load-status');
-  if (statusEl) statusEl.textContent = status;
-  if (bar) {
-    if (progress === 'indeterminate') {
-      bar.classList.add('indeterminate');
-    } else {
-      bar.classList.remove('indeterminate');
-      bar.style.width = progress + '%';
-    }
-  }
+  const pctEl = document.getElementById('splash-load-pct');
+  const hintEl = document.getElementById('splash-load-hint');
+  if (statusEl && status) statusEl.textContent = status;
+  if (hintEl && hint !== undefined) hintEl.textContent = hint;
+  if (!bar || targetPct === undefined) return;
+  if (_splashPctTimer) clearInterval(_splashPctTimer);
+  const target = Math.min(targetPct, 99);
+  _splashPctTimer = setInterval(() => {
+    const step = Math.max(1, Math.ceil((target - _splashPct) / 8));
+    _splashPct = Math.min(_splashPct + step, target);
+    bar.style.width = _splashPct + '%';
+    if (pctEl) pctEl.textContent = _splashPct + '%';
+    if (_splashPct >= target) { clearInterval(_splashPctTimer); _splashPctTimer = null; }
+  }, 80);
+}
+function finishSplashLoading() {
+  if (_splashPctTimer) { clearInterval(_splashPctTimer); _splashPctTimer = null; }
+  const bar = document.getElementById('splash-load-bar');
+  const pctEl = document.getElementById('splash-load-pct');
+  if (bar) bar.style.width = '100%';
+  if (pctEl) pctEl.textContent = '100%';
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -2005,27 +2024,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   const hashOrSearch = window.location.hash + window.location.search;
   const isAuthRedirectReturn = hashOrSearch.includes('code=') || hashOrSearch.includes('access_token') || hashOrSearch.includes('id_token') || hashOrSearch.includes('error=');
 
-  // If user has connected before, show loading state instead of connect splash
   if (clientId && !isAuthRedirectReturn) {
     document.getElementById('splash').classList.add('loading-mode');
-    setSplashLoading('Opening database…', 10);
-    document.getElementById('btn-skip-loading').addEventListener('click', () => {
+    setSplashLoading('Opening your photo library…', 12, 'Connecting to local storage…');
+    document.getElementById('splash-settings-btn').addEventListener('click', () => {
       document.getElementById('splash').classList.add('hidden');
+      showConfigPanel();
     });
   }
 
   try {
     const cached = await dbGetAllMedia();
     if (cached.length > 0) {
-      setSplashLoading('Placing ' + cached.length + ' photos on the map…', 35);
+      setSplashLoading('Organizing ' + cached.length.toLocaleString() + ' memories…', 38, 'Building your world map…');
       allPhotos = cached;
       updateUiWithCurrentPhotos(true);
       document.getElementById('btn-config').style.display = 'inline-flex';
       document.getElementById('map-layer-toggle').classList.add('visible');
-      setSplashLoading('Loading thumbnails…', 'indeterminate');
-      document.getElementById('splash').classList.add('hidden');
+      setSplashLoading('Loading thumbnails…', 72, 'Almost there…');
       refreshStorageStats();
-      loadCachedThumbs().then(() => updateUiWithCurrentPhotos(false)).catch(() => {});
+      loadCachedThumbs().then(() => {
+        finishSplashLoading();
+        updateUiWithCurrentPhotos(false);
+        setTimeout(() => document.getElementById('splash').classList.add('hidden'), 300);
+      }).catch(() => { document.getElementById('splash').classList.add('hidden'); });
       if (clientId && !isAuthRedirectReturn) trySilentBackgroundSync(clientId);
     }
   } catch (err) { console.warn('IndexedDB preload error:', err); }
