@@ -1139,7 +1139,7 @@ function updateCacheStatus(done, total) {
   if (!total) { el.textContent = ''; return; }
   const cachedTotal = parseInt(localStorage.getItem('thumbCacheDone') || '0');
   const allDone = done >= total || (cachedTotal >= total);
-  el.textContent = allDone ? `✓ ${Math.max(done, cachedTotal)} thumbnails cached` : `⟳ ${done} / ${total} caching…`;
+  el.textContent = allDone ? `✓ ${done} thumbnails cached` : `⟳ ${done} / ${total} caching…`;
 }
 
 const map = L.map('map', {
