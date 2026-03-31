@@ -421,7 +421,7 @@
   .year-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
 
   #config-panel {
-    position: fixed; inset: 0; z-index: 1500;
+    position: fixed; inset: 0; z-index: 2500;
     background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center;
   }
   #config-panel.open { display: flex; }
@@ -2004,12 +2004,14 @@ function setSplashLoading(status, targetPct, hint) {
   if (_splashPctTimer) clearInterval(_splashPctTimer);
   const target = Math.min(targetPct, 99);
   _splashPctTimer = setInterval(() => {
-    const step = Math.max(1, Math.ceil((target - _splashPct) / 8));
-    _splashPct = Math.min(_splashPct + step, target);
-    bar.style.width = _splashPct + '%';
-    if (pctEl) pctEl.textContent = _splashPct + '%';
-    if (_splashPct >= target) { clearInterval(_splashPctTimer); _splashPctTimer = null; }
-  }, 80);
+    if (_splashPct < target) {
+      _splashPct = Math.min(_splashPct + 1, target);
+      bar.style.width = _splashPct + '%';
+      if (pctEl) pctEl.textContent = _splashPct + '%';
+    } else {
+      clearInterval(_splashPctTimer); _splashPctTimer = null;
+    }
+  }, 60);
 }
 function finishSplashLoading() {
   if (_splashPctTimer) { clearInterval(_splashPctTimer); _splashPctTimer = null; }
@@ -2028,7 +2030,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('splash').classList.add('loading-mode');
     setSplashLoading('Opening your photo library…', 12, 'Connecting to local storage…');
     document.getElementById('splash-settings-btn').addEventListener('click', () => {
-      document.getElementById('splash').classList.add('hidden');
       showConfigPanel();
     });
   }
