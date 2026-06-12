@@ -734,7 +734,17 @@ const REFRESH_CONCURRENCY = 4;
 const REFRESH_DELAY_MS = 200;
 
 function safeDate(value) {
-  return value ? new Date(value) : null;
+  if (!value) return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+const photoById = new Map();
+
+function setAllPhotos(photos) {
+  allPhotos = photos;
+  photoById.clear();
+  for (const p of photos) photoById.set(p.id, p);
 }
 
 function revokeThumbUrl(id) {
@@ -748,7 +758,7 @@ function revokeThumbUrl(id) {
 function setThumbObjectUrl(id, blob) {
   revokeThumbUrl(id);
   thumbBlobUrls.set(id, URL.createObjectURL(blob));
-  const photo = allPhotos.find(p => p.id === id);
+  const photo = photoById.get(id);
   if (photo) photo.thumbnailBroken = false;
 }
 
@@ -982,18 +992,18 @@ function getThumbSrc(photo) {
 }
 
 function markThumbnailBroken(photoId) {
-  const photo = allPhotos.find(p => p.id === photoId);
+  const photo = photoById.get(photoId);
   if (photo) photo.thumbnailBroken = true;
 }
 
 function markThumbnailHealthy(photoId) {
-  const photo = allPhotos.find(p => p.id === photoId);
+  const photo = photoById.get(photoId);
   if (photo) photo.thumbnailBroken = false;
 }
 
 function handleThumbnailError(photoId, imgElement) {
   markThumbnailBroken(photoId);
-  const photo = allPhotos.find(p => p.id === photoId);
+  const photo = photoById.get(photoId);
   if (imgElement) imgElement.src = photo ? getFallbackIcon(photo) : FALLBACK_ICON;
   if (window.queueThumbnailRefresh) window.queueThumbnailRefresh(photoId, imgElement);
 }
@@ -1146,7 +1156,7 @@ async function backgroundCacheThumbs() {
       else failed.push(photo);
       updateCacheStatus(done, total);
     });
-    localStorage.setItem('thumbCacheDone', total);
+    localStorage.setItem('thumbCacheDone', String(done));
     if (failed.length) {
       const failedIds = failed.map(p => p.id);
       localStorage.setItem('thumbCacheFailed', JSON.stringify(failedIds));
@@ -1182,7 +1192,7 @@ function updateBrokenStatus() {
   try {
     const ids = JSON.parse(raw);
     if (!ids.length) { el.style.display = 'none'; return; }
-    const photos = ids.map(id => allPhotos.find(p => p.id === id)).filter(Boolean);
+    const photos = ids.map(id => photoById.get(id)).filter(Boolean);
     const names = photos.map(p => p.name || p.id).join(', ');
     countEl.textContent = ids.length + ' thumbnail' + (ids.length > 1 ? 's' : '') + ' could not be cached: ' + names;
     el.style.display = 'block';
@@ -1254,34 +1264,18 @@ clusterGroup = L.markerClusterGroup({
   iconCreateFunction(cluster) {
     const count = cluster.getChildCount();
     const children = cluster.getAllChildMarkers();
-    let bestPhoto = null;
-
+    // Single pass: pick the photo with the most reliable thumbnail source.
+    let bestPhoto = null, bestScore = -1;
     for (const child of children) {
       const p = child._photoData;
       if (!p) continue;
-      if (lcEnabled && thumbBlobUrls.has(p.id)) { bestPhoto = p; break; }
+      let score = 0;
+      if (lcEnabled && thumbBlobUrls.has(p.id)) score = 4;
+      else if (!p.thumbnailBroken && p.thumbnailUrl && p.thumbnailUrl !== FALLBACK_ICON) score = isUrlStale(p) ? 2 : 3;
+      else if (!p.thumbnailBroken) score = 1;
+      if (score > bestScore) { bestScore = score; bestPhoto = p; }
+      if (score === 4) break;
     }
-    if (!bestPhoto) {
-      for (const child of children) {
-        const p = child._photoData;
-        if (!p || p.thumbnailBroken) continue;
-        if (p.thumbnailUrl && !isUrlStale(p) && p.thumbnailUrl !== FALLBACK_ICON) { bestPhoto = p; break; }
-      }
-    }
-    if (!bestPhoto) {
-      for (const child of children) {
-        const p = child._photoData;
-        if (!p || p.thumbnailBroken) continue;
-        if (p.thumbnailUrl && p.thumbnailUrl !== FALLBACK_ICON) { bestPhoto = p; break; }
-      }
-    }
-    if (!bestPhoto) {
-      for (const child of children) {
-        const p = child._photoData;
-        if (p && !p.thumbnailBroken) { bestPhoto = p; break; }
-      }
-    }
-    if (!bestPhoto) bestPhoto = children[0]?._photoData;
 
     const thumbSrc = bestPhoto ? getThumbSrc(bestPhoto) : FALLBACK_ICON;
     const photoId = bestPhoto?.id || '';
@@ -1355,7 +1349,7 @@ function isVideoByName(name = '') {
 function updateUiWithCurrentPhotos(fit = false) {
   if (!allPhotos?.length) return;
   buildYearFilter(allPhotos);
-  const filtered = currentYear === 'all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
+  const filtered = getFilteredPhotos();
   renderMarkers(filtered);
   updateStats(filtered.length);
   if (fit && markers.length > 0) {
@@ -1390,7 +1384,7 @@ async function processRefreshQueue() {
   const bounds = map.getBounds();
   const priorityIds = [], normalIds = [];
   for (const id of _refreshQueue) {
-    const photo = allPhotos.find(p => p.id === id);
+    const photo = photoById.get(id);
     if (photo && bounds.contains([photo.lat, photo.lng])) priorityIds.push(id);
     else normalIds.push(id);
   }
@@ -1398,7 +1392,7 @@ async function processRefreshQueue() {
   const promises = batch.map(async (id) => {
     _refreshQueue.delete(id);
     _refreshInProgress.add(id);
-    const photo = allPhotos.find(p => p.id === id);
+    const photo = photoById.get(id);
     if (!photo) { _refreshInProgress.delete(id); return; }
     try {
       await refreshMediaUrls(photo);
@@ -1528,7 +1522,7 @@ function renderMarkers(filtered) {
   filtered.forEach(photo => markers.push(createMarker(photo, filteredIdSet)));
   clusterGroup.addLayers(markers);
   clusterGroup.on('clusterclick', e => {
-    const photos = e.layer.getAllChildMarkers().map(m => m._photoData);
+    const photos = e.layer.getAllChildMarkers().map(m => m._photoData).filter(Boolean);
     openPanel(photos, e.latlng.lat, e.latlng.lng);
   });
 }
@@ -1536,11 +1530,14 @@ function renderMarkers(filtered) {
 function openPanel(photos, lat, lng) {
   const panel = document.getElementById('photo-panel');
   panelAllPhotos = [...photos].sort((a, b) => (b.date || 0) - (a.date || 0));
-  const dates = panelAllPhotos.filter(p => p.date).map(p => p.date);
+  let min = null, max = null;
+  for (const p of panelAllPhotos) {
+    if (!p.date) continue;
+    if (!min || p.date < min) min = p.date;
+    if (!max || p.date > max) max = p.date;
+  }
   const dateRange = document.getElementById('panel-date-range');
-  if (dates.length) {
-    const min = new Date(Math.min(...dates));
-    const max = new Date(Math.max(...dates));
+  if (min) {
     const fmt = d => d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     dateRange.textContent = (min.getFullYear() === max.getFullYear() && min.getMonth() === max.getMonth()) ? fmt(min) : `${fmt(min)} — ${fmt(max)}`;
   } else dateRange.textContent = '';
@@ -1667,35 +1664,46 @@ async function showLightboxPhoto() {
   }
 }
 
+function getFilteredPhotos() {
+  return currentYear === 'all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
+}
+
 function refreshCurrentViews() {
-  const filtered = currentYear === 'all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
+  const filtered = getFilteredPhotos();
   renderMarkers(filtered);
+  updateStats(filtered.length);
   if (document.getElementById('photo-panel').classList.contains('open')) renderPanelPhotos();
 }
 
-document.getElementById('panel-close').addEventListener('click', () => {
+function closePanel() {
   currentPanelRequestId++;
   document.getElementById('photo-panel').classList.remove('open');
-});
-map.on('click', () => {
-  currentPanelRequestId++;
-  document.getElementById('photo-panel').classList.remove('open');
-});
-document.getElementById('lightbox-close').addEventListener('click', () => {
+}
+
+function closeLightbox() {
+  const video = document.getElementById('lightbox-video');
+  video.pause(); video.removeAttribute('src'); video.load();
   document.getElementById('lightbox').classList.remove('open');
   setHdState('hidden');
-});
-document.getElementById('lightbox-prev').addEventListener('click', (e) => { e.stopPropagation(); lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; showLightboxPhoto(); });
-document.getElementById('lightbox-next').addEventListener('click', (e) => { e.stopPropagation(); lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; showLightboxPhoto(); });
+}
+
+function lightboxStep(delta) {
+  if (lightboxPhotos.length < 2) return;
+  lightboxIndex = (lightboxIndex + delta + lightboxPhotos.length) % lightboxPhotos.length;
+  showLightboxPhoto();
+}
+
+document.getElementById('panel-close').addEventListener('click', closePanel);
+map.on('click', closePanel);
+document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+document.getElementById('lightbox-prev').addEventListener('click', (e) => { e.stopPropagation(); lightboxStep(-1); });
+document.getElementById('lightbox-next').addEventListener('click', (e) => { e.stopPropagation(); lightboxStep(1); });
 document.getElementById('lightbox').addEventListener('click', e => {
   const tgt = e.target;
   const lb = document.getElementById('lightbox');
   const wrap = document.querySelector('.lightbox-media-wrap');
   const img = document.getElementById('lightbox-img');
-  if (tgt === lb || tgt === wrap || tgt === img) {
-    lb.classList.remove('open');
-    setHdState('hidden');
-  }
+  if (tgt === lb || tgt === wrap || tgt === img) closeLightbox();
 });
 
 document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) => {
@@ -1706,15 +1714,14 @@ document.getElementById('lightbox-open-onedrive').addEventListener('click', (e) 
 });
 
 document.addEventListener('keydown', e => {
-  const lb = document.getElementById('lightbox');
-  if (!lb.classList.contains('open')) return;
-  if (e.key === 'Escape') { lb.classList.remove('open'); setHdState('hidden'); }
-  if (e.key === 'ArrowLeft') { lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; showLightboxPhoto(); }
-  if (e.key === 'ArrowRight') { lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; showLightboxPhoto(); }
-});
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { currentPanelRequestId++; document.getElementById('photo-panel').classList.remove('open'); }
+  const lbOpen = document.getElementById('lightbox').classList.contains('open');
+  if (lbOpen) {
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') lightboxStep(-1);
+    else if (e.key === 'ArrowRight') lightboxStep(1);
+    return;
+  }
+  if (e.key === 'Escape') closePanel();
 });
 
 (function() {
@@ -1723,15 +1730,13 @@ document.addEventListener('keydown', e => {
   const lb = document.getElementById('lightbox');
   lb.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, { passive: true });
   lb.addEventListener('touchend', e => {
+    if (!lightboxPhotos.length) return;
     const dx = e.changedTouches[0].screenX - touchStartX;
     const dy = e.changedTouches[0].screenY - touchStartY;
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
-      if (dx < 0) lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
-      else lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
-      showLightboxPhoto();
+      lightboxStep(dx < 0 ? 1 : -1);
     } else if (dy > SWIPE_THRESHOLD * 1.5 && Math.abs(dy) > Math.abs(dx)) {
-      lb.classList.remove('open');
-      setHdState('hidden');
+      closeLightbox();
     }
   }, { passive: true });
 
@@ -1739,10 +1744,7 @@ document.addEventListener('keydown', e => {
   let panelTouchStartY = 0;
   panelHeader.addEventListener('touchstart', e => { panelTouchStartY = e.changedTouches[0].screenY; }, { passive: true });
   panelHeader.addEventListener('touchend', e => {
-    if (e.changedTouches[0].screenY - panelTouchStartY > 60) {
-      currentPanelRequestId++;
-      document.getElementById('photo-panel').classList.remove('open');
-    }
+    if (e.changedTouches[0].screenY - panelTouchStartY > 60) closePanel();
   }, { passive: true });
 })();
 
@@ -1799,11 +1801,10 @@ function buildYearFilter(photos) {
 }
 
 function applyFilter() {
-  const filtered = currentYear === 'all' ? allPhotos : allPhotos.filter(p => p.date && p.date.getFullYear() == currentYear);
+  const filtered = getFilteredPhotos();
   renderMarkers(filtered);
   updateStats(filtered.length);
-  currentPanelRequestId++;
-  document.getElementById('photo-panel').classList.remove('open');
+  closePanel();
 }
 
 function updateStats(count) {
@@ -1851,6 +1852,15 @@ async function runDeltaSync() {
   const writeBatch = [];
   const thumbResolveQueue = [];
 
+  async function removeExisting(id) {
+    if (!existingMap.has(id)) return;
+    existingMap.delete(id);
+    await dbDeleteMediaItem(id);
+    if (lcEnabled) dbDeleteThumb(id).catch(() => {});
+    revokeThumbUrl(id);
+    deleted++;
+  }
+
   while (url) {
     const data = await graphGet(url, _currentToken);
     const items = data?.value || [];
@@ -1862,20 +1872,20 @@ async function runDeltaSync() {
       }
 
       if (item.deleted) {
-        if (existingMap.has(item.id)) {
-          existingMap.delete(item.id);
-          await dbDeleteMediaItem(item.id);
-          if (lcEnabled) dbDeleteThumb(item.id).catch(() => {});
-          revokeThumbUrl(item.id);
-          deleted++;
-        }
+        await removeExisting(item.id);
         continue;
       }
 
-      if (item.folder || !isMediaFile(item)) continue;
+      if (item.folder || !isMediaFile(item)) {
+        await removeExisting(item.id);
+        continue;
+      }
       const existingItem = existingMap.get(item.id) || null;
       const mediaItem = normalizeMediaItemFromGraph(item, existingItem);
-      if (!mediaItem) continue;
+      if (!mediaItem) {
+        await removeExisting(item.id);
+        continue;
+      }
 
       existingMap.set(item.id, mediaItem);
       writeBatch.push(mediaItem);
@@ -1886,7 +1896,7 @@ async function runDeltaSync() {
       if (writeBatch.length >= flushThreshold) {
         await maybeResolveThumbnailUrls(thumbResolveQueue.splice(0, thumbResolveQueue.length), !lcEnabled);
         await dbPutMediaBatch(writeBatch.splice(0, writeBatch.length));
-        allPhotos = [...existingMap.values()];
+        setAllPhotos([...existingMap.values()]);
         updateUiWithCurrentPhotos(existingCount === 0 && added <= flushThreshold);
       }
     }
@@ -1899,7 +1909,7 @@ async function runDeltaSync() {
   if (writeBatch.length > 0) await dbPutMediaBatch(writeBatch);
   if (newDeltaLink) await dbSetMeta('deltaLink', newDeltaLink);
 
-  allPhotos = [...existingMap.values()];
+  setAllPhotos([...existingMap.values()]);
   updateUiWithCurrentPhotos(existingCount === 0 && allPhotos.length > 0);
 
   await dbSetMeta('scan_state', { scanned, found: allPhotos.length, updatedAt: new Date().toISOString(), completed: true });
@@ -1945,15 +1955,17 @@ async function startApp() {
 
 async function _startAppInner() {
   const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
-  if (!clientId) { document.getElementById('splash').classList.add('hidden'); showConfigPanel(); return; }
+  clearSplashTimers();
   document.getElementById('splash').classList.add('hidden');
 
   try {
-    const cached = await dbGetAllMedia();
-    if (cached.length > 0) {
-      allPhotos = cached;
-      updateUiWithCurrentPhotos(true);
-      loadCachedThumbs().then(() => updateUiWithCurrentPhotos(false)).catch(() => {});
+    if (!allPhotos.length) {
+      const cached = await dbGetAllMedia();
+      if (cached.length > 0) {
+        setAllPhotos(cached);
+        updateUiWithCurrentPhotos(true);
+        loadCachedThumbs().then(() => updateUiWithCurrentPhotos(false)).catch(() => {});
+      }
     }
   } catch (err) { console.warn('IndexedDB read error:', err); }
 
@@ -1998,30 +2010,34 @@ function showConfigPanel() {
 document.getElementById('btn-config-cancel').addEventListener('click', () => { document.getElementById('config-panel').classList.remove('open'); });
 
 document.getElementById('btn-config-logout').addEventListener('click', async () => {
-  try {
-    if (msalInstance) {
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0) { await msalInstance.logoutRedirect({ account: accounts[0] }).catch(() => {}); return; }
-    }
-  } finally {
-    localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
-    await dbClearMedia().catch(() => {});
-    await dbClearThumbs().catch(() => {});
-    await dbDeleteMeta('scan_state').catch(() => {});
-    await dbDeleteMeta('deltaLink').catch(() => {});
-    revokeAllThumbUrls();
-    stopAutoSync();
-    msalInstance = null; allPhotos = []; markers = [];
-    clusterGroup.clearLayers();
-    document.getElementById('config-panel').classList.remove('open');
-    document.getElementById('filter-bar').classList.remove('visible');
-    document.getElementById('stats-pill').style.display = 'none';
-    document.getElementById('btn-config').style.display = 'none';
-    document.getElementById('map-layer-toggle').classList.remove('visible');
-    document.getElementById('photo-panel').classList.remove('open');
-    document.getElementById('splash').classList.remove('hidden');
-    setScanStatus('hidden');
-    refreshStorageStats();
+  // Clear local data first: logoutRedirect navigates away, so anything after it may never run.
+  const instance = msalInstance;
+  msalInstance = null;
+  _currentToken = null;
+  localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
+  localStorage.removeItem('thumbCacheDone');
+  localStorage.removeItem('thumbCacheFailed');
+  await dbClearMedia().catch(() => {});
+  await dbClearThumbs().catch(() => {});
+  await dbDeleteMeta('scan_state').catch(() => {});
+  await dbDeleteMeta('deltaLink').catch(() => {});
+  revokeAllThumbUrls();
+  stopAutoSync();
+  setAllPhotos([]); markers = [];
+  clusterGroup.clearLayers();
+  closePanel();
+  document.getElementById('config-panel').classList.remove('open');
+  document.getElementById('filter-bar').classList.remove('visible');
+  document.getElementById('stats-pill').style.display = 'none';
+  document.getElementById('btn-config').style.display = 'none';
+  document.getElementById('map-layer-toggle').classList.remove('visible');
+  document.getElementById('splash').classList.remove('hidden', 'loading-mode');
+  setScanStatus('hidden');
+  refreshStorageStats();
+  const accounts = instance ? instance.getAllAccounts() : [];
+  if (accounts.length > 0) {
+    await instance.logoutRedirect({ account: accounts[0] }).catch(() => {});
+  } else {
     showToast('Successfully disconnected');
   }
 });
@@ -2093,9 +2109,13 @@ function setSplashLoading(status, targetPct, hints) {
   }, 60);
 }
 
-function finishSplashLoading() {
+function clearSplashTimers() {
   if (_splashPctTimer) { clearInterval(_splashPctTimer); _splashPctTimer = null; }
   if (_splashMsgTimer) { clearInterval(_splashMsgTimer); _splashMsgTimer = null; }
+}
+
+function finishSplashLoading() {
+  clearSplashTimers();
   const bar = document.getElementById('splash-load-bar');
   const pctEl = document.getElementById('splash-load-pct');
   const statusEl = document.getElementById('splash-load-status');
@@ -2119,51 +2139,64 @@ function computeSplashStats(photos) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const clientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
+  const storedClientId = localStorage.getItem(STORAGE_KEY_CLIENT_ID);
+  const hasConnectedBefore = !!storedClientId;
   const hashOrSearch = window.location.hash + window.location.search;
   const isAuthRedirectReturn = hashOrSearch.includes('code=') || hashOrSearch.includes('access_token') || hashOrSearch.includes('id_token') || hashOrSearch.includes('error=');
 
-  if (clientId && !isAuthRedirectReturn) {
+  document.getElementById('splash-settings-btn').addEventListener('click', showConfigPanel);
+
+  if (isAuthRedirectReturn) { startApp(); return; }
+
+  if (hasConnectedBefore) {
     document.getElementById('splash').classList.add('loading-mode');
     setSplashLoading('Opening your photo library…', 12, [
       'Connecting to local storage…',
       'Waking up your memories…',
       'Reading your adventures…',
     ]);
-    document.getElementById('splash-settings-btn').addEventListener('click', showConfigPanel);
   }
 
-  try {
-    const cached = await dbGetAllMedia();
-    if (cached.length > 0) {
-      const stat = computeSplashStats(cached);
-      setSplashStat(stat);
-      setSplashLoading('Organizing ' + cached.length.toLocaleString() + ' memories…', 38, [
-        'Building your world map…',
-        'Plotting ' + cached.length.toLocaleString() + ' locations…',
-        'Grouping nearby photos…',
-        'Calculating clusters…',
-      ]);
-      allPhotos = cached;
-      updateUiWithCurrentPhotos(true);
-      document.getElementById('btn-config').style.display = 'inline-flex';
-      document.getElementById('map-layer-toggle').classList.add('visible');
-      setSplashLoading('Loading thumbnails…', 72, [
-        'Almost there…',
-        'Preparing ' + cached.length.toLocaleString() + ' previews…',
-        'Your map is coming together…',
-        'Just a few more seconds…',
-      ]);
-      refreshStorageStats();
-      loadCachedThumbs().then(() => {
-        finishSplashLoading();
-        updateUiWithCurrentPhotos(false);
-        setTimeout(() => document.getElementById('splash').classList.add('hidden'), 400);
-      }).catch(() => { document.getElementById('splash').classList.add('hidden'); });
-      if (clientId && !isAuthRedirectReturn) trySilentBackgroundSync(clientId);
-    }
-  } catch (err) { console.warn('IndexedDB preload error:', err); }
-  if (clientId && isAuthRedirectReturn) startApp();
+  let cached = [];
+  try { cached = await dbGetAllMedia(); }
+  catch (err) { console.warn('IndexedDB preload error:', err); }
+
+  if (cached.length > 0) {
+    setSplashStat(computeSplashStats(cached));
+    setSplashLoading('Organizing ' + cached.length.toLocaleString() + ' memories…', 38, [
+      'Building your world map…',
+      'Plotting ' + cached.length.toLocaleString() + ' locations…',
+      'Grouping nearby photos…',
+      'Calculating clusters…',
+    ]);
+    setAllPhotos(cached);
+    updateUiWithCurrentPhotos(true);
+    document.getElementById('btn-config').style.display = 'inline-flex';
+    document.getElementById('map-layer-toggle').classList.add('visible');
+    setSplashLoading('Loading thumbnails…', 72, [
+      'Almost there…',
+      'Preparing ' + cached.length.toLocaleString() + ' previews…',
+      'Your map is coming together…',
+      'Just a few more seconds…',
+    ]);
+    refreshStorageStats();
+    loadCachedThumbs().then(() => {
+      finishSplashLoading();
+      updateUiWithCurrentPhotos(false);
+      setTimeout(() => document.getElementById('splash').classList.add('hidden'), 400);
+    }).catch(() => {
+      clearSplashTimers();
+      document.getElementById('splash').classList.add('hidden');
+    });
+    trySilentBackgroundSync(storedClientId || DEFAULT_CLIENT_ID);
+  } else if (hasConnectedBefore) {
+    // Previously connected but no local data: run the full startup (silent auth or redirect).
+    startApp();
+  } else {
+    // First visit: show the connect screen instead of an endless fake loading bar.
+    clearSplashTimers();
+    document.getElementById('splash').classList.remove('loading-mode');
+  }
 });
 
 async function trySilentBackgroundSync(clientId) {
@@ -2176,7 +2209,7 @@ async function trySilentBackgroundSync(clientId) {
     runBackgroundSync();
     startAutoSync();
   } catch {
-    setScanStatus('scanning', 'Session expirée — appuyez pour reconnecter', '', 0);
+    setScanStatus('paused', 'Session expirée — appuyez pour reconnecter', '', 0);
     const statusEl = document.getElementById('scan-status');
     if (statusEl) {
       statusEl.style.cursor = 'pointer';
